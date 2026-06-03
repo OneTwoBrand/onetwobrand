@@ -1,7 +1,24 @@
 import { hasSupabasePublicEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
+import type { ProductionOrderListItem } from '@/lib/production/orders';
+import { fallbackProductionOrders, getProductionOrders } from '@/lib/production/orders';
 
 export type DataSource = 'supabase' | 'fallback';
+
+export type DashboardSummary = {
+  inProduction: number;
+  inEmbroidery: number;
+  stockTotal: number;
+  pendingOrders: number;
+  revenueMonth: number;
+  toReceive: number;
+  toPay: number;
+  grossProfitMonth: number;
+  netProfitMonth: number;
+  overdueOps: number;
+  lowStockSkus: number;
+  activeOrders: ProductionOrderListItem[];
+};
 
 export type ClientListItem = {
   id: string;
@@ -78,9 +95,80 @@ const fallbackSales: SalesSummary = {
   latestSales: [],
 };
 
+const fallbackDashboard: DashboardSummary = {
+  inProduction: 1,
+  inEmbroidery: 1,
+  stockTotal: 47,
+  pendingOrders: 0,
+  revenueMonth: 0,
+  toReceive: 0,
+  toPay: 6420,
+  grossProfitMonth: 0,
+  netProfitMonth: 0,
+  overdueOps: 0,
+  lowStockSkus: 3,
+  activeOrders: fallbackProductionOrders.slice(0, 2),
+};
+
 async function getSupabaseOrNull() {
   if (!hasSupabasePublicEnv()) return null;
   return createClient();
+}
+
+export async function getDashboardSummary(): Promise<{ source: DataSource; summary: DashboardSummary; error?: string }> {
+  try {
+    const supabase = await getSupabaseOrNull();
+    if (!supabase) return { source: 'fallback', summary: fallbackDashboard };
+
+    const [{ data: kpis, error: kpiError }, ordersResult] = await Promise.all([
+      supabase
+        .from('v_dashboard_kpis')
+        .select(`
+          in_production,
+          in_embroidery,
+          stock_total,
+          pending_orders,
+          revenue_month,
+          to_receive,
+          to_pay,
+          gross_profit_month,
+          net_profit_month,
+          overdue_ops,
+          low_stock_skus
+        `)
+        .single(),
+      getProductionOrders(),
+    ]);
+
+    if (kpiError || !kpis) {
+      return { source: 'fallback', summary: fallbackDashboard, error: kpiError?.message };
+    }
+
+    const activeOrders = ordersResult.orders
+      .filter((order) => !['Finalizada', 'Vendida', 'Entregue'].includes(order.status))
+      .slice(0, 4);
+
+    return {
+      source: ordersResult.source === 'supabase' ? 'supabase' : 'fallback',
+      error: ordersResult.error,
+      summary: {
+        inProduction: Number(kpis.in_production),
+        inEmbroidery: Number(kpis.in_embroidery),
+        stockTotal: Number(kpis.stock_total),
+        pendingOrders: Number(kpis.pending_orders),
+        revenueMonth: Number(kpis.revenue_month),
+        toReceive: Number(kpis.to_receive),
+        toPay: Number(kpis.to_pay),
+        grossProfitMonth: Number(kpis.gross_profit_month),
+        netProfitMonth: Number(kpis.net_profit_month),
+        overdueOps: Number(kpis.overdue_ops),
+        lowStockSkus: Number(kpis.low_stock_skus),
+        activeOrders: activeOrders.length ? activeOrders : fallbackDashboard.activeOrders,
+      },
+    };
+  } catch (error) {
+    return { source: 'fallback', summary: fallbackDashboard, error: error instanceof Error ? error.message : 'Erro ao buscar dashboard.' };
+  }
 }
 
 export async function getClients(): Promise<{ source: DataSource; clients: ClientListItem[]; error?: string }> {
