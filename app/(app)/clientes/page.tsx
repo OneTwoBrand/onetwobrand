@@ -1,4 +1,5 @@
 import { Plus, Search, User } from 'lucide-react';
+import Link from 'next/link';
 import { AppBar, Topbar } from '@/components/layout/Navigation';
 import { DataNotice } from '@/components/app/DataNotice';
 import { Button } from '@/components/ui/Button';
@@ -13,8 +14,8 @@ export default async function ClientesPage() {
 
   return (
     <>
-      <AppBar large eyebrow="Clientes" title={`${clients.length} cadastros`} action={<Button size="sm" icon={<Plus size={14} />}>Nova</Button>} />
-      <Topbar eyebrow="Clientes" title={`${clients.length} cadastros`} action={<Button size="sm" icon={<Plus size={14} />}>Nova cliente</Button>} />
+      <AppBar large eyebrow="Clientes" title={`${clients.length} cadastros`} action={<Link href="/clientes/novo"><Button size="sm" icon={<Plus size={14} />}>Nova</Button></Link>} />
+      <Topbar eyebrow="Clientes" title={`${clients.length} cadastros`} action={<Link href="/clientes/novo"><Button size="sm" icon={<Plus size={14} />}>Nova cliente</Button></Link>} />
       <main className="flex-1 px-5 pb-28 pt-3 md:px-9 md:py-8">
         <section className="mx-auto max-w-5xl">
           <DataNotice source={source} error={error} />

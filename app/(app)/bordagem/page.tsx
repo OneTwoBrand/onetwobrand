@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
-import { Calendar, Gem, PackageCheck, UserRound } from 'lucide-react';
+import { Calendar, Gem, PackageCheck, Plus, UserRound } from 'lucide-react';
+import Link from 'next/link';
 import { AppBar, Topbar } from '@/components/layout/Navigation';
+import { Button } from '@/components/ui/Button';
 import { DataNotice } from '@/components/app/DataNotice';
 import { Badge } from '@/components/ui/Badge';
 import { Card, SectionHead } from '@/components/ui/Primitives';
@@ -14,8 +16,8 @@ export default async function BordagemPage() {
 
   return (
     <>
-      <AppBar large eyebrow="Bordagem" title={`${totalQty} peças em trânsito`} />
-      <Topbar eyebrow="Bordagem" title={`${totalQty} peças em trânsito`} />
+      <AppBar large eyebrow="Bordagem" title={`${totalQty} peças em trânsito`} action={<Link href="/bordagem/novo"><Button size="sm" icon={<Plus size={14} />}>Nova</Button></Link>} />
+      <Topbar eyebrow="Bordagem" title={`${totalQty} peças em trânsito`} action={<Link href="/bordagem/novo"><Button size="sm" icon={<Plus size={14} />}>Nova remessa</Button></Link>} />
       <main className="flex-1 px-5 pb-28 pt-3 md:px-9 md:py-8">
         <section className="mx-auto max-w-5xl">
           <DataNotice source={source} error={error} />

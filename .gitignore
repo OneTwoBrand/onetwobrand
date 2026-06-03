@@ -43,3 +43,5 @@ next-env.d.ts
 
 # local verification logs
 tmp-next-*.log
+
+.vercel

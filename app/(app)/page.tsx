@@ -1,4 +1,5 @@
 import { Bell, Box, CircleDollarSign, Package, Scissors, Search, ShoppingCart, Sparkles } from 'lucide-react';
+import Link from 'next/link';
 import { AppBar, Topbar } from '@/components/layout/Navigation';
 import { KPI, OPRow } from '@/components/app/Composites';
 import { Button } from '@/components/ui/Button';
@@ -54,7 +55,7 @@ export default function DashboardPage() {
       <Topbar
         eyebrow="Hoje no atelier"
         title="Boa tarde, Ana"
-        action={<Button size="sm" icon={<Scissors size={14} strokeWidth={1.5} />}>Nova OP</Button>}
+        action={<Link href="/producao/novo"><Button size="sm" icon={<Scissors size={14} strokeWidth={1.5} />}>Nova OP</Button></Link>}
       />
 
       <main className="flex-1 px-5 pb-28 pt-3 md:px-9 md:py-8">
