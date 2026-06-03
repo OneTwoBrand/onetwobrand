@@ -1,6 +1,147 @@
-import { Menu } from 'lucide-react';
-import { SimpleModulePage } from '@/components/app/SimpleModulePage';
+import Link from 'next/link';
+import {
+  BarChart3, Bot, CircleDollarSign, Gem, KeyRound, LogOut,
+  Package, Scissors, Settings, Shield, User, Users,
+} from 'lucide-react';
+import { AppBar, Topbar } from '@/components/layout/Navigation';
+import { Avatar, Card, Divider, SectionHead } from '@/components/ui/Primitives';
+import { Badge } from '@/components/ui/Badge';
+import { getCurrentUserDisplay } from '@/lib/current-user';
+import { createClient } from '@/lib/supabase/server';
+import { signOut } from '@/app/(auth)/logout/actions';
+import { ProfileForm, PasswordForm } from './ProfileForm';
 
-export default function MaisPage() {
-  return <SimpleModulePage eyebrow="Mais" title="Áreas adicionais" icon={<Menu size={34} strokeWidth={1.4} />} />;
+async function getProfileRole(userId: string): Promise<string> {
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .maybeSingle();
+    return data?.role ?? 'admin';
+  } catch {
+    return 'admin';
+  }
+}
+
+const NAV_LINKS = [
+  { href: '/', label: 'Início', icon: <BarChart3 size={18} strokeWidth={1.5} /> },
+  { href: '/producao', label: 'Produção', icon: <Scissors size={18} strokeWidth={1.5} /> },
+  { href: '/bordagem', label: 'Bordagem', icon: <Gem size={18} strokeWidth={1.5} /> },
+  { href: '/estoque', label: 'Estoque', icon: <Package size={18} strokeWidth={1.5} /> },
+  { href: '/clientes', label: 'Clientes', icon: <User size={18} strokeWidth={1.5} /> },
+  { href: '/costureiras', label: 'Costureiras', icon: <Users size={18} strokeWidth={1.5} /> },
+  { href: '/financeiro', label: 'Financeiro', icon: <CircleDollarSign size={18} strokeWidth={1.5} /> },
+  { href: '/relatorios', label: 'Relatórios', icon: <BarChart3 size={18} strokeWidth={1.5} /> },
+  { href: '/assistant', label: 'OneTwo Assistant', icon: <Bot size={18} strokeWidth={1.5} /> },
+];
+
+export default async function MaisPage() {
+  const [user, supabase] = await Promise.all([
+    getCurrentUserDisplay(),
+    createClient(),
+  ]);
+
+  const { data: { user: authUser } } = await supabase.auth.getUser();
+  const role = authUser ? await getProfileRole(authUser.id) : 'admin';
+
+  const roleLabel: Record<string, string> = {
+    admin: 'Admin', atelier: 'Atelier', viewer: 'Visualizador',
+  };
+
+  return (
+    <>
+      <AppBar large eyebrow="Mais" title="Configurações" />
+      <Topbar eyebrow="Mais" title="Configurações" action={<Settings size={18} className="text-ink-soft" />} />
+
+      <main className="flex-1 px-5 pb-28 pt-3 md:px-9 md:py-8">
+        <section className="mx-auto max-w-xl space-y-6">
+
+          {/* Perfil do usuário */}
+          <Card pad={20}>
+            <div className="mb-5 flex items-center gap-4">
+              <Avatar name={user.name} size={52} tone="primary" />
+              <div>
+                <h2 className="m-0 font-serif text-[22px] font-normal text-ink">{user.name}</h2>
+                <div className="mt-1 flex items-center gap-2">
+                  <p className="text-[12px] text-ink-soft">{user.email}</p>
+                  <Badge tone="primary" size="sm">{roleLabel[role] ?? role}</Badge>
+                </div>
+              </div>
+            </div>
+            <Divider className="mb-5" />
+            <SectionHead eyebrow="Dados" title="Editar nome" />
+            <div className="mt-3">
+              <ProfileForm currentName={user.name} />
+            </div>
+          </Card>
+
+          {/* Segurança */}
+          <Card pad={20}>
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-primary-soft text-primary">
+                <Shield size={18} strokeWidth={1.5} />
+              </div>
+              <div>
+                <p className="text-[13px] font-medium text-ink">Segurança</p>
+                <p className="text-[11px] text-ink-soft">Altere sua senha de acesso</p>
+              </div>
+            </div>
+            <Divider className="mb-5" />
+            <SectionHead eyebrow="Acesso" title="Alterar senha" />
+            <div className="mt-3">
+              <PasswordForm />
+            </div>
+          </Card>
+
+          {/* Navegação rápida — útil no mobile */}
+          <div className="md:hidden">
+            <SectionHead eyebrow="Atalhos" title="Módulos" />
+            <Card pad={0}>
+              {NAV_LINKS.map((item, i) => (
+                <div key={item.href}>
+                  <Link
+                    href={item.href}
+                    className="flex items-center gap-3 px-5 py-4 hover:bg-surface transition-colors"
+                  >
+                    <span className="text-primary">{item.icon}</span>
+                    <span className="text-[14px] text-ink">{item.label}</span>
+                  </Link>
+                  {i < NAV_LINKS.length - 1 && <Divider />}
+                </div>
+              ))}
+            </Card>
+          </div>
+
+          {/* Sair */}
+          <Card pad={20}>
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-danger-soft text-danger">
+                <LogOut size={18} strokeWidth={1.5} />
+              </div>
+              <div className="flex-1">
+                <p className="text-[13px] font-medium text-ink">Sair da conta</p>
+                <p className="text-[11px] text-ink-soft">Encerra a sessão atual</p>
+              </div>
+              <form action={signOut}>
+                <button
+                  type="submit"
+                  className="rounded-full border border-danger px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.16em] text-danger transition-colors hover:bg-danger-soft"
+                >
+                  Sair
+                </button>
+              </form>
+            </div>
+          </Card>
+
+          {/* Rodapé */}
+          <p className="text-center text-[10px] text-ink-soft tracking-[0.16em] uppercase">
+            ONE TWO Manager · v1.0
+          </p>
+
+        </section>
+      </main>
+    </>
+  );
 }
