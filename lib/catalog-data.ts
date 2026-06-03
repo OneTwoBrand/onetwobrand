@@ -92,9 +92,9 @@ export async function getCollections(): Promise<{ collections: CollectionOption[
       .eq('active', true)
       .order('name', { ascending: true });
 
-    if (error || !data?.length) return { collections: fallbackCollections, source: 'fallback', error: error?.message };
+    if (error) return { collections: fallbackCollections, source: 'fallback', error: error.message };
 
-    return { source: 'supabase', collections: data };
+    return { source: 'supabase', collections: data ?? [] };
   } catch (error) {
     return { collections: fallbackCollections, source: 'fallback', error: error instanceof Error ? error.message : 'Erro ao buscar coleções.' };
   }
@@ -130,7 +130,7 @@ export async function getCatalogStock(): Promise<{ products: CatalogStockItem[];
       `)
       .order('updated_at', { ascending: false });
 
-    if (error || !data?.length) return { products: fallbackProducts, source: 'fallback', error: error?.message };
+    if (error) return { products: fallbackProducts, source: 'fallback', error: error.message };
 
     return {
       source: 'supabase',

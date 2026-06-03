@@ -10,7 +10,7 @@ export function DataNotice({ source, error }: { source: 'supabase' | 'fallback';
       <div>
         <div className="text-[12px] font-medium text-ink">Dados demonstrativos em uso</div>
         <div className="mt-1 text-[11px] text-ink-soft">
-          {error ? `Supabase: ${error}` : 'Faça login para carregar dados reais do Supabase.'}
+          {error ? `Erro: ${error}` : 'Não foi possível conectar ao Supabase.'}
         </div>
       </div>
       <Badge tone="warning" size="sm">Fallback</Badge>
