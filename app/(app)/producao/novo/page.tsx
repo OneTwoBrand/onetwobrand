@@ -142,7 +142,7 @@ export default function NewProductionOrderPage() {
               </div>
               <h2 className="m-0 font-serif text-[22px] font-normal text-ink">Preparado para IA</h2>
               <p className="mt-2 text-[12px] leading-relaxed text-ink-soft">
-                Este formulário já separa os campos para futuro preenchimento assistido pelo OneTwo Assistant.
+                Este formulário já separa os campos para futuro preenchimento assistido pelo OneTwo Assistente.
               </p>
             </Card>
 

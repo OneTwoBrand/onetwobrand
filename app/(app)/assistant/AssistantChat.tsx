@@ -140,7 +140,7 @@ export function AssistantChat({ configured }: { configured: boolean }) {
         </div>
         <h2 className="font-serif text-[22px] text-ink">Assistente não configurado</h2>
         <p className="max-w-sm text-[13px] leading-relaxed text-ink-soft">
-          O OneTwo Assistant ainda não está ativo. Solicite ao administrador de TI que configure a chave OpenAI em <strong>Mais → Integração IA</strong>.
+          O OneTwo Assistente ainda não está ativo. Solicite ao administrador de TI que configure a chave OpenAI em <strong>Mais → Integração IA</strong>.
         </p>
       </div>
     );
@@ -156,7 +156,7 @@ export function AssistantChat({ configured }: { configured: boolean }) {
               <Bot size={26} strokeWidth={1.5} />
             </div>
             <div>
-              <h2 className="font-serif text-[22px] text-ink">OneTwo Assistant</h2>
+              <h2 className="font-serif text-[22px] text-ink">OneTwo Assistente</h2>
               <p className="mt-1 text-[12px] text-ink-soft">
                 Pergunte por texto ou use o microfone para falar.
               </p>

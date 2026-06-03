@@ -3,7 +3,7 @@
  * Server-side only. Do not import this module from Client Components.
  */
 
-export const ONETWO_ASSISTANT_NAME = 'OneTwo Assistant';
+export const ONETWO_ASSISTANT_NAME = 'OneTwo Assistente';
 
 export const INSUFFICIENT_DATA_RESPONSE =
   'Não encontrei dados suficientes para responder com segurança.';

@@ -7,8 +7,8 @@ export default async function AssistantPage() {
 
   return (
     <>
-      <AppBar large eyebrow="Concierge digital" title="OneTwo Assistant" />
-      <Topbar eyebrow="Concierge digital" title="OneTwo Assistant" />
+      <AppBar large eyebrow="Concierge digital" title="OneTwo Assistente" />
+      <Topbar eyebrow="Concierge digital" title="OneTwo Assistente" />
 
       <main className="flex flex-1 flex-col px-5 pb-28 pt-3 md:px-9 md:py-8">
         <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col">

@@ -46,7 +46,7 @@ const NAV_LINKS = [
   { href: '/costureiras', label: 'Costureiras', icon: <Users size={18} strokeWidth={1.5} /> },
   { href: '/financeiro', label: 'Financeiro', icon: <CircleDollarSign size={18} strokeWidth={1.5} /> },
   { href: '/relatorios', label: 'Relatórios', icon: <BarChart3 size={18} strokeWidth={1.5} /> },
-  { href: '/assistant', label: 'OneTwo Assistant', icon: <Bot size={18} strokeWidth={1.5} /> },
+  { href: '/assistant', label: 'OneTwo Assistente', icon: <Bot size={18} strokeWidth={1.5} /> },
 ];
 
 export default async function MaisPage() {
@@ -139,7 +139,7 @@ export default async function MaisPage() {
                   <Bot size={18} strokeWidth={1.5} />
                 </div>
                 <div>
-                  <p className="text-[13px] font-medium text-ink">Integração IA — OneTwo Assistant</p>
+                  <p className="text-[13px] font-medium text-ink">Integração IA — OneTwo Assistente</p>
                   <p className="text-[11px] text-ink-soft">Restrito ao administrador de TI</p>
                 </div>
               </div>

@@ -36,7 +36,7 @@ const sheetNav = [
   { href: '/colecoes'    as NavHref, label: 'Coleções',        Icon: Layers3 },
   { href: '/financeiro'  as NavHref, label: 'Financeiro',      Icon: CircleDollarSign },
   { href: '/relatorios'  as NavHref, label: 'Relatórios',      Icon: BarChart3 },
-  { href: '/assistant'   as NavHref, label: 'Assistant',       Icon: Bot },
+  { href: '/assistant'   as NavHref, label: 'Assistente',      Icon: Bot },
   { href: '/mais'        as NavHref, label: 'Configurações',   Icon: Settings },
   { href: '/usuarios',               label: 'Usuários',        Icon: Users, adminOnly: true },
 ];
@@ -205,7 +205,7 @@ const sidebarItems = [
   { href: '/vendas'      as NavHref, label: 'Vendas',            Icon: ShoppingCart,     adminOnly: false },
   { href: '/financeiro'  as NavHref, label: 'Financeiro',        Icon: CircleDollarSign, adminOnly: false },
   { href: '/relatorios'  as NavHref, label: 'Relatórios',        Icon: BarChart3,        adminOnly: false },
-  { href: '/assistant'   as NavHref, label: 'OneTwo Assistant',  Icon: Bot,              adminOnly: false },
+  { href: '/assistant'   as NavHref, label: 'OneTwo Assistente', Icon: Bot,              adminOnly: false },
   { href: '/mais'        as NavHref, label: 'Configurações',     Icon: Settings,         adminOnly: false },
   { href: '/usuarios',               label: 'Usuários',          Icon: Users,            adminOnly: true  },
 ];

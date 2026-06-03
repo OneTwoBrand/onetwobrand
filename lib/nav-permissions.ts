@@ -28,7 +28,7 @@ export const NAV_LABELS: Record<NavHref, string> = {
   '/vendas':      'Vendas',
   '/financeiro':  'Financeiro',
   '/relatorios':  'Relatórios',
-  '/assistant':   'OneTwo Assistant',
+  '/assistant':   'OneTwo Assistente',
   '/mais':        'Configurações',
 };
 

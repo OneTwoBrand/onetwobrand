@@ -101,13 +101,13 @@ export default async function DashboardPage() {
             </Card>
 
             <Card pad={18}>
-              <SectionHead eyebrow="Concierge digital" title="OneTwo Assistant" />
+              <SectionHead eyebrow="Concierge digital" title="OneTwo Assistente" />
               <p className="text-[13px] leading-relaxed text-ink-soft">
                 Pergunte sobre produção, estoque, vendas ou financeiro — por texto ou por voz.
               </p>
               <Link href="/assistant">
                 <Button className="mt-4" variant="soft" size="sm" icon={<Sparkles size={14} strokeWidth={1.5} />}>
-                  Abrir Assistant
+                  Abrir Assistente
                 </Button>
               </Link>
             </Card>
