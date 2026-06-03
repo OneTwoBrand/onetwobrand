@@ -9,6 +9,10 @@ import {
   saveProductionSteps,
   savePaymentMethods,
   saveSeamstressRoles,
+  saveProductSizes,
+  saveProductFabrics,
+  saveProductCategories,
+  saveProductColors,
 } from './workflow-actions';
 import type { WorkflowConfig } from '@/lib/workflow-config';
 
@@ -125,6 +129,82 @@ export function SeamstressRolesForm({ config }: { config: WorkflowConfig }) {
       <FormFeedback state={state} />
       <Button type="submit" size="sm" disabled={pending} block>
         {pending ? 'Salvando…' : 'Salvar funções'}
+      </Button>
+    </form>
+  );
+}
+
+export function ProductSizesForm({ config }: { config: WorkflowConfig }) {
+  const [state, action, pending] = useActionState<State, FormData>(saveProductSizes, {});
+  return (
+    <form action={action} className="space-y-4">
+      <SectionHead eyebrow="Catálogo" title="Tamanhos de produto" />
+      <ConfigField
+        name="product_sizes"
+        label="Um tamanho por linha"
+        hint="Opções exibidas no campo Tamanho ao cadastrar um produto no estoque."
+        defaultValue={config.product_sizes.join('\n')}
+      />
+      <FormFeedback state={state} />
+      <Button type="submit" size="sm" disabled={pending} block>
+        {pending ? 'Salvando…' : 'Salvar tamanhos'}
+      </Button>
+    </form>
+  );
+}
+
+export function ProductFabricsForm({ config }: { config: WorkflowConfig }) {
+  const [state, action, pending] = useActionState<State, FormData>(saveProductFabrics, {});
+  return (
+    <form action={action} className="space-y-4">
+      <SectionHead eyebrow="Catálogo" title="Tecidos" />
+      <ConfigField
+        name="product_fabrics"
+        label="Um tecido por linha"
+        hint="Opções exibidas no campo Tecido ao cadastrar um produto no estoque."
+        defaultValue={config.product_fabrics.join('\n')}
+      />
+      <FormFeedback state={state} />
+      <Button type="submit" size="sm" disabled={pending} block>
+        {pending ? 'Salvando…' : 'Salvar tecidos'}
+      </Button>
+    </form>
+  );
+}
+
+export function ProductCategoriesForm({ config }: { config: WorkflowConfig }) {
+  const [state, action, pending] = useActionState<State, FormData>(saveProductCategories, {});
+  return (
+    <form action={action} className="space-y-4">
+      <SectionHead eyebrow="Catálogo" title="Categorias de produto" />
+      <ConfigField
+        name="product_categories"
+        label="Uma categoria por linha"
+        hint="Opções exibidas no campo Categoria ao cadastrar um produto no estoque."
+        defaultValue={config.product_categories.join('\n')}
+      />
+      <FormFeedback state={state} />
+      <Button type="submit" size="sm" disabled={pending} block>
+        {pending ? 'Salvando…' : 'Salvar categorias'}
+      </Button>
+    </form>
+  );
+}
+
+export function ProductColorsForm({ config }: { config: WorkflowConfig }) {
+  const [state, action, pending] = useActionState<State, FormData>(saveProductColors, {});
+  return (
+    <form action={action} className="space-y-4">
+      <SectionHead eyebrow="Catálogo" title="Cores" />
+      <ConfigField
+        name="product_colors"
+        label="Uma cor por linha"
+        hint="Opções exibidas no campo Cor ao cadastrar um produto no estoque."
+        defaultValue={config.product_colors.join('\n')}
+      />
+      <FormFeedback state={state} />
+      <Button type="submit" size="sm" disabled={pending} block>
+        {pending ? 'Salvando…' : 'Salvar cores'}
       </Button>
     </form>
   );

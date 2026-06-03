@@ -93,3 +93,59 @@ export async function saveSeamstressRoles(_prev: State, formData: FormData): Pro
     return { error: e instanceof Error ? e.message : 'Erro ao salvar.' };
   }
 }
+
+export async function saveProductSizes(_prev: State, formData: FormData): Promise<State> {
+  try {
+    const userId = await getAdminUserId();
+    const list = parseLines(String(formData.get('product_sizes') ?? ''));
+    if (list.length < 1) return { error: 'Informe ao menos 1 tamanho.' };
+    await setWorkflowConfig('product_sizes', list, userId);
+    revalidatePath('/mais');
+    revalidatePath('/estoque');
+    return { success: 'Tamanhos salvos.' };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Erro ao salvar.' };
+  }
+}
+
+export async function saveProductFabrics(_prev: State, formData: FormData): Promise<State> {
+  try {
+    const userId = await getAdminUserId();
+    const list = parseLines(String(formData.get('product_fabrics') ?? ''));
+    if (list.length < 1) return { error: 'Informe ao menos 1 tecido.' };
+    await setWorkflowConfig('product_fabrics', list, userId);
+    revalidatePath('/mais');
+    revalidatePath('/estoque');
+    return { success: 'Tecidos salvos.' };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Erro ao salvar.' };
+  }
+}
+
+export async function saveProductCategories(_prev: State, formData: FormData): Promise<State> {
+  try {
+    const userId = await getAdminUserId();
+    const list = parseLines(String(formData.get('product_categories') ?? ''));
+    if (list.length < 1) return { error: 'Informe ao menos 1 categoria.' };
+    await setWorkflowConfig('product_categories', list, userId);
+    revalidatePath('/mais');
+    revalidatePath('/estoque');
+    return { success: 'Categorias salvas.' };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Erro ao salvar.' };
+  }
+}
+
+export async function saveProductColors(_prev: State, formData: FormData): Promise<State> {
+  try {
+    const userId = await getAdminUserId();
+    const list = parseLines(String(formData.get('product_colors') ?? ''));
+    if (list.length < 1) return { error: 'Informe ao menos 1 cor.' };
+    await setWorkflowConfig('product_colors', list, userId);
+    revalidatePath('/mais');
+    revalidatePath('/estoque');
+    return { success: 'Cores salvas.' };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Erro ao salvar.' };
+  }
+}

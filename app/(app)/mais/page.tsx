@@ -17,6 +17,10 @@ import {
   ProductionStepsForm,
   PaymentMethodsForm,
   SeamstressRolesForm,
+  ProductSizesForm,
+  ProductFabricsForm,
+  ProductCategoriesForm,
+  ProductColorsForm,
 } from './WorkflowConfigForms';
 
 async function getProfileRole(userId: string): Promise<string> {
@@ -168,6 +172,31 @@ export default async function MaisPage() {
                 <PaymentMethodsForm config={workflowConfig} />
                 <Divider />
                 <SeamstressRolesForm config={workflowConfig} />
+              </div>
+            </Card>
+          )}
+
+          {/* Admin — Catálogo de produtos */}
+          {isAdmin && workflowConfig && (
+            <Card pad={20}>
+              <div className="mb-5 flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-primary-soft text-primary">
+                  <Package size={18} strokeWidth={1.5} />
+                </div>
+                <div>
+                  <p className="text-[13px] font-medium text-ink">Catálogo de produtos</p>
+                  <p className="text-[11px] text-ink-soft">Opções dos campos no cadastro de estoque</p>
+                </div>
+              </div>
+              <Divider className="mb-5" />
+              <div className="space-y-8">
+                <ProductSizesForm config={workflowConfig} />
+                <Divider />
+                <ProductFabricsForm config={workflowConfig} />
+                <Divider />
+                <ProductCategoriesForm config={workflowConfig} />
+                <Divider />
+                <ProductColorsForm config={workflowConfig} />
               </div>
             </Card>
           )}

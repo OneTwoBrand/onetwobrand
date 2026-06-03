@@ -10,12 +10,13 @@ import { Select, Textarea } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Primitives';
 import type { CollectionOption } from '@/lib/catalog-data';
+import type { WorkflowConfig } from '@/lib/workflow-config';
 import { createProduct } from './actions';
 
 type UploadState = 'idle' | 'uploading' | 'enhancing' | 'done' | 'error';
 type PhotoField = 'photo_url' | 'back_photo_url' | 'detail_photo_url';
 
-export function ProductForm({ collections }: { collections: CollectionOption[] }) {
+export function ProductForm({ collections, workflowConfig }: { collections: CollectionOption[]; workflowConfig: WorkflowConfig }) {
   const router = useRouter();
   const [state, formAction, pending] = useActionState(createProduct, {});
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -118,10 +119,33 @@ export function ProductForm({ collections }: { collections: CollectionOption[] }
                     <option key={collection.id} value={collection.id}>{collection.name}</option>
                   ))}
                 </Select>
-                <Input name="category" label="Categoria" placeholder="Ex: Vestido, Blusa, Conjunto" />
-                <Input name="fabric" label="Tecido" placeholder="Ex: Linho" />
-                <Input name="color" label="Cor" placeholder="Ex: Cru" value={color} onChange={(e) => setColor(e.target.value)} />
-                <Input name="size" label="Tamanho" placeholder="Ex: P, M, G ou Único" defaultValue="Único" />
+                <Select name="category" label="Categoria">
+                  <option value="">Selecione</option>
+                  {workflowConfig.product_categories.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                  <option value="__outro__">Outro…</option>
+                </Select>
+                <Select name="fabric" label="Tecido">
+                  <option value="">Selecione</option>
+                  {workflowConfig.product_fabrics.map((f) => (
+                    <option key={f} value={f}>{f}</option>
+                  ))}
+                  <option value="__outro__">Outro…</option>
+                </Select>
+                <Select name="color" label="Cor" onChange={(e) => setColor(e.target.value)}>
+                  <option value="">Selecione</option>
+                  {workflowConfig.product_colors.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                  <option value="__outro__">Outro…</option>
+                </Select>
+                <Select name="size" label="Tamanho">
+                  {workflowConfig.product_sizes.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                  <option value="__outro__">Outro…</option>
+                </Select>
               </div>
               <Textarea className="mt-3" name="description" label="Descrição" placeholder="Descrição da peça, acabamento, bordado, coleção..." />
             </Card>
