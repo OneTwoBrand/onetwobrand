@@ -7,18 +7,23 @@ import { Sidebar, BottomNav } from '@/components/layout/Navigation';
 import { ToastProvider } from '@/components/ui/Overlays';
 import { getCurrentUserDisplay } from '@/lib/current-user';
 import { createClient } from '@/lib/supabase/server';
+import { parseNavPermissions, type NavHref } from '@/lib/nav-permissions';
 
-async function getUserRole(userId: string): Promise<string> {
+async function getUserProfile(userId: string): Promise<{ role: string; navPermissions: NavHref[] | null }> {
   try {
     const supabase = await createClient();
     const { data } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, nav_permissions')
       .eq('id', userId)
       .maybeSingle();
-    return data?.role ?? 'atelier';
+
+    const role = data?.role ?? 'atelier';
+    // Admin always gets null (= unrestricted); non-admins get parsed list
+    const navPermissions = role === 'admin' ? null : parseNavPermissions(data?.nav_permissions);
+    return { role, navPermissions };
   } catch {
-    return 'atelier';
+    return { role: 'atelier', navPermissions: null };
   }
 }
 
@@ -28,12 +33,20 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     getCurrentUserDisplay(),
     supabase.auth.getUser(),
   ]);
-  const role = authUser ? await getUserRole(authUser.id) : 'atelier';
+  const { role, navPermissions } = authUser
+    ? await getUserProfile(authUser.id)
+    : { role: 'atelier', navPermissions: null };
 
   return (
     <ToastProvider>
       <div className="min-h-screen bg-bg flex">
-        <Sidebar expanded userName={user.name} userEmail={user.email} userRole={role} />
+        <Sidebar
+          expanded
+          userName={user.name}
+          userEmail={user.email}
+          userRole={role}
+          navPermissions={navPermissions}
+        />
         <div className="flex-1 flex flex-col min-h-screen">
           {children}
           <footer className="pb-24 md:pb-6 pt-4 text-center">
@@ -42,7 +55,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             </span>
           </footer>
         </div>
-        <BottomNav userRole={role} />
+        <BottomNav userRole={role} navPermissions={navPermissions} />
       </div>
     </ToastProvider>
   );

@@ -9,6 +9,7 @@ export type PlatformUser = {
   active: boolean;
   lastSignIn: string | null;
   createdAt: string;
+  navPermissions: string[] | null;
 };
 
 export const ROLE_LABEL: Record<string, string> = {
@@ -49,7 +50,7 @@ export async function listUsers(): Promise<{ users: PlatformUser[]; error?: stri
 
     const [{ data: authData, error: authError }, { data: profiles, error: profilesError }] = await Promise.all([
       admin.auth.admin.listUsers({ perPage: 200 }),
-      admin.from('profiles').select('id, full_name, role'),
+      admin.from('profiles').select('id, full_name, role, nav_permissions'),
     ]);
 
     if (authError || profilesError) {
@@ -69,6 +70,7 @@ export async function listUsers(): Promise<{ users: PlatformUser[]; error?: stri
         active: !isBanned,
         lastSignIn: formatDate(u.last_sign_in_at ?? null),
         createdAt: formatDate(u.created_at) ?? '',
+        navPermissions: Array.isArray(profile?.nav_permissions) ? profile.nav_permissions as string[] : null,
       };
     });
 

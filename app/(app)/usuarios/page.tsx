@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Avatar, Card, SectionHead } from '@/components/ui/Primitives';
 import { listUsers, ROLE_LABEL, ROLE_TONE } from '@/lib/users-data';
 import { createClient } from '@/lib/supabase/server';
-import { RoleSelector, UserMenu } from './UserActions';
+import { RoleSelector, UserMenu, NavPermissionsPanel } from './UserActions';
 
 async function getCurrentUserId(): Promise<string | null> {
   const supabase = await createClient();
@@ -102,6 +102,13 @@ export default async function UsuariosPage() {
                       <UserMenu userId={user.id} active={user.active} isSelf={user.id === currentUserId} />
                     </div>
                   </div>
+                  {user.id !== currentUserId && (
+                    <NavPermissionsPanel
+                      userId={user.id}
+                      currentRole={user.role}
+                      navPermissions={user.navPermissions}
+                    />
+                  )}
                 </Card>
               ))}
               {active.length === 0 && (

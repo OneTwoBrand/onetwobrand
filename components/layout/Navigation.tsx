@@ -16,51 +16,59 @@ import {
 import { signOut } from '@/app/(auth)/logout/actions';
 import { cn } from '@/lib/utils';
 import { Avatar } from '../ui/Primitives';
+import type { NavHref } from '@/lib/nav-permissions';
 
 // ────────────────────────────────────────────────────────────
 // BottomNav — mobile floating tab bar + "Mais" bottom sheet
 // ────────────────────────────────────────────────────────────
 
 const primaryNav = [
-  { href: '/',         label: 'Início',   Icon: Home },
-  { href: '/producao', label: 'Produção', Icon: Scissors },
-  { href: '/estoque',  label: 'Estoque',  Icon: Package },
-  { href: '/clientes', label: 'Clientes', Icon: User },
+  { href: '/'         as NavHref, label: 'Início',   Icon: Home },
+  { href: '/producao' as NavHref, label: 'Produção', Icon: Scissors },
+  { href: '/estoque'  as NavHref, label: 'Estoque',  Icon: Package },
+  { href: '/clientes' as NavHref, label: 'Clientes', Icon: User },
 ];
 
 const sheetNav = [
-  { href: '/vendas',      label: 'Vendas',      Icon: ShoppingCart },
-  { href: '/bordagem',    label: 'Bordagem',     Icon: Gem },
-  { href: '/costureiras', label: 'Costureiras',  Icon: User },
-  { href: '/colecoes',    label: 'Coleções',     Icon: Layers3 },
-  { href: '/financeiro',  label: 'Financeiro',   Icon: CircleDollarSign },
-  { href: '/relatorios',  label: 'Relatórios',   Icon: BarChart3 },
-  { href: '/assistant',   label: 'Assistant',    Icon: Bot },
-  { href: '/mais',        label: 'Perfil',       Icon: Settings },
-  { href: '/usuarios',    label: 'Usuários',     Icon: Users, adminOnly: true },
+  { href: '/vendas'      as NavHref, label: 'Vendas',         Icon: ShoppingCart },
+  { href: '/bordagem'    as NavHref, label: 'Bordagem',        Icon: Gem },
+  { href: '/costureiras' as NavHref, label: 'Costureiras',     Icon: User },
+  { href: '/colecoes'    as NavHref, label: 'Coleções',        Icon: Layers3 },
+  { href: '/financeiro'  as NavHref, label: 'Financeiro',      Icon: CircleDollarSign },
+  { href: '/relatorios'  as NavHref, label: 'Relatórios',      Icon: BarChart3 },
+  { href: '/assistant'   as NavHref, label: 'Assistant',       Icon: Bot },
+  { href: '/mais'        as NavHref, label: 'Configurações',   Icon: Settings },
+  { href: '/usuarios',               label: 'Usuários',        Icon: Users, adminOnly: true },
 ];
 
-export function BottomNav({ userRole }: { userRole?: string }) {
+export function BottomNav({
+  userRole,
+  navPermissions,
+}: {
+  userRole?: string;
+  navPermissions?: NavHref[] | null;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const isAdmin = userRole === 'admin';
 
-  // Close sheet on navigation
   useEffect(() => { setSheetOpen(false); }, [pathname]);
 
-  // Prevent body scroll when sheet is open
   useEffect(() => {
-    if (sheetOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    document.body.style.overflow = sheetOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [sheetOpen]);
 
-  const visibleSheet = sheetNav.filter((i) => !i.adminOnly || userRole === 'admin');
+  function isVisible(item: { href: string; adminOnly?: boolean }): boolean {
+    if (item.adminOnly) return isAdmin;
+    if (isAdmin) return true;
+    if (!navPermissions) return true;
+    return navPermissions.includes(item.href as NavHref);
+  }
 
-  // Check if current path is a secondary item (to highlight "Mais")
+  const visibleSheet = sheetNav.filter(isVisible);
+
   const isSecondaryActive = visibleSheet.some(({ href }) =>
     href === '/mais' ? pathname === href : pathname.startsWith(href)
   );
@@ -76,6 +84,7 @@ export function BottomNav({ userRole }: { userRole?: string }) {
       <nav className="fixed bottom-0 inset-x-0 z-30 px-3 pt-2 pb-[max(22px,env(safe-area-inset-bottom))] bg-gradient-to-t from-bg to-transparent md:hidden">
         <div className="bg-paper rounded-[28px] border border-line shadow-s2 h-16 px-1.5 flex items-center justify-around">
           {primaryNav.map(({ href, label, Icon }) => {
+            if (!isAdmin && navPermissions && !navPermissions.includes(href)) return null;
             const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
             return (
               <Link
@@ -186,18 +195,19 @@ export function BottomNav({ userRole }: { userRole?: string }) {
 // Sidebar — desktop collapsible
 // ────────────────────────────────────────────────────────────
 const sidebarItems = [
-  { href: '/',            label: 'Início',     Icon: Home,              adminOnly: false },
-  { href: '/producao',    label: 'Produção',   Icon: Scissors,          adminOnly: false },
-  { href: '/bordagem',    label: 'Bordagem',   Icon: Gem,               adminOnly: false },
-  { href: '/costureiras', label: 'Costureiras',Icon: User,              adminOnly: false },
-  { href: '/estoque',     label: 'Estoque',    Icon: Package,           adminOnly: false },
-  { href: '/colecoes',    label: 'Coleções',   Icon: Layers3,           adminOnly: false },
-  { href: '/clientes',    label: 'Clientes',   Icon: User,              adminOnly: false },
-  { href: '/vendas',      label: 'Vendas',     Icon: ShoppingCart,      adminOnly: false },
-  { href: '/financeiro',  label: 'Financeiro', Icon: CircleDollarSign,  adminOnly: false },
-  { href: '/relatorios',  label: 'Relatórios', Icon: BarChart3,         adminOnly: false },
-  { href: '/assistant',   label: 'OneTwo Assistant', Icon: Bot,         adminOnly: false },
-  { href: '/usuarios',    label: 'Usuários',   Icon: Users,             adminOnly: true  },
+  { href: '/'            as NavHref, label: 'Início',            Icon: Home,             adminOnly: false },
+  { href: '/producao'    as NavHref, label: 'Produção',          Icon: Scissors,         adminOnly: false },
+  { href: '/bordagem'    as NavHref, label: 'Bordagem',          Icon: Gem,              adminOnly: false },
+  { href: '/costureiras' as NavHref, label: 'Costureiras',       Icon: User,             adminOnly: false },
+  { href: '/estoque'     as NavHref, label: 'Estoque',           Icon: Package,          adminOnly: false },
+  { href: '/colecoes'    as NavHref, label: 'Coleções',          Icon: Layers3,          adminOnly: false },
+  { href: '/clientes'    as NavHref, label: 'Clientes',          Icon: User,             adminOnly: false },
+  { href: '/vendas'      as NavHref, label: 'Vendas',            Icon: ShoppingCart,     adminOnly: false },
+  { href: '/financeiro'  as NavHref, label: 'Financeiro',        Icon: CircleDollarSign, adminOnly: false },
+  { href: '/relatorios'  as NavHref, label: 'Relatórios',        Icon: BarChart3,        adminOnly: false },
+  { href: '/assistant'   as NavHref, label: 'OneTwo Assistant',  Icon: Bot,              adminOnly: false },
+  { href: '/mais'        as NavHref, label: 'Configurações',     Icon: Settings,         adminOnly: false },
+  { href: '/usuarios',               label: 'Usuários',          Icon: Users,            adminOnly: true  },
 ];
 
 export function Sidebar({
@@ -206,14 +216,25 @@ export function Sidebar({
   userName,
   userEmail,
   userRole,
+  navPermissions,
 }: {
   expanded?: boolean;
   userRole?: string;
+  navPermissions?: NavHref[] | null;
   onToggle?: () => void;
   userName?: string;
   userEmail?: string;
 }) {
   const pathname = usePathname();
+  const isAdmin = userRole === 'admin';
+
+  function isVisible(item: { href: string; adminOnly: boolean }): boolean {
+    if (item.adminOnly) return isAdmin;
+    if (isAdmin) return true;
+    if (!navPermissions) return true;
+    return navPermissions.includes(item.href as NavHref);
+  }
+
   return (
     <aside
       style={{ width: expanded ? 240 : 76 }}
@@ -232,7 +253,7 @@ export function Sidebar({
 
       {/* Items */}
       <div className="flex flex-col gap-1">
-        {sidebarItems.filter(({ adminOnly }) => !adminOnly || userRole === 'admin').map(({ href, label, Icon }) => {
+        {sidebarItems.filter(isVisible).map(({ href, label, Icon }) => {
           const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
           return (
             <Link

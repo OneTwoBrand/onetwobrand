@@ -92,6 +92,17 @@ export async function toggleUserActive(userId: string, currentlyActive: boolean)
   revalidatePath('/usuarios');
 }
 
+export async function saveNavPermissions(userId: string, permissions: string[]) {
+  await assertAdmin();
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from('profiles')
+    .update({ nav_permissions: permissions })
+    .eq('id', userId);
+  if (error) throw new Error(error.message);
+  revalidatePath('/usuarios');
+}
+
 export async function removeUser(userId: string) {
   await assertAdmin();
 
