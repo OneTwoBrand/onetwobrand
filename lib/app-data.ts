@@ -38,7 +38,25 @@ export type EmbroideryShipmentItem = {
   qty: number;
   sentAt: string;
   expectedReturnAt: string;
+  returnedAt?: string | null;
   status: string;
+  embroideryType?: string | null;
+  value: number;
+  linkedOps: number;
+};
+
+export type SeamstressListItem = {
+  id: string;
+  name: string;
+  role: string;
+  phone?: string | null;
+  pix?: string | null;
+  address?: string | null;
+  specialty?: string | null;
+  notes?: string | null;
+  active: boolean;
+  pendingShipments: number;
+  pendingValue: number;
 };
 
 export type FinancialSummary = {
@@ -69,9 +87,15 @@ const fallbackClients: ClientListItem[] = [
 ];
 
 const fallbackShipments: EmbroideryShipmentItem[] = [
-  { id: 'bd-118', code: 'BD-118', seamstressName: 'Maria Helena', qty: 6, sentAt: '2026-05-28', expectedReturnAt: '2026-06-07', status: 'Em Bordagem' },
-  { id: 'bd-117', code: 'BD-117', seamstressName: 'Joana Lima', qty: 3, sentAt: '2026-05-25', expectedReturnAt: '2026-06-05', status: 'Em Bordagem' },
-  { id: 'bd-116', code: 'BD-116', seamstressName: 'Renata Souza', qty: 4, sentAt: '2026-05-15', expectedReturnAt: '2026-05-29', status: 'Finalizada' },
+  { id: 'bd-118', code: 'BD-118', seamstressName: 'Maria Helena', qty: 6, sentAt: '2026-05-28', expectedReturnAt: '2026-06-07', status: 'Em Bordagem', embroideryType: 'Floral a mao', value: 1380, linkedOps: 1 },
+  { id: 'bd-117', code: 'BD-117', seamstressName: 'Joana Lima', qty: 3, sentAt: '2026-05-25', expectedReturnAt: '2026-06-05', status: 'Em Bordagem', embroideryType: 'Aplicacao', value: 720, linkedOps: 1 },
+  { id: 'bd-116', code: 'BD-116', seamstressName: 'Renata Souza', qty: 4, sentAt: '2026-05-15', expectedReturnAt: '2026-05-29', status: 'Finalizada', embroideryType: 'Richelieu', value: 880, linkedOps: 0 },
+];
+
+const fallbackSeamstresses: SeamstressListItem[] = [
+  { id: 'maria', name: 'Maria Helena', role: 'Costureira-chefe', phone: '+5511999990001', pix: 'maria@pix', specialty: 'Bordado floral', active: true, pendingShipments: 1, pendingValue: 1380 },
+  { id: 'joana', name: 'Joana Lima', role: 'Bordadeira', phone: '+5511999990002', pix: 'joana@pix', specialty: 'Aplicacoes', active: true, pendingShipments: 1, pendingValue: 720 },
+  { id: 'renata', name: 'Renata Souza', role: 'Costureira', phone: '+5511999990003', specialty: 'Costura fina', active: true, pendingShipments: 0, pendingValue: 0 },
 ];
 
 const fallbackFinancial: FinancialSummary = {
@@ -217,8 +241,12 @@ type ShipmentRow = {
   qty: number;
   sent_at: string;
   expected_return_at: string;
+  returned_at: string | null;
   status: string;
+  embroidery_type: string | null;
+  value: number;
   seamstresses: { name: string } | { name: string }[] | null;
+  shipment_items: { op_id: string }[] | null;
 };
 
 export async function getEmbroideryShipments(): Promise<{ source: DataSource; shipments: EmbroideryShipmentItem[]; error?: string }> {
@@ -228,7 +256,7 @@ export async function getEmbroideryShipments(): Promise<{ source: DataSource; sh
 
     const { data, error } = await supabase
       .from('embroidery_shipments')
-      .select('id, code, qty, sent_at, expected_return_at, status, seamstresses(name)')
+      .select('id, code, qty, sent_at, expected_return_at, returned_at, status, embroidery_type, value, seamstresses(name), shipment_items(op_id)')
       .order('expected_return_at', { ascending: true });
 
     if (error || !data) return { source: 'fallback', shipments: fallbackShipments, error: error?.message };
@@ -242,13 +270,65 @@ export async function getEmbroideryShipments(): Promise<{ source: DataSource; sh
         qty: item.qty,
         sentAt: item.sent_at,
         expectedReturnAt: item.expected_return_at,
+        returnedAt: item.returned_at,
         status: item.status,
+        embroideryType: item.embroidery_type,
+        value: Number(item.value ?? 0),
+        linkedOps: item.shipment_items?.length ?? 0,
       };
     });
 
     return { source: shipments.length ? 'supabase' : 'fallback', shipments: shipments.length ? shipments : fallbackShipments };
   } catch (error) {
     return { source: 'fallback', shipments: fallbackShipments, error: error instanceof Error ? error.message : 'Erro ao buscar bordagens.' };
+  }
+}
+
+type SeamstressRow = {
+  id: string;
+  name: string;
+  role: string;
+  phone: string | null;
+  pix: string | null;
+  address: string | null;
+  specialty: string | null;
+  notes: string | null;
+  active: boolean;
+  embroidery_shipments: { id: string; status: string; value: number }[] | null;
+};
+
+export async function getSeamstresses(): Promise<{ source: DataSource; seamstresses: SeamstressListItem[]; error?: string }> {
+  try {
+    const supabase = await getSupabaseOrNull();
+    if (!supabase) return { source: 'fallback', seamstresses: fallbackSeamstresses };
+
+    const { data, error } = await supabase
+      .from('seamstresses')
+      .select('id, name, role, phone, pix, address, specialty, notes, active, embroidery_shipments(id, status, value)')
+      .order('name', { ascending: true });
+
+    if (error || !data) return { source: 'fallback', seamstresses: fallbackSeamstresses, error: error?.message };
+
+    const seamstresses = (data as SeamstressRow[]).map((item) => {
+      const activeShipments = (item.embroidery_shipments ?? []).filter((shipment) => shipment.status === 'Em Bordagem');
+      return {
+        id: item.id,
+        name: item.name,
+        role: item.role,
+        phone: item.phone,
+        pix: item.pix,
+        address: item.address,
+        specialty: item.specialty,
+        notes: item.notes,
+        active: item.active,
+        pendingShipments: activeShipments.length,
+        pendingValue: activeShipments.reduce((sum, shipment) => sum + Number(shipment.value ?? 0), 0),
+      };
+    });
+
+    return { source: seamstresses.length ? 'supabase' : 'fallback', seamstresses: seamstresses.length ? seamstresses : fallbackSeamstresses };
+  } catch (error) {
+    return { source: 'fallback', seamstresses: fallbackSeamstresses, error: error instanceof Error ? error.message : 'Erro ao buscar costureiras.' };
   }
 }
 

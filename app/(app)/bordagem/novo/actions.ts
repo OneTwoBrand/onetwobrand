@@ -1,6 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { hasSupabasePublicEnv } from '@/lib/env';
 
@@ -16,6 +17,8 @@ export async function createShipment(
   const qty = parseInt(String(formData.get('qty') ?? '0'), 10) || 0;
   const sent_at = String(formData.get('sent_at') ?? '').trim();
   const expected_return_at = String(formData.get('expected_return_at') ?? '').trim();
+  const value = Number.parseFloat(String(formData.get('value') ?? '0')) || 0;
+  const op_id = String(formData.get('op_id') ?? '').trim() || null;
 
   if (!code) return { error: 'Código é obrigatório.' };
   if (!seamstress_name) return { error: 'Costureira é obrigatória.' };
@@ -56,7 +59,7 @@ export async function createShipment(
     seamstressId = newSeamstress.id;
   }
 
-  const { error } = await supabase
+  const { data: shipment, error } = await supabase
     .from('embroidery_shipments')
     .insert({
       code,
@@ -64,11 +67,43 @@ export async function createShipment(
       qty,
       sent_at,
       expected_return_at,
+      embroidery_type,
+      value,
       notes: embroidery_type ? `Tipo de bordagem: ${embroidery_type}` : null,
       status: 'Em Bordagem',
-    });
+    })
+    .select('id')
+    .single();
 
-  if (error) return { error: error.message };
+  if (error || !shipment) return { error: error?.message ?? 'Erro ao criar remessa.' };
+
+  if (op_id) {
+    const { error: linkError } = await supabase
+      .from('shipment_items')
+      .insert({ shipment_id: shipment.id, op_id });
+
+    if (linkError) return { error: linkError.message };
+  }
 
   redirect('/bordagem');
+}
+
+export async function finishShipment(formData: FormData) {
+  const id = String(formData.get('id') ?? '').trim();
+  if (!id || !hasSupabasePublicEnv()) return;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return;
+
+  await supabase
+    .from('embroidery_shipments')
+    .update({ status: 'Finalizada', returned_at: new Date().toISOString().slice(0, 10) })
+    .eq('id', id);
+
+  revalidatePath('/bordagem');
+  revalidatePath('/financeiro');
 }

@@ -7,7 +7,8 @@ import { DataNotice } from '@/components/app/DataNotice';
 import { Badge } from '@/components/ui/Badge';
 import { Card, SectionHead } from '@/components/ui/Primitives';
 import { getEmbroideryShipments } from '@/lib/app-data';
-import { daysUntil } from '@/lib/utils';
+import { brl, daysUntil } from '@/lib/utils';
+import { finishShipment } from './novo/actions';
 
 export default async function BordagemPage() {
   const { shipments, source, error } = await getEmbroideryShipments();
@@ -38,10 +39,22 @@ export default async function BordagemPage() {
                   </div>
                   <h2 className="m-0 mt-3 font-serif text-[20px] font-normal text-ink">{shipment.seamstressName}</h2>
                   <p className="mt-1 text-[12px] text-ink-soft">{shipment.qty} peças · enviadas em {shipment.sentAt}</p>
-                  <div className="mt-4 flex items-center justify-between text-[11px] text-ink-soft">
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] text-ink-soft">
+                    <span>{shipment.embroideryType ?? 'Bordagem'}</span>
+                    <span className="text-right">{brl(shipment.value)}</span>
+                    <span>{shipment.linkedOps} OP vinculada{shipment.linkedOps === 1 ? '' : 's'}</span>
+                    <span className="text-right">{shipment.returnedAt ? `Retorno ${shipment.returnedAt}` : 'Sem retorno'}</span>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between gap-3 text-[11px] text-ink-soft">
                     <span className="flex items-center gap-1.5"><Calendar size={13} />Retorno</span>
                     <span>{due.label}</span>
                   </div>
+                  {shipment.status !== 'Finalizada' && (
+                    <form action={finishShipment} className="mt-4">
+                      <input type="hidden" name="id" value={shipment.id} />
+                      <Button type="submit" size="sm" variant="soft" block>Finalizar remessa</Button>
+                    </form>
+                  )}
                 </Card>
               );
             })}

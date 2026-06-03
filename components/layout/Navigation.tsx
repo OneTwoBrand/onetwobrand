@@ -61,6 +61,7 @@ const sidebarItems = [
   { href: '/',            label: 'Início',     Icon: Home },
   { href: '/producao',    label: 'Produção',   Icon: Scissors },
   { href: '/bordagem',    label: 'Bordagem',   Icon: Gem },
+  { href: '/costureiras',  label: 'Costureiras', Icon: User },
   { href: '/estoque',     label: 'Estoque',    Icon: Package },
   { href: '/clientes',    label: 'Clientes',   Icon: User },
   { href: '/vendas',      label: 'Vendas',     Icon: ShoppingCart },
