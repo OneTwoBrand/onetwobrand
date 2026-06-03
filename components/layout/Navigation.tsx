@@ -11,7 +11,7 @@ import { type ReactNode } from 'react';
 import {
   Home, Scissors, ShoppingCart, Package, MoreHorizontal,
   Gem, User, CircleDollarSign, BarChart3, ChevronLeft, ChevronRight,
-  Bot, LogOut, Layers3,
+  Bot, LogOut, Layers3, Users,
 } from 'lucide-react';
 import { signOut } from '@/app/(auth)/logout/actions';
 import { cn } from '@/lib/utils';
@@ -58,17 +58,18 @@ export function BottomNav() {
 // Sidebar — desktop collapsible
 // ────────────────────────────────────────────────────────────
 const sidebarItems = [
-  { href: '/',            label: 'Início',     Icon: Home },
-  { href: '/producao',    label: 'Produção',   Icon: Scissors },
-  { href: '/bordagem',    label: 'Bordagem',   Icon: Gem },
-  { href: '/costureiras',  label: 'Costureiras', Icon: User },
-  { href: '/estoque',     label: 'Estoque',    Icon: Package },
-  { href: '/colecoes',     label: 'Coleções',   Icon: Layers3 },
-  { href: '/clientes',    label: 'Clientes',   Icon: User },
-  { href: '/vendas',      label: 'Vendas',     Icon: ShoppingCart },
-  { href: '/financeiro',  label: 'Financeiro', Icon: CircleDollarSign },
-  { href: '/relatorios',  label: 'Relatórios', Icon: BarChart3 },
-  { href: '/assistant',   label: 'OneTwo Assistant', Icon: Bot },
+  { href: '/',            label: 'Início',     Icon: Home,              adminOnly: false },
+  { href: '/producao',    label: 'Produção',   Icon: Scissors,          adminOnly: false },
+  { href: '/bordagem',    label: 'Bordagem',   Icon: Gem,               adminOnly: false },
+  { href: '/costureiras', label: 'Costureiras',Icon: User,              adminOnly: false },
+  { href: '/estoque',     label: 'Estoque',    Icon: Package,           adminOnly: false },
+  { href: '/colecoes',    label: 'Coleções',   Icon: Layers3,           adminOnly: false },
+  { href: '/clientes',    label: 'Clientes',   Icon: User,              adminOnly: false },
+  { href: '/vendas',      label: 'Vendas',     Icon: ShoppingCart,      adminOnly: false },
+  { href: '/financeiro',  label: 'Financeiro', Icon: CircleDollarSign,  adminOnly: false },
+  { href: '/relatorios',  label: 'Relatórios', Icon: BarChart3,         adminOnly: false },
+  { href: '/assistant',   label: 'OneTwo Assistant', Icon: Bot,         adminOnly: false },
+  { href: '/usuarios',    label: 'Usuários',   Icon: Users,             adminOnly: true  },
 ];
 
 export function Sidebar({
@@ -76,8 +77,10 @@ export function Sidebar({
   onToggle,
   userName,
   userEmail,
+  userRole,
 }: {
   expanded?: boolean;
+  userRole?: string;
   onToggle?: () => void;
   userName?: string;
   userEmail?: string;
@@ -101,7 +104,7 @@ export function Sidebar({
 
       {/* Items */}
       <div className="flex flex-col gap-1">
-        {sidebarItems.map(({ href, label, Icon }) => {
+        {sidebarItems.filter(({ adminOnly }) => !adminOnly || userRole === 'admin').map(({ href, label, Icon }) => {
           const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
           return (
             <Link
