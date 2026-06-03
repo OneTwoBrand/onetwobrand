@@ -42,7 +42,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             </span>
           </footer>
         </div>
-        <BottomNav />
+        <BottomNav userRole={role} />
       </div>
     </ToastProvider>
   );

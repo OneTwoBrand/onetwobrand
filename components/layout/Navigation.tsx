@@ -6,51 +6,179 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { type ReactNode } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { type ReactNode, useState, useEffect } from 'react';
 import {
   Home, Scissors, ShoppingCart, Package, MoreHorizontal,
   Gem, User, CircleDollarSign, BarChart3, ChevronLeft, ChevronRight,
-  Bot, LogOut, Layers3, Users,
+  Bot, LogOut, Layers3, Users, X, Settings,
 } from 'lucide-react';
 import { signOut } from '@/app/(auth)/logout/actions';
 import { cn } from '@/lib/utils';
 import { Avatar } from '../ui/Primitives';
 
 // ────────────────────────────────────────────────────────────
-// BottomNav — mobile floating tab bar
+// BottomNav — mobile floating tab bar + "Mais" bottom sheet
 // ────────────────────────────────────────────────────────────
-const bottomNavItems = [
-  { href: '/',           label: 'Início',   Icon: Home },
-  { href: '/producao',   label: 'Produção', Icon: Scissors },
-  { href: '/vendas/novo',label: 'Vendas',   Icon: ShoppingCart },
-  { href: '/estoque',    label: 'Estoque',  Icon: Package },
-  { href: '/mais',       label: 'Mais',     Icon: MoreHorizontal },
+
+const primaryNav = [
+  { href: '/',         label: 'Início',   Icon: Home },
+  { href: '/producao', label: 'Produção', Icon: Scissors },
+  { href: '/estoque',  label: 'Estoque',  Icon: Package },
+  { href: '/clientes', label: 'Clientes', Icon: User },
 ];
 
-export function BottomNav() {
+const sheetNav = [
+  { href: '/vendas',      label: 'Vendas',      Icon: ShoppingCart },
+  { href: '/bordagem',    label: 'Bordagem',     Icon: Gem },
+  { href: '/costureiras', label: 'Costureiras',  Icon: User },
+  { href: '/colecoes',    label: 'Coleções',     Icon: Layers3 },
+  { href: '/financeiro',  label: 'Financeiro',   Icon: CircleDollarSign },
+  { href: '/relatorios',  label: 'Relatórios',   Icon: BarChart3 },
+  { href: '/assistant',   label: 'Assistant',    Icon: Bot },
+  { href: '/mais',        label: 'Perfil',       Icon: Settings },
+  { href: '/usuarios',    label: 'Usuários',     Icon: Users, adminOnly: true },
+];
+
+export function BottomNav({ userRole }: { userRole?: string }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  // Close sheet on navigation
+  useEffect(() => { setSheetOpen(false); }, [pathname]);
+
+  // Prevent body scroll when sheet is open
+  useEffect(() => {
+    if (sheetOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [sheetOpen]);
+
+  const visibleSheet = sheetNav.filter((i) => !i.adminOnly || userRole === 'admin');
+
+  // Check if current path is a secondary item (to highlight "Mais")
+  const isSecondaryActive = visibleSheet.some(({ href }) =>
+    href === '/mais' ? pathname === href : pathname.startsWith(href)
+  );
+
+  function handleSheetNav(href: string) {
+    setSheetOpen(false);
+    router.push(href);
+  }
+
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-30 px-3 pt-2 pb-[max(22px,env(safe-area-inset-bottom))] bg-gradient-to-t from-bg to-transparent md:hidden">
-      <div className="bg-paper rounded-[28px] border border-line shadow-s2 h-16 px-1.5 flex items-center justify-around">
-        {bottomNavItems.map(({ href, label, Icon }) => {
-          const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                'flex flex-col items-center gap-[3px] px-2.5 py-1.5 rounded-2xl min-w-[56px] transition-colors',
-                active ? 'bg-primary-soft text-primary' : 'text-ink-soft'
-              )}
+    <>
+      {/* Tab bar */}
+      <nav className="fixed bottom-0 inset-x-0 z-30 px-3 pt-2 pb-[max(22px,env(safe-area-inset-bottom))] bg-gradient-to-t from-bg to-transparent md:hidden">
+        <div className="bg-paper rounded-[28px] border border-line shadow-s2 h-16 px-1.5 flex items-center justify-around">
+          {primaryNav.map(({ href, label, Icon }) => {
+            const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={cn(
+                  'flex flex-col items-center gap-[3px] px-2.5 py-1.5 rounded-2xl min-w-[56px] transition-colors',
+                  active ? 'bg-primary-soft text-primary' : 'text-ink-soft'
+                )}
+              >
+                <Icon size={20} strokeWidth={1.5} />
+                <span className="text-[9px] font-medium tracking-[0.1em] uppercase">{label}</span>
+              </Link>
+            );
+          })}
+
+          {/* "Mais" button — opens sheet */}
+          <button
+            type="button"
+            onClick={() => setSheetOpen(true)}
+            className={cn(
+              'flex flex-col items-center gap-[3px] px-2.5 py-1.5 rounded-2xl min-w-[56px] transition-colors',
+              isSecondaryActive ? 'bg-primary-soft text-primary' : 'text-ink-soft'
+            )}
+          >
+            <MoreHorizontal size={20} strokeWidth={1.5} />
+            <span className="text-[9px] font-medium tracking-[0.1em] uppercase">Mais</span>
+          </button>
+        </div>
+      </nav>
+
+      {/* Backdrop */}
+      {sheetOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-ink/40 backdrop-blur-sm md:hidden"
+          onClick={() => setSheetOpen(false)}
+        />
+      )}
+
+      {/* Bottom sheet */}
+      <div
+        className={cn(
+          'fixed inset-x-0 bottom-0 z-50 md:hidden transition-transform duration-300 ease-out',
+          sheetOpen ? 'translate-y-0' : 'translate-y-full'
+        )}
+      >
+        <div className="bg-paper rounded-t-[28px] border-t border-line shadow-s2 px-5 pt-4 pb-[max(28px,env(safe-area-inset-bottom))]">
+          {/* Handle + header */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="mx-auto absolute left-1/2 -translate-x-1/2 top-3 w-10 h-1 rounded-full bg-line" />
+            <span className="text-[10px] font-medium tracking-[0.22em] uppercase text-ink-soft">
+              Mais módulos
+            </span>
+            <button
+              type="button"
+              aria-label="Fechar menu"
+              onClick={() => setSheetOpen(false)}
+              className="w-7 h-7 rounded-full bg-ink/[0.06] flex items-center justify-center text-ink-soft"
             >
-              <Icon size={20} strokeWidth={1.5} />
-              <span className="text-[9px] font-medium tracking-[0.1em] uppercase">{label}</span>
-            </Link>
-          );
-        })}
+              <X size={14} strokeWidth={2} />
+            </button>
+          </div>
+
+          {/* Grid */}
+          <div className="grid grid-cols-3 gap-3">
+            {visibleSheet.map(({ href, label, Icon }) => {
+              const active = href === '/mais' ? pathname === href : pathname.startsWith(href);
+              return (
+                <button
+                  key={href}
+                  type="button"
+                  onClick={() => handleSheetNav(href)}
+                  className={cn(
+                    'flex flex-col items-center gap-2 rounded-[16px] py-4 px-2 transition-colors',
+                    active
+                      ? 'bg-primary text-paper'
+                      : 'bg-ink/[0.04] text-ink-soft hover:bg-ink/[0.08]'
+                  )}
+                >
+                  <Icon size={22} strokeWidth={1.5} />
+                  <span className="text-[10px] font-medium tracking-[0.08em] uppercase leading-tight text-center">
+                    {label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Sign out */}
+          <div className="mt-4 pt-4 border-t border-line">
+            <form action={signOut}>
+              <button
+                type="submit"
+                className="w-full flex items-center justify-center gap-2 rounded-[14px] py-3 text-ink-soft bg-ink/[0.04] hover:bg-ink/[0.08] transition-colors"
+              >
+                <LogOut size={16} strokeWidth={1.5} />
+                <span className="text-[12px] font-medium tracking-[0.12em] uppercase">Sair da conta</span>
+              </button>
+            </form>
+          </div>
+        </div>
       </div>
-    </nav>
+    </>
   );
 }
 
