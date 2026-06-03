@@ -35,6 +35,158 @@ function firstRelated<T>(value: T | T[] | null): T | null {
   return value;
 }
 
+export type SaleListItem = {
+  id: string;
+  clientName: string;
+  clientId: string;
+  total: number;
+  status: 'pending' | 'paid' | 'cancelled';
+  paymentMethod: string;
+  itemCount: number;
+  createdAt: string;
+};
+
+export type SaleDetail = SaleListItem & {
+  items: {
+    id: string;
+    pieceName: string;
+    size: string;
+    color: string | null;
+    qty: number;
+    unitPrice: number;
+  }[];
+};
+
+type SaleRow = {
+  id: string;
+  total: string | number;
+  status: string;
+  payment_method: string;
+  created_at: string;
+  clients: { id: string; name: string } | { id: string; name: string }[] | null;
+  sale_items: { id: string }[] | null;
+};
+
+type SaleDetailRow = {
+  id: string;
+  total: string | number;
+  status: string;
+  payment_method: string;
+  created_at: string;
+  clients: { id: string; name: string } | { id: string; name: string }[] | null;
+  sale_items: {
+    id: string;
+    qty: number;
+    unit_price: string | number;
+    stock_items: {
+      size: string;
+      color: string | null;
+      pieces: { name: string } | { name: string }[] | null;
+    } | null;
+  }[] | null;
+};
+
+function firstR<T>(v: T | T[] | null): T | null {
+  if (Array.isArray(v)) return v[0] ?? null;
+  return v;
+}
+
+function formatSaleDate(iso: string) {
+  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' }).format(new Date(iso));
+}
+
+export async function getSalesList(): Promise<{
+  sales: SaleListItem[];
+  source: 'supabase' | 'fallback';
+  error?: string;
+}> {
+  if (!hasSupabasePublicEnv()) return { sales: [], source: 'fallback' };
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('sales')
+      .select('id, total, status, payment_method, created_at, clients(id, name), sale_items(id)')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error || !data) return { sales: [], source: 'fallback', error: error?.message };
+
+    const sales = (data as SaleRow[]).map((row) => {
+      const client = firstR(row.clients);
+      return {
+        id: row.id,
+        clientName: client?.name ?? 'Cliente',
+        clientId: client?.id ?? '',
+        total: Number(row.total),
+        status: row.status as SaleListItem['status'],
+        paymentMethod: row.payment_method,
+        itemCount: row.sale_items?.length ?? 0,
+        createdAt: formatSaleDate(row.created_at),
+      };
+    });
+
+    return { sales, source: 'supabase' };
+  } catch (e) {
+    return { sales: [], source: 'fallback', error: e instanceof Error ? e.message : 'Erro.' };
+  }
+}
+
+export async function getSaleDetail(saleId: string): Promise<{
+  sale: SaleDetail | null;
+  source: 'supabase' | 'fallback';
+  error?: string;
+}> {
+  if (!hasSupabasePublicEnv()) return { sale: null, source: 'fallback' };
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('sales')
+      .select(`
+        id, total, status, payment_method, created_at,
+        clients(id, name),
+        sale_items(id, qty, unit_price,
+          stock_items(size, color, pieces(name))
+        )
+      `)
+      .eq('id', saleId)
+      .maybeSingle();
+
+    if (error || !data) return { sale: null, source: 'fallback', error: error?.message };
+
+    const row = data as unknown as SaleDetailRow;
+    const client = firstR(row.clients);
+
+    const items = (row.sale_items ?? []).map((si) => {
+      const piece = firstR(si.stock_items?.pieces ?? null);
+      return {
+        id: si.id,
+        pieceName: piece?.name ?? 'Produto',
+        size: si.stock_items?.size ?? '-',
+        color: si.stock_items?.color ?? null,
+        qty: si.qty,
+        unitPrice: Number(si.unit_price),
+      };
+    });
+
+    return {
+      source: 'supabase',
+      sale: {
+        id: row.id,
+        clientName: client?.name ?? 'Cliente',
+        clientId: client?.id ?? '',
+        total: Number(row.total),
+        status: row.status as SaleListItem['status'],
+        paymentMethod: row.payment_method,
+        itemCount: items.length,
+        createdAt: formatSaleDate(row.created_at),
+        items,
+      },
+    };
+  } catch (e) {
+    return { sale: null, source: 'fallback', error: e instanceof Error ? e.message : 'Erro.' };
+  }
+}
+
 export async function getSaleFormOptions(): Promise<{
   clients: SaleClientOption[];
   stock: SaleStockOption[];
