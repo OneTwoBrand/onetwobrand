@@ -1,10 +1,11 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
-import { Bot, Send, User } from 'lucide-react';
+import { useRef, useState, useEffect, useCallback } from 'react';
+import { Bot, Send, User, Mic, MicOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
-type Message = { role: 'user' | 'assistant'; content: string };
+type Message = { role: 'user' | 'assistant'; content: string; isVoice?: boolean };
+type VoiceState = 'idle' | 'recording' | 'processing';
 
 const SUGGESTIONS = [
   'Quais OPs estão atrasadas?',
@@ -18,7 +19,11 @@ export function AssistantChat({ configured }: { configured: boolean }) {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [voiceState, setVoiceState] = useState<VoiceState>('idle');
   const bottomRef = useRef<HTMLDivElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -53,6 +58,80 @@ export function AssistantChat({ configured }: { configured: boolean }) {
     }
   }
 
+  const stopRecording = useCallback(() => {
+    mediaRecorderRef.current?.stop();
+  }, []);
+
+  async function startRecording() {
+    setError('');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4';
+      const recorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = recorder;
+      chunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        setVoiceState('processing');
+
+        const blob = new Blob(chunksRef.current, { type: mimeType });
+        const ext = mimeType.includes('webm') ? 'webm' : 'mp4';
+        const file = new File([blob], `voice.${ext}`, { type: mimeType });
+
+        const fd = new FormData();
+        fd.append('audio', file);
+
+        try {
+          const res = await fetch('/api/ai/voice', { method: 'POST', body: fd });
+          const data = await res.json();
+
+          if (!res.ok) {
+            setError(data.error ?? 'Erro ao processar o áudio.');
+            setVoiceState('idle');
+            return;
+          }
+
+          const next: Message[] = [
+            ...messages,
+            { role: 'user', content: data.transcript, isVoice: true },
+            { role: 'assistant', content: data.reply, isVoice: true },
+          ];
+          setMessages(next);
+
+          // Reproduce áudio TTS se disponível
+          if (data.audioBase64) {
+            const audio = new Audio(`data:audio/mp3;base64,${data.audioBase64}`);
+            audioRef.current = audio;
+            audio.play().catch(() => {});
+          }
+        } catch {
+          setError('Falha de conexão. Tente novamente.');
+        } finally {
+          setVoiceState('idle');
+        }
+      };
+
+      recorder.start();
+      setVoiceState('recording');
+    } catch {
+      setError('Permissão de microfone negada ou indisponível.');
+      setVoiceState('idle');
+    }
+  }
+
+  function handleVoiceButton() {
+    if (voiceState === 'recording') {
+      stopRecording();
+    } else if (voiceState === 'idle') {
+      startRecording();
+    }
+  }
+
   if (!configured) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 rounded-[18px] border border-line bg-paper px-8 py-12 text-center">
@@ -78,7 +157,9 @@ export function AssistantChat({ configured }: { configured: boolean }) {
             </div>
             <div>
               <h2 className="font-serif text-[22px] text-ink">OneTwo Assistant</h2>
-              <p className="mt-1 text-[12px] text-ink-soft">Pergunte sobre produção, estoque, vendas ou financeiro.</p>
+              <p className="mt-1 text-[12px] text-ink-soft">
+                Pergunte por texto ou use o microfone para falar.
+              </p>
             </div>
             <div className="flex flex-wrap justify-center gap-2">
               {SUGGESTIONS.map((s) => (
@@ -109,6 +190,11 @@ export function AssistantChat({ configured }: { configured: boolean }) {
                   : 'bg-paper border border-line text-ink rounded-tl-[4px]'
               }`}
             >
+              {msg.isVoice && msg.role === 'user' && (
+                <span className="mb-1 flex items-center gap-1 text-[10px] opacity-70">
+                  <Mic size={10} /> voz
+                </span>
+              )}
               {msg.content}
             </div>
             {msg.role === 'user' && (
@@ -119,7 +205,7 @@ export function AssistantChat({ configured }: { configured: boolean }) {
           </div>
         ))}
 
-        {loading && (
+        {(loading || voiceState === 'processing') && (
           <div className="flex gap-3 justify-start">
             <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-paper">
               <Bot size={15} strokeWidth={1.5} />
@@ -139,22 +225,55 @@ export function AssistantChat({ configured }: { configured: boolean }) {
         <div ref={bottomRef} />
       </div>
 
+      {/* Recording indicator */}
+      {voiceState === 'recording' && (
+        <div className="mb-3 flex items-center justify-center gap-2 rounded-[12px] border border-danger bg-danger-soft px-4 py-2.5">
+          <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-danger" />
+          <span className="text-[12px] font-medium text-danger">Gravando… toque novamente para enviar</span>
+        </div>
+      )}
+
+      {voiceState === 'processing' && (
+        <div className="mb-3 flex items-center justify-center gap-2 rounded-[12px] border border-line bg-surface px-4 py-2.5">
+          <Loader2 size={14} className="animate-spin text-ink-soft" />
+          <span className="text-[12px] text-ink-soft">Processando áudio…</span>
+        </div>
+      )}
+
       {/* Input */}
       <div className="mt-4 flex gap-2">
+        {/* Voice button */}
+        <button
+          type="button"
+          onClick={handleVoiceButton}
+          disabled={voiceState === 'processing' || loading}
+          title={voiceState === 'recording' ? 'Parar gravação' : 'Falar com o assistente'}
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] border transition-colors disabled:opacity-40 ${
+            voiceState === 'recording'
+              ? 'border-danger bg-danger text-paper animate-pulse'
+              : 'border-line bg-paper text-ink-soft hover:border-primary hover:text-primary'
+          }`}
+        >
+          {voiceState === 'recording' ? <MicOff size={18} /> : <Mic size={18} />}
+        </button>
+
+        {/* Text input */}
         <div className="flex flex-1 items-center gap-3 rounded-[14px] border border-line bg-paper px-4 focus-within:border-primary focus-within:shadow-[0_0_0_4px_var(--ot-primary-soft)]">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && send()}
             placeholder="Pergunte algo sobre o atelier…"
-            disabled={loading}
+            disabled={loading || voiceState !== 'idle'}
             className="flex-1 bg-transparent py-3 text-[13px] text-ink placeholder:text-ink-mute outline-none"
           />
         </div>
+
+        {/* Send button */}
         <Button
           type="button"
           onClick={() => send()}
-          disabled={!input.trim() || loading}
+          disabled={!input.trim() || loading || voiceState !== 'idle'}
           icon={<Send size={15} />}
           size="md"
         >
