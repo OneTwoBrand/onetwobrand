@@ -72,7 +72,13 @@ export type FinancialSummary = {
 
 export type ReportsSummary = {
   piecesSold: number;
+  grossMonth: number;
+  revenueMonth: number;
   topPieces: { id: string; name: string; unitsSold: number; gross: number }[];
+  salesMonth: { id: string; clientName: string; total: number; status: string; piecesQty: number; grossProfit: number; paymentMethod: string; createdAt: string }[];
+  productionReport: { id: string; opNumber: string; status: string; qty: number; clientName: string; pieceName: string; seamstressName: string | null; dueDate: string; overdue: boolean }[];
+  embroideryReport: { id: string; code: string; status: string; qty: number; value: number; seamstressName: string; overdue: boolean; expectedReturnAt: string }[];
+  lowStock: { id: string; name: string; collectionName: string | null; size: string; quantity: number; lowThreshold: number }[];
 };
 
 export type SalesSummary = {
@@ -115,11 +121,17 @@ const fallbackFinancial: FinancialSummary = {
 
 const fallbackReports: ReportsSummary = {
   piecesSold: 0,
+  grossMonth: 0,
+  revenueMonth: 0,
   topPieces: [
     { id: 'vestido-lis', name: 'Vestido Lis', unitsSold: 0, gross: 0 },
     { id: 'blusa-iris', name: 'Blusa Íris', unitsSold: 0, gross: 0 },
     { id: 'conjunto-hera', name: 'Conjunto Hera', unitsSold: 0, gross: 0 },
   ],
+  salesMonth: [],
+  productionReport: [],
+  embroideryReport: [],
+  lowStock: [],
 };
 
 const fallbackSales: SalesSummary = {
@@ -408,21 +420,77 @@ export async function getReportsSummary(): Promise<{ source: DataSource; summary
     const supabase = await getSupabaseOrNull();
     if (!supabase) return { source: 'fallback', summary: fallbackReports };
 
-    const [{ data: topPieces, error: topError }] = await Promise.all([
+    const [
+      { data: topPieces, error: topError },
+      { data: salesMonth },
+      { data: productionReport },
+      { data: embroideryReport },
+      { data: lowStock },
+    ] = await Promise.all([
       supabase.from('v_top_pieces').select('id, name, units_sold, gross').limit(10),
+      supabase.from('v_sales_report_month').select('id, client_name, total, status, pieces_qty, gross_profit, payment_method, created_at').order('created_at', { ascending: false }).limit(30),
+      supabase.from('v_production_report').select('id, op_number, status, qty, client_name, piece_name, seamstress_name, due_date, overdue'),
+      supabase.from('v_embroidery_report').select('id, code, status, qty, value, seamstress_name, overdue, expected_return_at'),
+      supabase.from('v_stock_low').select('id, name, collection_name, size, quantity, low_threshold').limit(20),
     ]);
 
     if (topError) return { source: 'fallback', summary: fallbackReports, error: topError.message };
 
+    const pieces = topPieces ?? [];
+    const piecesSold = pieces.reduce((sum, p) => sum + Number(p.units_sold), 0);
+    const revenueMonth = (salesMonth ?? []).filter((s) => s.status === 'paid').reduce((sum, s) => sum + Number(s.total), 0);
+    const grossMonth = (salesMonth ?? []).filter((s) => s.status === 'paid').reduce((sum, s) => sum + Number(s.gross_profit), 0);
+
     return {
       source: 'supabase',
       summary: {
-        piecesSold: 0,
-        topPieces: (topPieces ?? []).map((item) => ({
+        piecesSold,
+        revenueMonth,
+        grossMonth,
+        topPieces: pieces.map((item) => ({
           id: item.id,
           name: item.name,
           unitsSold: Number(item.units_sold),
           gross: Number(item.gross),
+        })),
+        salesMonth: (salesMonth ?? []).map((s) => ({
+          id: s.id,
+          clientName: s.client_name,
+          total: Number(s.total),
+          status: s.status,
+          piecesQty: Number(s.pieces_qty),
+          grossProfit: Number(s.gross_profit),
+          paymentMethod: s.payment_method,
+          createdAt: new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' }).format(new Date(s.created_at)),
+        })),
+        productionReport: (productionReport ?? []).map((p) => ({
+          id: p.id,
+          opNumber: p.op_number,
+          status: p.status,
+          qty: p.qty,
+          clientName: p.client_name,
+          pieceName: p.piece_name,
+          seamstressName: p.seamstress_name,
+          dueDate: p.due_date,
+          overdue: Boolean(p.overdue),
+        })),
+        embroideryReport: (embroideryReport ?? []).map((e) => ({
+          id: e.id,
+          code: e.code,
+          status: e.status,
+          qty: e.qty,
+          value: Number(e.value),
+          seamstressName: e.seamstress_name,
+          overdue: Boolean(e.overdue),
+          expectedReturnAt: e.expected_return_at,
+        })),
+        lowStock: (lowStock ?? []).map((s) => ({
+          id: s.id,
+          name: s.name,
+          collectionName: s.collection_name,
+          size: s.size,
+          quantity: s.quantity,
+          lowThreshold: s.low_threshold,
         })),
       },
     };
