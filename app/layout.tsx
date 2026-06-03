@@ -26,8 +26,11 @@ export const metadata: Metadata = {
   description: 'Plataforma administrativa para a marca ONE TWO — slow fashion atelier.',
   manifest: '/manifest.webmanifest',
   icons: {
-    icon: '/one-two-logo.png',
-    apple: '/one-two-logo.png',
+    icon: [
+      { url: '/favicon.ico', sizes: '48x48', type: 'image/x-icon' },
+      { url: '/one-two-logo.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: '/apple-touch-icon.png',
   },
 };
 
