@@ -58,8 +58,8 @@ export default function LoginPage() {
         >
           {pending ? 'Entrando...' : 'Entrar'}
         </Button>
-        <div className="text-center text-[11px] text-ink-mute mt-2 font-mono">
-          v1.0 · made for ONE TWO atelier
+        <div className="text-center text-[11px] text-ink-mute mt-2">
+          Desenvolvido por Girassol Inteligência para OneTwoBrand
         </div>
       </form>
     </main>

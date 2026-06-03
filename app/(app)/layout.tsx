@@ -51,7 +51,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           {children}
           <footer className="pb-24 md:pb-6 pt-4 text-center">
             <span className="text-[10px] text-ink-soft tracking-[0.18em] uppercase">
-              Plataforma oficial One Two Brand
+              Desenvolvido por Girassol Inteligência para OneTwoBrand
             </span>
           </footer>
         </div>
