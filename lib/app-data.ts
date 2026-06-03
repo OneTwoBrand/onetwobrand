@@ -45,7 +45,11 @@ export type FinancialSummary = {
   revenueMonth: number;
   toReceive: number;
   toPay: number;
-  payables: { id: string; supplier: string; category?: string | null; amount: number; dueDate: string }[];
+  expensesPaidMonth: number;
+  grossProfitMonth: number;
+  netProfitMonth: number;
+  payables: { id: string; supplier: string; category?: string | null; amount: number; dueDate: string; status: string }[];
+  receivables: { id: string; clientName: string; amount: number; dueDate: string; status: string }[];
 };
 
 export type ReportsSummary = {
@@ -74,11 +78,15 @@ const fallbackFinancial: FinancialSummary = {
   revenueMonth: 0,
   toReceive: 0,
   toPay: 6420,
+  expensesPaidMonth: 0,
+  grossProfitMonth: 0,
+  netProfitMonth: 0,
   payables: [
-    { id: 'linho', supplier: 'Linho Premium', category: 'fornecedor', amount: 2840, dueDate: '2026-06-08' },
-    { id: 'aluguel', supplier: 'Atelier · Aluguel', category: 'aluguel', amount: 2200, dueDate: '2026-06-11' },
-    { id: 'maria', supplier: 'Maria Helena', category: 'bordagem', amount: 1380, dueDate: '2026-06-14' },
+    { id: 'linho', supplier: 'Linho Premium', category: 'fornecedor', amount: 2840, dueDate: '2026-06-08', status: 'pending' },
+    { id: 'aluguel', supplier: 'Atelier · Aluguel', category: 'aluguel', amount: 2200, dueDate: '2026-06-11', status: 'pending' },
+    { id: 'maria', supplier: 'Maria Helena', category: 'bordagem', amount: 1380, dueDate: '2026-06-14', status: 'pending' },
   ],
+  receivables: [],
 };
 
 const fallbackReports: ReportsSummary = {
@@ -249,28 +257,65 @@ export async function getFinancialSummary(): Promise<{ source: DataSource; summa
     const supabase = await getSupabaseOrNull();
     if (!supabase) return { source: 'fallback', summary: fallbackFinancial };
 
-    const [{ data: kpis, error: kpiError }, { data: payables, error: payablesError }] = await Promise.all([
-      supabase.from('v_dashboard_kpis').select('revenue_month, to_receive, to_pay').single(),
-      supabase.from('payables').select('id, supplier, category, amount, due_date').order('due_date', { ascending: true }).limit(6),
+    const [
+      { data: summary, error: summaryError },
+      { data: payables, error: payablesError },
+      { data: receivables, error: receivablesError },
+    ] = await Promise.all([
+      supabase
+        .from('v_financial_summary')
+        .select('revenue_month, to_receive, to_pay, expenses_paid_month, gross_profit_month')
+        .single(),
+      supabase
+        .from('payables')
+        .select('id, supplier, category, amount, due_date, status')
+        .order('due_date', { ascending: true })
+        .limit(12),
+      supabase
+        .from('receivables')
+        .select('id, amount, due_date, status, clients(name)')
+        .order('due_date', { ascending: true })
+        .limit(12),
     ]);
 
-    if (kpiError || payablesError || !kpis) {
-      return { source: 'fallback', summary: fallbackFinancial, error: kpiError?.message ?? payablesError?.message };
+    if (summaryError || payablesError || receivablesError || !summary) {
+      return {
+        source: 'fallback',
+        summary: fallbackFinancial,
+        error: summaryError?.message ?? payablesError?.message ?? receivablesError?.message,
+      };
     }
+
+    const grossProfitMonth = Number(summary.gross_profit_month);
+    const expensesPaidMonth = Number(summary.expenses_paid_month);
 
     return {
       source: 'supabase',
       summary: {
-        revenueMonth: Number(kpis.revenue_month),
-        toReceive: Number(kpis.to_receive),
-        toPay: Number(kpis.to_pay),
+        revenueMonth: Number(summary.revenue_month),
+        toReceive: Number(summary.to_receive),
+        toPay: Number(summary.to_pay),
+        expensesPaidMonth,
+        grossProfitMonth,
+        netProfitMonth: grossProfitMonth - expensesPaidMonth,
         payables: (payables ?? []).map((item) => ({
           id: item.id,
           supplier: item.supplier,
           category: item.category,
           amount: Number(item.amount),
           dueDate: item.due_date,
+          status: item.status,
         })),
+        receivables: (receivables ?? []).map((item) => {
+          const client = Array.isArray(item.clients) ? item.clients[0] : item.clients;
+          return {
+            id: item.id,
+            clientName: client?.name ?? 'Cliente',
+            amount: Number(item.amount),
+            dueDate: item.due_date,
+            status: item.status,
+          };
+        }),
       },
     };
   } catch (error) {
