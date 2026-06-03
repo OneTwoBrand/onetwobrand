@@ -4,6 +4,7 @@ import { AppBar, Topbar } from '@/components/layout/Navigation';
 import { KPI, OPRow } from '@/components/app/Composites';
 import { Button } from '@/components/ui/Button';
 import { Card, SectionHead, Divider } from '@/components/ui/Primitives';
+import { getCurrentUserDisplay } from '@/lib/current-user';
 import { brl } from '@/lib/utils';
 
 const dashboardKpis = [
@@ -34,13 +35,15 @@ const activeOrders = [
   },
 ];
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const user = await getCurrentUserDisplay();
+
   return (
     <>
       <AppBar
         large
         eyebrow="Hoje no atelier"
-        title="Boa tarde, Ana"
+        title={user.greeting}
         action={
           <div className="flex gap-2">
             <button className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-paper text-ink" aria-label="Buscar">
@@ -54,7 +57,7 @@ export default function DashboardPage() {
       />
       <Topbar
         eyebrow="Hoje no atelier"
-        title="Boa tarde, Ana"
+        title={user.greeting}
         action={<Link href="/producao/novo"><Button size="sm" icon={<Scissors size={14} strokeWidth={1.5} />}>Nova OP</Button></Link>}
       />
 
