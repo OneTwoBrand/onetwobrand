@@ -5,35 +5,20 @@ import { useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, Check, Sparkles } from 'lucide-react';
 import { useForm, useWatch } from 'react-hook-form';
-import { z } from 'zod';
 import { AppBar, Topbar } from '@/components/layout/Navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select, Textarea } from '@/components/ui/Field';
 import { Card, Divider } from '@/components/ui/Primitives';
-
-const productionOrderSchema = z.object({
-  clientName: z.string().min(2, 'Informe a cliente.'),
-  productName: z.string().min(2, 'Informe o produto.'),
-  collection: z.string().min(1, 'Selecione a coleção.'),
-  model: z.string().min(2, 'Informe o modelo.'),
-  color: z.string().min(2, 'Informe a cor.'),
-  size: z.string().min(1, 'Selecione o tamanho.'),
-  quantity: z.number().int().min(1, 'Quantidade mínima: 1.').max(99, 'Quantidade máxima: 99.'),
-  embroideryType: z.string().min(1, 'Selecione a bordagem.'),
-  seamstressName: z.string().min(2, 'Informe a costureira.'),
-  dueDate: z.string().min(1, 'Informe o prazo.'),
-  observations: z.string().max(600, 'Use até 600 caracteres.').optional(),
-});
-
-type ProductionOrderForm = z.infer<typeof productionOrderSchema>;
+import { productionOrderSchema, type ProductionOrderForm } from '@/lib/production/schema';
 
 const collections = ['Premium', 'Bordados', 'Casual', 'Verão', 'Inverno'];
 const sizes = ['PP', 'P', 'M', 'G', 'GG'];
 const embroideryTypes = ['Sem bordagem', 'Frontal', 'Floral à mão', 'Personalizada', 'Aplicação'];
 
 export default function NewProductionOrderPage() {
-  const [createdOrder, setCreatedOrder] = useState<ProductionOrderForm | null>(null);
+  const [createdOrder, setCreatedOrder] = useState<{ opNumber: string } | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -56,8 +41,23 @@ export default function NewProductionOrderPage() {
     return `${name}${color}`;
   }, [preview.productName, preview.color]);
 
-  function onSubmit(data: ProductionOrderForm) {
-    setCreatedOrder(data);
+  async function onSubmit(data: ProductionOrderForm) {
+    setSubmitError(null);
+    setCreatedOrder(null);
+
+    const response = await fetch('/api/production-orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const payload = await response.json();
+
+    if (!response.ok) {
+      setSubmitError(payload.error ?? 'Nao foi possivel criar a OP.');
+      return;
+    }
+
+    setCreatedOrder(payload.order);
   }
 
   return (
@@ -148,10 +148,20 @@ export default function NewProductionOrderPage() {
 
             {createdOrder && (
               <Card className="border-success bg-success-soft" pad={18}>
-                <p className="m-0 text-[13px] font-medium text-success">OP preparada com sucesso.</p>
+                <p className="m-0 text-[13px] font-medium text-success">OP {createdOrder.opNumber} criada com sucesso.</p>
                 <p className="mt-1 text-[12px] text-ink-soft">
-                  Integração com Supabase será ativada quando o ambiente oficial estiver configurado.
+                  A ordem foi registrada no Supabase oficial.
                 </p>
+                <Link href="/producao" className="mt-3 inline-block text-[11px] font-medium uppercase tracking-[0.16em] text-success">
+                  Ver produção
+                </Link>
+              </Card>
+            )}
+
+            {submitError && (
+              <Card className="border-warning bg-warning-soft" pad={18}>
+                <p className="m-0 text-[13px] font-medium text-warning">Ainda não foi possível criar a OP.</p>
+                <p className="mt-1 text-[12px] text-ink-soft">{submitError}</p>
               </Card>
             )}
           </aside>
