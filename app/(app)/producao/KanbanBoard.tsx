@@ -19,27 +19,18 @@ import { moveOP } from './kanban/actions';
 import type { OPStatus } from '@/lib/types';
 import type { ProductionOrderListItem } from '@/lib/production/orders';
 
-const COLUMNS: { status: OPStatus; label: string; tone: string }[] = [
-  { status: 'Aberta', label: 'Aberta', tone: 'neutral' },
-  { status: 'Aguardando Material', label: 'Ag. Material', tone: 'warning' },
-  { status: 'Em Produção', label: 'Em Produção', tone: 'primary' },
-  { status: 'Em Bordagem', label: 'Em Bordagem', tone: 'secondary' },
-  { status: 'Em Revisão', label: 'Em Revisão', tone: 'warning' },
-  { status: 'Finalizada', label: 'Finalizada', tone: 'success' },
-];
-
 function formatDate(iso: string) {
   return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date(iso));
 }
 
-function isOverdue(iso: string, status: OPStatus) {
-  if (['Finalizada', 'Vendida', 'Entregue'].includes(status)) return false;
+function isOverdue(iso: string, status: string, doneStatuses: string[]) {
+  if (doneStatuses.some((s) => status.includes(s) || s.includes(status))) return false;
   return new Date(iso) < new Date();
 }
 
 // ── Draggable card ────────────────────────────────────────────────
-function KanbanCard({ order, isDragging = false }: { order: ProductionOrderListItem; isDragging?: boolean }) {
-  const overdue = order.dueDate ? isOverdue(order.dueDate, order.status) : false;
+function KanbanCard({ order, isDragging = false, doneStatuses = [] }: { order: ProductionOrderListItem; isDragging?: boolean; doneStatuses?: string[] }) {
+  const overdue = order.dueDate ? isOverdue(order.dueDate, order.status, doneStatuses) : false;
 
   return (
     <div className={`rounded-[14px] border bg-paper p-3 transition-shadow ${isDragging ? 'shadow-s2 opacity-90 rotate-1' : 'border-line hover:shadow-s1'}`}>
@@ -66,7 +57,7 @@ function KanbanCard({ order, isDragging = false }: { order: ProductionOrderListI
 }
 
 // ── Draggable wrapper ─────────────────────────────────────────────
-function DraggableCard({ order }: { order: ProductionOrderListItem }) {
+function DraggableCard({ order, doneStatuses }: { order: ProductionOrderListItem; doneStatuses: string[] }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: order.id ?? order.opNumber,
     data: { order },
@@ -85,7 +76,7 @@ function DraggableCard({ order }: { order: ProductionOrderListItem }) {
           >
             <GripVertical size={14} />
           </button>
-          <KanbanCard order={order} />
+          <KanbanCard order={order} doneStatuses={doneStatuses} />
         </div>
       </Link>
     </div>
@@ -98,11 +89,13 @@ function KanbanColumn({
   label,
   orders,
   isOver,
+  doneStatuses,
 }: {
-  status: OPStatus;
+  status: string;
   label: string;
   orders: ProductionOrderListItem[];
   isOver: boolean;
+  doneStatuses: string[];
 }) {
   const { setNodeRef } = useDroppable({ id: status });
 
@@ -121,7 +114,7 @@ function KanbanColumn({
       </div>
       <div className="flex flex-1 flex-col gap-2">
         {orders.map((order) => (
-          <DraggableCard key={order.id ?? order.opNumber} order={order} />
+          <DraggableCard key={order.id ?? order.opNumber} order={order} doneStatuses={doneStatuses} />
         ))}
         {orders.length === 0 && (
           <div className="flex flex-1 items-center justify-center rounded-[10px] border border-dashed border-line py-6">
@@ -134,10 +127,18 @@ function KanbanColumn({
 }
 
 // ── Main board ────────────────────────────────────────────────────
-export function KanbanBoard({ initialOrders }: { initialOrders: ProductionOrderListItem[] }) {
+export function KanbanBoard({
+  initialOrders,
+  columns,
+  doneStatuses,
+}: {
+  initialOrders: ProductionOrderListItem[];
+  columns: string[];
+  doneStatuses: string[];
+}) {
   const [orders, setOrders] = useState(initialOrders);
   const [activeOrder, setActiveOrder] = useState<ProductionOrderListItem | null>(null);
-  const [overColumn, setOverColumn] = useState<OPStatus | null>(null);
+  const [overColumn, setOverColumn] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const sensors = useSensors(
@@ -150,7 +151,7 @@ export function KanbanBoard({ initialOrders }: { initialOrders: ProductionOrderL
   }
 
   function handleDragOver({ over }: { over: DragEndEvent['over'] }) {
-    setOverColumn(over ? (over.id as OPStatus) : null);
+    setOverColumn(over ? String(over.id) : null);
   }
 
   function handleDragEnd({ active, over }: DragEndEvent) {
@@ -158,7 +159,7 @@ export function KanbanBoard({ initialOrders }: { initialOrders: ProductionOrderL
     setOverColumn(null);
     if (!over) return;
 
-    const newStatus = over.id as OPStatus;
+    const newStatus = String(over.id) as OPStatus;
     const order = orders.find((o) => (o.id ?? o.opNumber) === active.id);
     if (!order || order.status === newStatus) return;
     if (!order.id) return;
@@ -180,7 +181,7 @@ export function KanbanBoard({ initialOrders }: { initialOrders: ProductionOrderL
     });
   }
 
-  const byStatus = (status: OPStatus) => orders.filter((o) => o.status === status);
+  const byStatus = (status: string) => orders.filter((o) => o.status === status);
 
   return (
     <div className="relative">
@@ -196,19 +197,20 @@ export function KanbanBoard({ initialOrders }: { initialOrders: ProductionOrderL
         onDragEnd={handleDragEnd}
       >
         <div className="flex gap-3 overflow-x-auto pb-4">
-          {COLUMNS.map((col) => (
+          {columns.map((status) => (
             <KanbanColumn
-              key={col.status}
-              status={col.status}
-              label={col.label}
-              orders={byStatus(col.status)}
-              isOver={overColumn === col.status}
+              key={status}
+              status={status}
+              label={status}
+              orders={byStatus(status)}
+              isOver={overColumn === status}
+              doneStatuses={doneStatuses}
             />
           ))}
         </div>
 
         <DragOverlay dropAnimation={{ duration: 150, easing: 'ease' }}>
-          {activeOrder && <KanbanCard order={activeOrder} isDragging />}
+          {activeOrder && <KanbanCard order={activeOrder} isDragging doneStatuses={doneStatuses} />}
         </DragOverlay>
       </DndContext>
     </div>

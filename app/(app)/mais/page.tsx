@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import {
   BarChart3, Bot, CircleDollarSign, Gem, KeyRound, LogOut,
-  Package, Scissors, Settings, Shield, User, Users,
+  Package, Scissors, Settings, Shield, User, Users, SlidersHorizontal,
 } from 'lucide-react';
 import { AppBar, Topbar } from '@/components/layout/Navigation';
 import { Avatar, Card, Divider, SectionHead } from '@/components/ui/Primitives';
@@ -11,6 +11,13 @@ import { createClient } from '@/lib/supabase/server';
 import { signOut } from '@/app/(auth)/logout/actions';
 import { checkOpenAIConfigured } from './actions';
 import { ProfileForm, PasswordForm, AdminAIConfigForm } from './ProfileForm';
+import { getWorkflowConfig } from '@/lib/workflow-config';
+import {
+  OpStatusesForm,
+  ProductionStepsForm,
+  PaymentMethodsForm,
+  SeamstressRolesForm,
+} from './WorkflowConfigForms';
 
 async function getProfileRole(userId: string): Promise<string> {
   try {
@@ -47,7 +54,10 @@ export default async function MaisPage() {
 
   const role = authUser ? await getProfileRole(authUser.id) : 'admin';
   const isAdmin = role === 'admin';
-  const aiConfigured = isAdmin ? await checkOpenAIConfigured() : false;
+  const [aiConfigured, workflowConfig] = await Promise.all([
+    isAdmin ? checkOpenAIConfigured() : Promise.resolve(false),
+    isAdmin ? getWorkflowConfig() : Promise.resolve(null),
+  ]);
 
   const roleLabel: Record<string, string> = {
     admin: 'Admin', atelier: 'Atelier', viewer: 'Visualizador',
@@ -133,6 +143,31 @@ export default async function MaisPage() {
               <SectionHead eyebrow="OpenAI" title="Chave de API" />
               <div className="mt-3">
                 <AdminAIConfigForm isConfigured={aiConfigured} />
+              </div>
+            </Card>
+          )}
+
+          {/* Admin — Fluxo de trabalho */}
+          {isAdmin && workflowConfig && (
+            <Card pad={20}>
+              <div className="mb-5 flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-primary-soft text-primary">
+                  <SlidersHorizontal size={18} strokeWidth={1.5} />
+                </div>
+                <div>
+                  <p className="text-[13px] font-medium text-ink">Configurações de fluxo</p>
+                  <p className="text-[11px] text-ink-soft">Restrito ao administrador</p>
+                </div>
+              </div>
+              <Divider className="mb-5" />
+              <div className="space-y-8">
+                <OpStatusesForm config={workflowConfig} />
+                <Divider />
+                <ProductionStepsForm config={workflowConfig} />
+                <Divider />
+                <PaymentMethodsForm config={workflowConfig} />
+                <Divider />
+                <SeamstressRolesForm config={workflowConfig} />
               </div>
             </Card>
           )}

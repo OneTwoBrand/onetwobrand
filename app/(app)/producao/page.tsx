@@ -5,13 +5,18 @@ import { OPRow } from '@/components/app/Composites';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { getProductionOrders } from '@/lib/production/orders';
+import { getWorkflowConfig } from '@/lib/workflow-config';
 import { KanbanBoard } from './KanbanBoard';
 
 export default async function ProducaoPage() {
-  const { orders, source, error } = await getProductionOrders();
+  const [{ orders, source, error }, wfConfig] = await Promise.all([
+    getProductionOrders(),
+    getWorkflowConfig(),
+  ]);
 
-  const active = orders.filter((o) => !['Finalizada', 'Vendida', 'Entregue'].includes(o.status));
-  const done = orders.filter((o) => ['Finalizada', 'Vendida', 'Entregue'].includes(o.status));
+  const doneStatuses = wfConfig.op_statuses.slice(-2); // last 2 statuses = "done"
+  const active = orders.filter((o) => !doneStatuses.includes(o.status));
+  const done = orders.filter((o) => doneStatuses.includes(o.status));
   const overdue = active.filter((o) => o.dueDate && new Date(o.dueDate) < new Date());
 
   const title = `${active.length} ativas${overdue.length > 0 ? ` · ${overdue.length} atrasadas` : ''}`;
@@ -49,7 +54,11 @@ export default async function ProducaoPage() {
                 Arraste os cards entre colunas para atualizar o status
               </p>
             </div>
-            <KanbanBoard initialOrders={orders.filter((o) => o.id)} />
+            <KanbanBoard
+              initialOrders={orders.filter((o) => o.id)}
+              columns={wfConfig.op_statuses}
+              doneStatuses={doneStatuses}
+            />
 
             {/* Finalizadas — lista abaixo do kanban */}
             {done.length > 0 && (

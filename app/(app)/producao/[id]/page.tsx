@@ -6,25 +6,21 @@ import { Badge, StatusBadge } from '@/components/ui/Badge';
 import { Card, Divider, SectionHead } from '@/components/ui/Primitives';
 import { getProductionOrderDetail, getOPHistory } from '@/lib/production/orders';
 import { daysUntil } from '@/lib/utils';
+import { getWorkflowConfig } from '@/lib/workflow-config';
 import { StatusActions } from './StatusActions';
 
-const productionSteps = ['Corte', 'Costura', 'Bordagem', 'Revisão', 'Entrega'];
-
-function stepState(index: number, status: string) {
-  const currentByStatus: Record<string, number> = {
-    'Aberta': 0,
-    'Aguardando Material': 0,
-    'Em Produção': 1,
-    'Em Bordagem': 2,
-    'Em Revisão': 3,
-    'Finalizada': 4,
-    'Vendida': 4,
-    'Entregue': 4,
+function stepState(steps: string[], index: number, allStatuses: string[]) {
+  return (status: string) => {
+    const totalSteps = steps.length;
+    // Map status position to step index proportionally
+    const statusIndex = allStatuses.indexOf(status);
+    const current = statusIndex < 0
+      ? 0
+      : Math.round((statusIndex / Math.max(allStatuses.length - 1, 1)) * (totalSteps - 1));
+    if (index < current) return 'done';
+    if (index === current) return 'current';
+    return 'pending';
   };
-  const current = currentByStatus[status] ?? 0;
-  if (index < current) return 'done';
-  if (index === current) return 'current';
-  return 'pending';
 }
 
 function formatHistoryDate(iso: string) {
@@ -39,9 +35,14 @@ function formatHistoryDate(iso: string) {
 
 export default async function ProducaoDetalhePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { order, source, error } = await getProductionOrderDetail(id);
+  const [{ order, source, error }, wfConfig] = await Promise.all([
+    getProductionOrderDetail(id),
+    getWorkflowConfig(),
+  ]);
   const history = order.id ? await getOPHistory(order.id) : [];
   const due = daysUntil(order.dueDate);
+  const productionSteps = wfConfig.production_steps;
+  const allStatuses = wfConfig.op_statuses;
 
   return (
     <>
@@ -74,7 +75,7 @@ export default async function ProducaoDetalhePage({ params }: { params: Promise<
               {order.id && source === 'supabase' && (
                 <div className="mt-4 flex items-center justify-between gap-3 border-t border-line pt-4">
                   <span className="text-[11px] text-ink-soft">Alterar andamento</span>
-                  <StatusActions opId={order.id} currentStatus={order.status} />
+                  <StatusActions opId={order.id} currentStatus={order.status} allStatuses={allStatuses} />
                 </div>
               )}
             </Card>
@@ -84,7 +85,7 @@ export default async function ProducaoDetalhePage({ params }: { params: Promise<
               <SectionHead eyebrow="Etapas" title="Andamento" />
               <div className="space-y-4">
                 {productionSteps.map((step, index) => {
-                  const state = stepState(index, order.status);
+                  const state = stepState(productionSteps, index, allStatuses)(order.status);
                   return (
                     <div key={step} className="flex items-center justify-between text-[13px]">
                       <div className="flex items-center gap-3">
