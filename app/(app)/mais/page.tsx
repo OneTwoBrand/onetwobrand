@@ -224,7 +224,7 @@ export default async function MaisPage() {
 
           {/* Rodapé */}
           <p className="text-center text-[10px] text-ink-soft tracking-[0.16em] uppercase">
-            v1.0 · Desenvolvido por Girassol Inteligência
+            Desenvolvido por Girassol Inteligência para OneTwoBrand
           </p>
 
         </section>

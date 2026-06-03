@@ -77,8 +77,8 @@ export default function NovaSenhaPage() {
           </form>
         )}
 
-        <div className="text-center text-[11px] text-ink-mute mt-4 font-mono">
-          v1.0 · Desenvolvido por Girassol Inteligência
+        <div className="text-center text-[11px] text-ink-mute mt-4">
+          Desenvolvido por Girassol Inteligência para OneTwoBrand
         </div>
       </div>
     </main>

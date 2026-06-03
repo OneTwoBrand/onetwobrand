@@ -70,8 +70,8 @@ export default function RecuperarPage() {
           Voltar ao login
         </Link>
 
-        <div className="text-center text-[11px] text-ink-mute mt-2 font-mono">
-          v1.0 · Desenvolvido por Girassol Inteligência
+        <div className="text-center text-[11px] text-ink-mute mt-2">
+          Desenvolvido por Girassol Inteligência para OneTwoBrand
         </div>
       </div>
     </main>
