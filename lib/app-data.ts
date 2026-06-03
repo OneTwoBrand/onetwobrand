@@ -247,6 +247,82 @@ export async function getClients(): Promise<{ source: DataSource; clients: Clien
   }
 }
 
+export type ClientDetail = ClientListItem & {
+  email?: string | null;
+  notes?: string | null;
+  createdAt?: string;
+  sales: { id: string; total: number; status: string; paymentMethod: string; createdAt: string }[];
+  orders: { id: string; opNumber: string; productName: string; status: string; qty: number; dueDate: string }[];
+};
+
+export async function getClientDetail(clientId: string): Promise<{ client: ClientDetail | null; source: DataSource; error?: string }> {
+  if (!hasSupabasePublicEnv()) return { client: null, source: 'fallback' };
+  try {
+    const supabase = await createClient();
+
+    const [{ data: clientData, error: clientError }, { data: salesData }, { data: ordersData }] = await Promise.all([
+      supabase
+        .from('clients')
+        .select('id, name, city, state, phone, email, vip, total_pieces, total_spent, notes, created_at')
+        .eq('id', clientId)
+        .maybeSingle(),
+      supabase
+        .from('sales')
+        .select('id, total, status, payment_method, created_at')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false })
+        .limit(20),
+      supabase
+        .from('production_orders')
+        .select('id, op_number, status, qty, due_date, pieces(name)')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false })
+        .limit(20),
+    ]);
+
+    if (clientError || !clientData) return { client: null, source: 'fallback', error: clientError?.message };
+
+    const formatDate = (iso: string) => new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' }).format(new Date(iso));
+
+    return {
+      source: 'supabase',
+      client: {
+        id: clientData.id,
+        name: clientData.name,
+        city: clientData.city,
+        state: clientData.state,
+        phone: clientData.phone,
+        email: clientData.email,
+        vip: clientData.vip,
+        totalPieces: clientData.total_pieces,
+        totalSpent: Number(clientData.total_spent),
+        notes: clientData.notes,
+        createdAt: formatDate(clientData.created_at),
+        sales: (salesData ?? []).map((s) => ({
+          id: s.id,
+          total: Number(s.total),
+          status: s.status,
+          paymentMethod: s.payment_method,
+          createdAt: formatDate(s.created_at),
+        })),
+        orders: (ordersData ?? []).map((o) => {
+          const piece = Array.isArray(o.pieces) ? o.pieces[0] : o.pieces;
+          return {
+            id: o.id,
+            opNumber: o.op_number,
+            productName: (piece as { name: string } | null)?.name ?? 'Produto',
+            status: o.status,
+            qty: o.qty,
+            dueDate: o.due_date,
+          };
+        }),
+      },
+    };
+  } catch (e) {
+    return { client: null, source: 'fallback', error: e instanceof Error ? e.message : 'Erro.' };
+  }
+}
+
 type ShipmentRow = {
   id: string;
   code: string;

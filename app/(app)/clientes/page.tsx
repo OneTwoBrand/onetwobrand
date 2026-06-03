@@ -26,31 +26,35 @@ export default async function ClientesPage() {
           <SectionHead eyebrow="Em destaque" title="Clientes VIP" />
           <div className="mb-5 flex gap-3 overflow-x-auto pb-1">
             {vipClients.map((client) => (
-              <Card key={client.id} pad={14} className="min-w-[150px]">
-                <Avatar name={client.name} tone="primary" />
-                <h2 className="m-0 mt-3 font-serif text-[17px] font-normal text-ink">{client.name}</h2>
-                <p className="mt-1 text-[11px] text-ink-soft">{client.totalPieces} peças</p>
-              </Card>
+              <Link key={client.id} href={`/clientes/${client.id}`} className="block shrink-0">
+                <Card pad={14} className="min-w-[150px] cursor-pointer hover:shadow-s2 transition-shadow">
+                  <Avatar name={client.name} tone="primary" />
+                  <h2 className="m-0 mt-3 font-serif text-[17px] font-normal text-ink">{client.name}</h2>
+                  <p className="mt-1 text-[11px] text-ink-soft">{client.totalPieces} peças</p>
+                </Card>
+              </Link>
             ))}
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             {clients.map((client) => (
-              <Card key={client.id} pad={16}>
-                <div className="flex items-center gap-3">
-                  <Avatar name={client.name} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <h2 className="m-0 truncate font-serif text-[18px] font-normal text-ink">{client.name}</h2>
-                      {client.vip && <Badge tone="primary" size="sm">VIP</Badge>}
+              <Link key={client.id} href={`/clientes/${client.id}`} className="block">
+                <Card pad={16} className="cursor-pointer hover:shadow-s2 transition-shadow">
+                  <div className="flex items-center gap-3">
+                    <Avatar name={client.name} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <h2 className="m-0 truncate font-serif text-[18px] font-normal text-ink">{client.name}</h2>
+                        {client.vip && <Badge tone="primary" size="sm">VIP</Badge>}
+                      </div>
+                      <p className="mt-1 text-[11px] text-ink-soft">{client.city ?? '-'}, {client.state ?? '--'} · {client.totalPieces} peças</p>
                     </div>
-                    <p className="mt-1 text-[11px] text-ink-soft">{client.city ?? '-'}, {client.state ?? '--'} · {client.totalPieces} peças</p>
+                    <div className="text-right">
+                      <User size={15} className="ml-auto text-ink-soft" />
+                      <p className="mt-1 text-[11px] text-ink-soft">{brl(client.totalSpent)}</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <User size={15} className="ml-auto text-ink-soft" />
-                    <p className="mt-1 text-[11px] text-ink-soft">{brl(client.totalSpent)}</p>
-                  </div>
-                </div>
-              </Card>
+                </Card>
+              </Link>
             ))}
           </div>
         </section>
