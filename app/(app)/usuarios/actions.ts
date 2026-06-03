@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { assertAdmin } from '@/lib/users-data';
+import { sendInviteEmail, sendAccountStatusEmail } from '@/lib/email';
 
 export type UserActionState = { error?: string; success?: string };
 
@@ -21,9 +22,11 @@ export async function inviteUser(
     await assertAdmin();
     const admin = createAdminClient();
 
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://one2brand.com.br';
+
     const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
       data: { full_name: fullName },
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://one2brand.com.br'}/login`,
+      redirectTo: `${siteUrl}/login`,
     });
 
     if (error) return { error: error.message };
@@ -34,6 +37,13 @@ export async function inviteUser(
       full_name: fullName,
       role,
     }, { onConflict: 'id' });
+
+    // Send branded invite email via Resend
+    // The Supabase invite generates a token; we build the confirmation URL
+    const inviteLink = `${siteUrl}/login`;
+    await sendInviteEmail({ to: email, fullName, role, inviteLink }).catch(() => {
+      // Non-fatal: Supabase also sends its own invite, log silently
+    });
 
     revalidatePath('/usuarios');
     return { success: `Convite enviado para ${email}.` };
@@ -53,17 +63,32 @@ export async function updateUserRole(userId: string, role: 'admin' | 'atelier' |
 export async function toggleUserActive(userId: string, currentlyActive: boolean) {
   await assertAdmin();
 
-  // Prevent self-deactivation
   const { createClient } = await import('@/lib/supabase/server');
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (user?.id === userId) throw new Error('Você não pode desativar sua própria conta.');
 
   const admin = createAdminClient();
+
+  // Fetch target user info for the notification email
+  const { data: targetAuth } = await admin.auth.admin.getUserById(userId);
+  const { data: targetProfile } = await admin.from('profiles').select('full_name').eq('id', userId).maybeSingle();
+
   const { error } = await admin.auth.admin.updateUserById(userId, {
     ban_duration: currentlyActive ? '876600h' : 'none',
   });
   if (error) throw new Error(error.message);
+
+  // Notify the affected user by email (non-fatal)
+  if (targetAuth?.user?.email) {
+    const fullName = targetProfile?.full_name ?? targetAuth.user.user_metadata?.full_name ?? 'Usuário';
+    sendAccountStatusEmail({
+      to: targetAuth.user.email,
+      fullName,
+      action: currentlyActive ? 'deactivated' : 'reactivated',
+    }).catch(() => {});
+  }
+
   revalidatePath('/usuarios');
 }
 
@@ -76,7 +101,23 @@ export async function removeUser(userId: string) {
   if (user?.id === userId) throw new Error('Você não pode remover sua própria conta.');
 
   const admin = createAdminClient();
+
+  // Fetch target user info before deletion
+  const { data: targetAuth } = await admin.auth.admin.getUserById(userId);
+  const { data: targetProfile } = await admin.from('profiles').select('full_name').eq('id', userId).maybeSingle();
+
   const { error } = await admin.auth.admin.deleteUser(userId);
   if (error) throw new Error(error.message);
+
+  // Notify removed user by email (non-fatal, fire-and-forget)
+  if (targetAuth?.user?.email) {
+    const fullName = targetProfile?.full_name ?? targetAuth.user.user_metadata?.full_name ?? 'Usuário';
+    sendAccountStatusEmail({
+      to: targetAuth.user.email,
+      fullName,
+      action: 'removed',
+    }).catch(() => {});
+  }
+
   revalidatePath('/usuarios');
 }
