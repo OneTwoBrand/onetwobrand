@@ -10,6 +10,8 @@ export type SaleStockOption = {
   id: string;
   pieceId: string;
   name: string;
+  collectionName?: string | null;
+  category?: string | null;
   size: string;
   color?: string | null;
   quantity: number;
@@ -22,7 +24,10 @@ type StockOptionRow = {
   size: string;
   color: string | null;
   quantity: number;
-  pieces: { name: string; price: number } | { name: string; price: number }[] | null;
+  pieces:
+    | { name: string; price: number; category: string | null; collections: { name: string } | { name: string }[] | null }
+    | { name: string; price: number; category: string | null; collections: { name: string } | { name: string }[] | null }[]
+    | null;
 };
 
 function firstRelated<T>(value: T | T[] | null): T | null {
@@ -49,7 +54,7 @@ export async function getSaleFormOptions(): Promise<{
       supabase.from('clients').select('id, name').order('name', { ascending: true }),
       supabase
         .from('stock_items')
-        .select('id, piece_id, size, color, quantity, pieces(name, price)')
+        .select('id, piece_id, size, color, quantity, pieces(name, price, category, collections(name))')
         .gt('quantity', 0)
         .order('updated_at', { ascending: false }),
     ]);
@@ -66,10 +71,13 @@ export async function getSaleFormOptions(): Promise<{
       })),
       stock: ((stock ?? []) as StockOptionRow[]).map((item) => {
         const piece = firstRelated(item.pieces);
+        const collection = firstRelated(piece?.collections ?? null);
         return {
           id: item.id,
           pieceId: item.piece_id,
           name: piece?.name ?? 'Produto',
+          collectionName: collection?.name,
+          category: piece?.category,
           size: item.size,
           color: item.color,
           quantity: item.quantity,

@@ -11,7 +11,7 @@ import { type ReactNode } from 'react';
 import {
   Home, Scissors, ShoppingCart, Package, MoreHorizontal,
   Gem, User, CircleDollarSign, BarChart3, ChevronLeft, ChevronRight,
-  Bot, LogOut,
+  Bot, LogOut, Layers3,
 } from 'lucide-react';
 import { signOut } from '@/app/(auth)/logout/actions';
 import { cn } from '@/lib/utils';
@@ -63,6 +63,7 @@ const sidebarItems = [
   { href: '/bordagem',    label: 'Bordagem',   Icon: Gem },
   { href: '/costureiras',  label: 'Costureiras', Icon: User },
   { href: '/estoque',     label: 'Estoque',    Icon: Package },
+  { href: '/colecoes',     label: 'Coleções',   Icon: Layers3 },
   { href: '/clientes',    label: 'Clientes',   Icon: User },
   { href: '/vendas',      label: 'Vendas',     Icon: ShoppingCart },
   { href: '/financeiro',  label: 'Financeiro', Icon: CircleDollarSign },

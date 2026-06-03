@@ -11,10 +11,18 @@ export async function createProduct(
   formData: FormData
 ): Promise<ProductActionState> {
   const name = String(formData.get('name') ?? '').trim();
+  const collection_id = String(formData.get('collection_id') ?? '').trim() || null;
+  const category = String(formData.get('category') ?? '').trim() || null;
+  const description = String(formData.get('description') ?? '').trim() || null;
   const color = String(formData.get('color') ?? '').trim() || null;
+  const fabric = String(formData.get('fabric') ?? '').trim() || color;
+  const cost_price = parseFloat(String(formData.get('cost_price') ?? '0')) || 0;
   const sale_price = parseFloat(String(formData.get('sale_price') ?? '0')) || 0;
   const quantity = parseInt(String(formData.get('quantity') ?? '0'), 10) || 0;
+  const low_threshold = parseInt(String(formData.get('low_threshold') ?? '3'), 10) || 3;
   const photo_url = String(formData.get('photo_url') ?? '').trim() || null;
+  const back_photo_url = String(formData.get('back_photo_url') ?? '').trim() || null;
+  const detail_photo_url = String(formData.get('detail_photo_url') ?? '').trim() || null;
   const size = String(formData.get('size') ?? '').trim() || 'Único';
 
   if (!name) return { error: 'Nome é obrigatório.' };
@@ -33,11 +41,17 @@ export async function createProduct(
     .from('pieces')
     .insert({
       name,
+      collection_id,
+      category,
+      description,
       color,
-      fabric: color,
+      fabric,
       sizes: [size],
+      cost_price,
       price: sale_price,
       photo_url,
+      back_photo_url,
+      detail_photo_url,
     })
     .select('id')
     .single();
@@ -51,6 +65,7 @@ export async function createProduct(
       size,
       color,
       quantity,
+      low_threshold,
     });
 
   if (stockError) return { error: stockError.message };

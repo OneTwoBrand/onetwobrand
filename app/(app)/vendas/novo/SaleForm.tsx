@@ -45,7 +45,7 @@ export function SaleForm({ clients, stock }: { clients: SaleClientOption[]; stoc
                     <option value="">Selecione</option>
                     {stock.map((item) => (
                       <option key={item.id} value={item.id}>
-                        {item.name} · {item.color ?? '-'} · {item.size} · {item.quantity} un. · {brl(item.price)}
+                        {item.name} · {item.collectionName ?? item.category ?? '-'} · {item.color ?? '-'} · {item.size} · {item.quantity} un. · {brl(item.price)}
                       </option>
                     ))}
                   </Select>
