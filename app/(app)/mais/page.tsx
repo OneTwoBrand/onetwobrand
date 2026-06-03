@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/Badge';
 import { getCurrentUserDisplay } from '@/lib/current-user';
 import { createClient } from '@/lib/supabase/server';
 import { signOut } from '@/app/(auth)/logout/actions';
-import { ProfileForm, PasswordForm } from './ProfileForm';
+import { checkOpenAIConfigured } from './actions';
+import { ProfileForm, PasswordForm, AdminAIConfigForm } from './ProfileForm';
 
 async function getProfileRole(userId: string): Promise<string> {
   try {
@@ -38,13 +39,15 @@ const NAV_LINKS = [
 ];
 
 export default async function MaisPage() {
-  const [user, supabase] = await Promise.all([
+  const supabase = await createClient();
+  const [user, { data: { user: authUser } }] = await Promise.all([
     getCurrentUserDisplay(),
-    createClient(),
+    supabase.auth.getUser(),
   ]);
 
-  const { data: { user: authUser } } = await supabase.auth.getUser();
   const role = authUser ? await getProfileRole(authUser.id) : 'admin';
+  const isAdmin = role === 'admin';
+  const aiConfigured = isAdmin ? await checkOpenAIConfigured() : false;
 
   const roleLabel: Record<string, string> = {
     admin: 'Admin', atelier: 'Atelier', viewer: 'Visualizador',
@@ -113,6 +116,26 @@ export default async function MaisPage() {
               ))}
             </Card>
           </div>
+
+          {/* Admin — Integração IA */}
+          {isAdmin && (
+            <Card pad={20}>
+              <div className="mb-5 flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-primary-soft text-primary">
+                  <Bot size={18} strokeWidth={1.5} />
+                </div>
+                <div>
+                  <p className="text-[13px] font-medium text-ink">Integração IA — OneTwo Assistant</p>
+                  <p className="text-[11px] text-ink-soft">Restrito ao administrador de TI</p>
+                </div>
+              </div>
+              <Divider className="mb-5" />
+              <SectionHead eyebrow="OpenAI" title="Chave de API" />
+              <div className="mt-3">
+                <AdminAIConfigForm isConfigured={aiConfigured} />
+              </div>
+            </Card>
+          )}
 
           {/* Sair */}
           <Card pad={20}>
