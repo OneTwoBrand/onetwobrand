@@ -4,28 +4,15 @@
  */
 'use client';
 
-import { useState } from 'react';
+import { useActionState } from 'react';
 import Image from 'next/image';
 import { Mail, Settings, ArrowRight } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-// import { createClient } from '@/lib/supabase/client';
+import { signInWithPassword } from './actions';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | undefined>();
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError(undefined);
-    // const supabase = createClient();
-    // const { error } = await supabase.auth.signInWithPassword({ email, password });
-    // if (error) setError(error.message);
-    setLoading(false);
-  }
+  const [state, formAction, pending] = useActionState(signInWithPassword, {});
 
   return (
     <main className="min-h-screen bg-bg flex flex-col px-7 py-8">
@@ -41,22 +28,20 @@ export default function LoginPage() {
       </div>
 
       {/* Form */}
-      <form onSubmit={onSubmit} className="flex flex-col gap-3.5">
+      <form action={formAction} className="flex flex-col gap-3.5">
         <Input
           label="E-mail"
+          name="email"
           type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
           icon={<Mail size={16} />}
           required
         />
         <Input
           label="Senha"
+          name="password"
           type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
           icon={<Settings size={16} />}
-          error={error}
+          error={state.error}
           required
         />
         <a href="/recuperar" className="text-right text-[11px] text-ink-soft tracking-[0.1em] uppercase -mt-1">
@@ -67,11 +52,11 @@ export default function LoginPage() {
           variant="primary"
           size="lg"
           block
-          disabled={loading}
+          disabled={pending}
           iconRight={<ArrowRight size={16} />}
           className="mt-3"
         >
-          {loading ? 'Entrando…' : 'Entrar'}
+          {pending ? 'Entrando...' : 'Entrar'}
         </Button>
         <div className="text-center text-[11px] text-ink-mute mt-2 font-mono">
           v1.0 · made for ONE TWO atelier
