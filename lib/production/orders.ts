@@ -20,6 +20,13 @@ export type ProductionOrderDetail = ProductionOrderListItem & {
   createdAt?: string;
 };
 
+export type OPHistoryEntry = {
+  id: string;
+  type: string;
+  note: string | null;
+  createdAt: string;
+};
+
 export const fallbackProductionOrders: ProductionOrderListItem[] = [
   {
     opNumber: '0241',
@@ -209,6 +216,45 @@ export async function getProductionOrderDetail(identifier: string): Promise<{
       error: error instanceof Error ? error.message : 'Erro desconhecido ao buscar OP.',
     };
   }
+}
+
+export async function getOPHistory(opId: string): Promise<OPHistoryEntry[]> {
+  if (!hasSupabasePublicEnv()) return [];
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('op_history')
+      .select('id, type, note, created_at')
+      .eq('op_id', opId)
+      .order('created_at', { ascending: false });
+    if (error || !data) return [];
+    return data.map((row) => ({
+      id: row.id,
+      type: row.type,
+      note: row.note,
+      createdAt: row.created_at,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function updateOPStatus(opId: string, newStatus: OPStatus, note?: string) {
+  if (!hasSupabasePublicEnv()) throw new Error('Supabase não configurado.');
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from('production_orders')
+    .update({ status: newStatus })
+    .eq('id', opId);
+
+  if (error) throw new Error(error.message);
+
+  await supabase.from('op_history').insert({
+    op_id: opId,
+    type: 'Sistema',
+    note: note ?? `Status alterado para ${newStatus}`,
+  });
 }
 
 async function findOrCreateClient(supabase: Awaited<ReturnType<typeof createClient>>, name: string) {
