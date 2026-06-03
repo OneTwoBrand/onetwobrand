@@ -167,3 +167,51 @@ export async function sendAccountStatusEmail({
     html: emailShell(content),
   });
 }
+
+// ── password reset email ───────────────────────────────────────
+export async function sendPasswordResetEmail({
+  to,
+  resetLink,
+}: {
+  to: string;
+  resetLink: string;
+}) {
+  const content = `
+    <p style="margin:0 0 6px;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#9E9688;">Recuperação de senha</p>
+    <h2 style="margin:0 0 24px;font-size:22px;font-weight:400;color:#1A1A1A;letter-spacing:0.04em;">Redefinir sua senha</h2>
+
+    <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#4A4540;">
+      Recebemos uma solicitação para redefinir a senha da sua conta no
+      <strong>ONE TWO Brand Manager</strong>.
+      Clique no botão abaixo para criar uma nova senha.
+    </p>
+
+    <p style="margin:0 0 28px;font-size:14px;line-height:1.6;color:#4A4540;">
+      O link é válido por <strong>1 hora</strong>.
+      Se você não solicitou a redefinição, ignore este e-mail — sua senha permanece a mesma.
+    </p>
+
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr><td align="center" style="padding-bottom:28px;">
+        <a href="${resetLink}"
+           style="display:inline-block;background:#1A1A1A;color:#F7F5F2;text-decoration:none;
+                  font-size:13px;letter-spacing:0.18em;text-transform:uppercase;
+                  padding:14px 36px;border-radius:100px;">
+          Redefinir senha
+        </a>
+      </td></tr>
+    </table>
+
+    <p style="margin:0;font-size:11px;color:#9E9688;line-height:1.6;">
+      Se o botão não funcionar, copie e cole este link no navegador:<br/>
+      <a href="${resetLink}" style="color:#9E9688;word-break:break-all;">${resetLink}</a>
+    </p>
+  `;
+
+  return resend.emails.send({
+    from: FROM,
+    to,
+    subject: 'Redefinir sua senha — ONE TWO Brand Manager',
+    html: emailShell(content),
+  });
+}
