@@ -14,6 +14,12 @@ export type ProductionOrderListItem = {
   status: OPStatus;
 };
 
+export type ProductionOrderDetail = ProductionOrderListItem & {
+  fabricUsed?: string;
+  embroideryNotes?: string;
+  createdAt?: string;
+};
+
 export const fallbackProductionOrders: ProductionOrderListItem[] = [
   {
     opNumber: '0241',
@@ -55,6 +61,12 @@ type ProductionOrderRow = {
   clients: RelatedRecord<{ name: string }>;
   pieces: RelatedRecord<{ name: string; fabric: string | null; color: string | null }>;
   seamstresses: RelatedRecord<{ name: string }>;
+};
+
+type ProductionOrderDetailRow = ProductionOrderRow & {
+  fabric_used: string | null;
+  embroidery_notes: string | null;
+  created_at: string;
 };
 
 function firstRelated<T>(value: RelatedRecord<T>): T | null {
@@ -128,6 +140,73 @@ export async function getProductionOrders(): Promise<{
       orders: fallbackProductionOrders,
       source: 'fallback',
       error: error instanceof Error ? error.message : 'Erro desconhecido ao buscar OPs.',
+    };
+  }
+}
+
+export async function getProductionOrderDetail(identifier: string): Promise<{
+  order: ProductionOrderDetail;
+  source: 'supabase' | 'fallback';
+  error?: string;
+}> {
+  const fallback =
+    fallbackProductionOrders.find((order) => order.opNumber === identifier) ??
+    fallbackProductionOrders[0];
+
+  if (!hasSupabasePublicEnv()) {
+    return { order: fallback, source: 'fallback' };
+  }
+
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('production_orders')
+      .select(`
+        id,
+        op_number,
+        qty,
+        due_date,
+        status,
+        fabric_used,
+        embroidery_notes,
+        created_at,
+        clients(name),
+        pieces(name, fabric, color),
+        seamstresses(name)
+      `)
+      .or(`op_number.eq.${identifier},id.eq.${identifier}`)
+      .maybeSingle();
+
+    if (error || !data) {
+      return { order: fallback, source: 'fallback', error: error?.message };
+    }
+
+    const row = data as ProductionOrderDetailRow;
+    const client = firstRelated(row.clients);
+    const piece = firstRelated(row.pieces);
+    const seamstress = firstRelated(row.seamstresses);
+
+    return {
+      source: 'supabase',
+      order: {
+        id: row.id,
+        opNumber: row.op_number,
+        productName: formatPieceName(piece),
+        clientName: client?.name ?? 'Cliente sem cadastro',
+        qty: row.qty,
+        seamstressName: seamstress?.name,
+        dueDate: row.due_date,
+        status: row.status,
+        fabricUsed: row.fabric_used ?? undefined,
+        embroideryNotes: row.embroidery_notes ?? undefined,
+        createdAt: row.created_at,
+      },
+    };
+  } catch (error) {
+    return {
+      order: fallback,
+      source: 'fallback',
+      error: error instanceof Error ? error.message : 'Erro desconhecido ao buscar OP.',
     };
   }
 }
