@@ -5,12 +5,24 @@
 import { type ReactNode } from 'react';
 import { Sidebar, BottomNav } from '@/components/layout/Navigation';
 import { ToastProvider } from '@/components/ui/Overlays';
+import { createClient } from '@/lib/supabase/server';
 
-export default function AppLayout({ children }: { children: ReactNode }) {
+export default async function AppLayout({ children }: { children: ReactNode }) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const displayName =
+    user?.user_metadata?.full_name ||
+    user?.user_metadata?.name ||
+    user?.email?.split('@')[0] ||
+    'Usuário';
+
+  const displayEmail = user?.email ?? '';
+
   return (
     <ToastProvider>
       <div className="min-h-screen bg-bg flex">
-        <Sidebar expanded />
+        <Sidebar expanded userName={displayName} userEmail={displayEmail} />
         <div className="flex-1 flex flex-col min-h-screen">
           {children}
           <footer className="pb-24 md:pb-6 pt-4 text-center">

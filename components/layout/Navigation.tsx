@@ -11,8 +11,9 @@ import { type ReactNode } from 'react';
 import {
   Home, Scissors, ShoppingCart, Package, MoreHorizontal,
   Gem, User, CircleDollarSign, BarChart3, ChevronLeft, ChevronRight,
-  Bot,
+  Bot, LogOut,
 } from 'lucide-react';
+import { signOut } from '@/app/(auth)/logout/actions';
 import { cn } from '@/lib/utils';
 import { Avatar } from '../ui/Primitives';
 
@@ -68,7 +69,17 @@ const sidebarItems = [
   { href: '/assistant',   label: 'OneTwo Assistant', Icon: Bot },
 ];
 
-export function Sidebar({ expanded = true, onToggle }: { expanded?: boolean; onToggle?: () => void }) {
+export function Sidebar({
+  expanded = true,
+  onToggle,
+  userName,
+  userEmail,
+}: {
+  expanded?: boolean;
+  onToggle?: () => void;
+  userName?: string;
+  userEmail?: string;
+}) {
   const pathname = usePathname();
   return (
     <aside
@@ -116,18 +127,32 @@ export function Sidebar({ expanded = true, onToggle }: { expanded?: boolean; onT
       <div className="mt-auto">
         <div className="h-px bg-line my-3 mx-1" />
         <div className={cn('flex items-center gap-3', expanded ? 'px-2.5 py-2' : 'p-2 justify-center')}>
-          <Avatar name="Ana Toledo" size={32} tone="primary" />
+          <Avatar name={userName || 'U'} size={32} tone="primary" />
           {expanded && (
             <div className="flex-1 min-w-0">
-              <div className="text-[12px] text-ink font-medium truncate">Ana Toledo</div>
-              <div className="text-[10px] text-ink-soft">Atelier · Admin</div>
+              <div className="text-[12px] text-ink font-medium truncate">{userName || 'Usuário'}</div>
+              <div className="text-[10px] text-ink-soft truncate">{userEmail || ''}</div>
             </div>
           )}
         </div>
+        <form action={signOut}>
+          <button
+            type="submit"
+            title="Sair"
+            className={cn(
+              'w-full flex items-center gap-2 rounded-xl transition-colors text-ink-soft hover:bg-ink/[0.04]',
+              expanded ? 'px-3 py-2.5' : 'p-2.5 justify-center'
+            )}
+          >
+            <LogOut size={16} strokeWidth={1.5} />
+            {expanded && <span className="text-[12px]">Sair</span>}
+          </button>
+        </form>
         {onToggle && (
           <button
+            type="button"
             onClick={onToggle}
-            className="mt-2 w-full flex items-center justify-center gap-1.5 h-8 rounded-lg text-ink-soft hover:bg-ink/[0.04] text-[10px] tracking-[0.18em] uppercase"
+            className="mt-1 w-full flex items-center justify-center gap-1.5 h-8 rounded-lg text-ink-soft hover:bg-ink/[0.04] text-[10px] tracking-[0.18em] uppercase"
           >
             {expanded ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
             {expanded && 'Colapsar'}
