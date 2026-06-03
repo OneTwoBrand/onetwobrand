@@ -1,26 +1,94 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ot-bg: #f1e0a8;
+  --ot-surface: #f7eac0;
+  --ot-surface-warm: #faf1d4;
+  --ot-paper: #fbf6e4;
+  --ot-ink: #3d1a1a;
+  --ot-ink-soft: #6b5a47;
+  --ot-ink-mute: #9c8b73;
+  --ot-line: rgba(61, 26, 26, 0.12);
+  --ot-line-soft: rgba(61, 26, 26, 0.06);
+  --ot-primary: #6f1628;
+  --ot-primary-hover: #8a2035;
+  --ot-primary-soft: rgba(111, 22, 40, 0.08);
+  --ot-secondary: #cbb67b;
+  --ot-secondary-soft: rgba(203, 182, 123, 0.25);
+  --ot-success: #738a63;
+  --ot-success-soft: rgba(115, 138, 99, 0.18);
+  --ot-warning: #c88b5a;
+  --ot-warning-soft: rgba(200, 139, 90, 0.18);
+  --ot-danger: #9a3434;
+  --ot-danger-soft: rgba(154, 52, 52, 0.14);
+  --ot-shadow-1: 0 1px 2px rgba(61, 26, 26, 0.04), 0 1px 3px rgba(61, 26, 26, 0.03);
+  --ot-shadow-2: 0 4px 14px rgba(61, 26, 26, 0.06), 0 1px 3px rgba(61, 26, 26, 0.04);
+  --ot-shadow-3: 0 12px 32px rgba(61, 26, 26, 0.1), 0 2px 8px rgba(61, 26, 26, 0.05);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--ot-bg);
+  --color-surface: var(--ot-surface);
+  --color-surface-warm: var(--ot-surface-warm);
+  --color-paper: var(--ot-paper);
+  --color-ink: var(--ot-ink);
+  --color-ink-soft: var(--ot-ink-soft);
+  --color-ink-mute: var(--ot-ink-mute);
+  --color-line: var(--ot-line);
+  --color-line-soft: var(--ot-line-soft);
+  --color-primary: var(--ot-primary);
+  --color-primary-hover: var(--ot-primary-hover);
+  --color-primary-soft: var(--ot-primary-soft);
+  --color-secondary: var(--ot-secondary);
+  --color-secondary-soft: var(--ot-secondary-soft);
+  --color-success: var(--ot-success);
+  --color-success-soft: var(--ot-success-soft);
+  --color-warning: var(--ot-warning);
+  --color-warning-soft: var(--ot-warning-soft);
+  --color-danger: var(--ot-danger);
+  --color-danger-soft: var(--ot-danger-soft);
+  --font-serif: var(--font-cormorant);
+  --font-sans: var(--font-montserrat);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --shadow-s1: var(--ot-shadow-1);
+  --shadow-s2: var(--ot-shadow-2);
+  --shadow-s3: var(--ot-shadow-3);
+  --tracking-tight-1: 0;
+  --tracking-wide-1: 0.14em;
+  --tracking-wide-2: 0.18em;
+  --tracking-wide-3: 0.24em;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  background: var(--ot-bg);
+  color: var(--ot-ink);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  font-family: var(--font-montserrat), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.safe-pt {
+  padding-top: max(8px, env(safe-area-inset-top));
 }
