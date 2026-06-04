@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { Heart, ShoppingBag, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCartStore } from '@/lib/shop/cart-store';
+import { useFavoritesStore } from '@/lib/shop/favorites-store';
 import type { ShopProductDetail } from '@/lib/shop/catalog';
 
 interface AddToCartButtonProps {
@@ -21,6 +22,8 @@ export function AddToCartButton({ product }: AddToCartButtonProps) {
   const [added, setAdded]       = useState(false);
   const router   = useRouter();
   const addItem  = useCartStore((s) => s.addItem);
+  const { isFavorited, toggleFavorite } = useFavoritesStore();
+  const favorited = isFavorited(product.pieceId);
 
   const { allSizes, availableSizes, isSoldOut } = product;
 
@@ -73,10 +76,23 @@ export function AddToCartButton({ product }: AddToCartButtonProps) {
         <div className="flex gap-2.5 items-stretch">
           <button
             type="button"
-            aria-label="Salvar nos favoritos"
-            className="w-[52px] h-[52px] shrink-0 rounded-full border border-line flex items-center justify-center text-ink hover:bg-ink/5 transition-colors"
+            aria-label={favorited ? 'Remover dos favoritos' : 'Salvar nos favoritos'}
+            onClick={() => toggleFavorite({
+              pieceId:        product.pieceId,
+              slug:           product.slug,
+              name:           product.name,
+              photoUrl:       product.photoUrl,
+              price:          product.price,
+              collectionName: product.collectionName,
+            })}
+            className={cn(
+              'w-[52px] h-[52px] shrink-0 rounded-full border flex items-center justify-center transition-colors',
+              favorited
+                ? 'bg-primary border-primary text-paper'
+                : 'border-line text-ink hover:bg-ink/5'
+            )}
           >
-            <Heart size={20} strokeWidth={1.5} />
+            <Heart size={20} strokeWidth={1.5} fill={favorited ? 'currentColor' : 'none'} />
           </button>
 
           <button

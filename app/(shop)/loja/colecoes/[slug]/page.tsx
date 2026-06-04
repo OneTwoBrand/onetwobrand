@@ -12,7 +12,7 @@ import {
   getShopProducts,
   getAllCollectionSlugs,
 } from '@/lib/shop/catalog';
-import { ProductCard } from '@/components/shop/ProductCard';
+import { FavoriteProductGrid } from '@/components/shop/FavoriteProductGrid';
 import { CollectionFilters } from './CollectionFilters';
 
 export const revalidate = 600;
@@ -138,11 +138,7 @@ export default async function ColecaoPage({ params, searchParams }: PageProps) {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-5">
-          {filtered.map((product) => (
-            <ProductCard key={product.pieceId} product={product} />
-          ))}
-        </div>
+        <FavoriteProductGrid products={filtered} />
       )}
     </div>
   );

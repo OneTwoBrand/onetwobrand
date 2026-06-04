@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Card, SectionHead, Divider } from '@/components/ui/Primitives';
 import { getReportsSummary, getShopKpis } from '@/lib/app-data';
 import { brl } from '@/lib/utils';
+import { ExportButton } from './ExportButton';
 
 const PAYMENT_LABEL: Record<string, string> = {
   pix: 'PIX', card: 'Cartão', cash: 'Dinheiro', transfer: 'Transferência',
@@ -35,6 +36,14 @@ export default async function RelatoriosPage() {
       <main className="flex-1 px-5 pb-28 pt-3 md:px-9 md:py-8">
         <section className="mx-auto max-w-5xl space-y-6">
           <DataNotice source={source} error={error} />
+
+          {/* Exportar CSV */}
+          <div className="flex flex-wrap gap-2">
+            <ExportButton tipo="vendas" />
+            <ExportButton tipo="producao" />
+            <ExportButton tipo="bordagem" />
+            <ExportButton tipo="estoque-baixo" />
+          </div>
 
           {/* KPIs do mês */}
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">

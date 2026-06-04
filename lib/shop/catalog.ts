@@ -182,6 +182,7 @@ export async function getShopCollections(): Promise<{
 export async function getShopProducts(opts?: {
   collectionSlug?: string;
   featuredOnly?: boolean;
+  query?: string;
 }): Promise<{
   products: ShopProductDetail[];
   source: 'supabase' | 'fallback';
@@ -208,6 +209,13 @@ export async function getShopProducts(opts?: {
         .maybeSingle();
       if (!col) return { products: [], source: 'supabase' };
       pieceQuery = pieceQuery.eq('collection_id', col.id);
+    }
+
+    if (opts?.query) {
+      const q = opts.query.trim();
+      pieceQuery = pieceQuery.or(
+        `name.ilike.%${q}%,description.ilike.%${q}%,fabric.ilike.%${q}%,color.ilike.%${q}%,category.ilike.%${q}%`
+      );
     }
 
     const { data: pieceIds, error: pieceErr } = await pieceQuery;
