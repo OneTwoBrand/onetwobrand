@@ -5,6 +5,7 @@
  * Esgotadas ficam visíveis com opacity reduzida.
  */
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import {
@@ -116,13 +117,15 @@ export default async function ColecaoPage({ params, searchParams }: PageProps) {
       )}
 
       {/* ── Filtros ───────────────────────────────────────── */}
-      <CollectionFilters
-        sizes={allSizes}
-        categories={allCategories}
-        availableCount={availableCount}
-        totalCount={products.length}
-        activeFilters={filters}
-      />
+      <Suspense>
+        <CollectionFilters
+          sizes={allSizes}
+          categories={allCategories}
+          availableCount={availableCount}
+          totalCount={products.length}
+          activeFilters={filters}
+        />
+      </Suspense>
 
       {/* ── Grid de produtos ──────────────────────────────── */}
       {filtered.length === 0 ? (

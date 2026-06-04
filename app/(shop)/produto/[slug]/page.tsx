@@ -4,6 +4,7 @@
  * Galeria swipeable, seleção de tamanho, sticky dock CTA.
  */
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
@@ -11,9 +12,9 @@ import {
   getShopProductBySlug,
   getAllProductSlugs,
 } from '@/lib/shop/catalog';
-import { getPlatformConfig } from '@/lib/platform-config';
 import { Gallery } from '@/components/shop/Gallery';
 import { AddToCartButton } from './AddToCartButton';
+import { DeliveryMessage } from './DeliveryMessage';
 import { brl } from '@/lib/utils';
 
 export const revalidate = 300;
@@ -47,10 +48,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ProdutoPage({ params }: PageProps) {
   const { slug } = await params;
-  const [{ product }, deliveryMessage] = await Promise.all([
-    getShopProductBySlug(slug),
-    getPlatformConfig('shop_delivery_message'),
-  ]);
+  const { product } = await getShopProductBySlug(slug);
 
   if (!product) notFound();
 
@@ -183,7 +181,9 @@ export default async function ProdutoPage({ params }: PageProps) {
             <div>
               <div className="text-[12px] font-medium text-ink">Feita à mão sob demanda</div>
               <div className="text-[11px] text-ink-soft mt-0.5 leading-[1.5]">
-                {deliveryMessage ?? 'Cada peça é produzida no atelier ONE TWO após o pedido confirmado.'}
+                <Suspense fallback="Cada peça é produzida no atelier ONE TWO após o pedido confirmado.">
+                  <DeliveryMessage />
+                </Suspense>
               </div>
             </div>
           </div>
