@@ -111,18 +111,37 @@ export default async function LojaPage({ searchParams }: PageProps) {
         />
 
         {displayProducts.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-16">
-            <div className="w-14 h-14 rounded-full bg-surface flex items-center justify-center">
-              <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6 text-ink-mute" stroke="currentColor" strokeWidth={1.5}>
-                <path d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
-              </svg>
-            </div>
-            <p className="font-serif text-[18px] text-ink">
-              {query ? 'Nenhuma peça encontrada.' : 'Em breve, novas peças.'}
-            </p>
-            <p className="text-[12px] text-ink-soft text-center max-w-[200px] leading-[1.55]">
-              {query ? 'Tente outro termo ou explore as coleções.' : 'Estamos preparando a nova coleção.'}
-            </p>
+          <div className="flex flex-col items-center gap-4 py-20 text-center">
+            <svg aria-hidden viewBox="0 0 64 64" fill="none" className="w-12 h-12 text-primary/20 mb-2">
+              <rect x="32" y="2" width="42" height="42" rx="3" transform="rotate(45 32 2)" stroke="currentColor" strokeWidth="1.2" />
+            </svg>
+            {query ? (
+              <>
+                <p className="font-serif text-[28px] font-light text-ink leading-tight">
+                  Nenhuma peça<br />com esse nome.
+                </p>
+                <p className="text-[12px] text-ink-soft max-w-xs leading-[1.7]">
+                  Tente palavras como o tecido, a cor ou a categoria —<br />
+                  ou explore nossas coleções.
+                </p>
+                <Link
+                  href="/loja/colecoes"
+                  className="mt-2 h-11 px-7 rounded-full border border-line text-[11px] font-medium tracking-[0.18em] uppercase text-ink hover:bg-ink/5 transition-colors flex items-center"
+                >
+                  Ver coleções
+                </Link>
+              </>
+            ) : (
+              <>
+                <p className="font-serif text-[28px] font-light text-ink leading-tight">
+                  Peças chegando<br />em breve.
+                </p>
+                <p className="text-[12px] text-ink-soft max-w-xs leading-[1.7]">
+                  O atelier está em produção. Cada peça é feita à mão
+                  e chegará aqui quando estiver pronta.
+                </p>
+              </>
+            )}
           </div>
         ) : (
           <FavoriteProductGrid products={displayProducts} />

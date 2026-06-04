@@ -25,10 +25,16 @@ export default async function ColecoesShopPage() {
       <SectionHead eyebrow="Portfólio" title="Coleções" />
 
       {collections.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 py-16">
-          <p className="font-serif text-[18px] text-ink">Em breve, novas coleções.</p>
-          <p className="text-[12px] text-ink-soft text-center max-w-[200px] leading-[1.55]">
-            Estamos preparando a próxima temporada.
+        <div className="flex flex-col items-center gap-4 py-24 text-center">
+          <svg aria-hidden viewBox="0 0 64 64" fill="none" className="w-12 h-12 text-primary/20 mb-2">
+            <rect x="32" y="2" width="42" height="42" rx="3" transform="rotate(45 32 2)" stroke="currentColor" strokeWidth="1.2" />
+          </svg>
+          <p className="font-serif text-[28px] font-light text-ink leading-tight">
+            Uma nova temporada<br />está a caminho.
+          </p>
+          <p className="text-[12px] text-ink-soft max-w-[240px] leading-[1.7]">
+            Nossas costureiras estão trabalhando com cuidado em cada peça.
+            Em breve, as coleções estarão disponíveis aqui.
           </p>
         </div>
       ) : (

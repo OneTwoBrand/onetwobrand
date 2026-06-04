@@ -129,15 +129,19 @@ export default async function ColecaoPage({ params, searchParams }: PageProps) {
 
       {/* ── Grid de produtos ──────────────────────────────── */}
       {filtered.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 py-16">
-          <div className="w-14 h-14 rounded-full bg-surface flex items-center justify-center">
-            <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6 text-ink-mute" stroke="currentColor" strokeWidth={1.5}>
-              <path d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5" />
-            </svg>
-          </div>
-          <p className="font-serif text-[18px] text-ink">Coleção esgotada por enquanto.</p>
-          <p className="text-[12px] text-ink-soft text-center max-w-[200px] leading-[1.55]">
-            Novos exemplares chegam em breve.
+        <div className="flex flex-col items-center gap-4 py-20 text-center">
+          <svg aria-hidden viewBox="0 0 64 64" fill="none" className="w-12 h-12 text-primary/20 mb-2">
+            <rect x="32" y="2" width="42" height="42" rx="3" transform="rotate(45 32 2)" stroke="currentColor" strokeWidth="1.2" />
+          </svg>
+          <p className="font-serif text-[28px] font-light text-ink leading-tight">
+            {filters.tamanho || filters.categoria || filters.disponivel
+              ? 'Nenhuma peça\ncom esse filtro.'
+              : 'Cada peça desta\ncoleção encontrou seu lar.'}
+          </p>
+          <p className="text-[12px] text-ink-soft max-w-xs leading-[1.7]">
+            {filters.tamanho || filters.categoria || filters.disponivel
+              ? 'Tente remover os filtros para ver mais opções.'
+              : 'Uma nova tiragem está sendo preparada. Volte em breve.'}
           </p>
         </div>
       ) : (
