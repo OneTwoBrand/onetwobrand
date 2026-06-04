@@ -9,15 +9,22 @@ import { Button } from '@/components/ui/Button';
 import { Select, Textarea } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Primitives';
-import type { CollectionOption } from '@/lib/catalog-data';
+import type { CatalogStockItem, CollectionOption } from '@/lib/catalog-data';
 import type { WorkflowConfig } from '@/lib/workflow-config';
-import { createProduct } from './actions';
+import { createProduct, updateProduct } from './actions';
 
 type UploadState = 'idle' | 'uploading' | 'enhancing' | 'done' | 'error';
 type PhotoField = 'photo_url' | 'back_photo_url' | 'detail_photo_url';
 type PhotoFit = { zoom: number; offsetX: number; offsetY: number };
 
 const DEFAULT_FIT: PhotoFit = { zoom: 1, offsetX: 0, offsetY: 0 };
+
+type ProductFormProps = {
+  collections: CollectionOption[];
+  workflowConfig: WorkflowConfig;
+  product?: CatalogStockItem;
+  mode?: 'create' | 'edit';
+};
 
 function fitFormData(file: File, fit: PhotoFit) {
   const fd = new FormData();
@@ -28,19 +35,25 @@ function fitFormData(file: File, fit: PhotoFit) {
   return fd;
 }
 
-export function ProductForm({ collections, workflowConfig }: { collections: CollectionOption[]; workflowConfig: WorkflowConfig }) {
+export function ProductForm({ collections, workflowConfig, product, mode = 'create' }: ProductFormProps) {
   const router = useRouter();
-  const [state, formAction, pending] = useActionState(createProduct, {});
+  const isEdit = mode === 'edit';
+  const [state, formAction, pending] = useActionState(isEdit ? updateProduct : createProduct, {});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const activeFieldRef = useRef<PhotoField>('photo_url');
 
-  const [photos, setPhotos] = useState<Record<PhotoField, string>>({ photo_url: '', back_photo_url: '', detail_photo_url: '' });
+  const [photos, setPhotos] = useState<Record<PhotoField, string>>({
+    photo_url: product?.photoUrl ?? '',
+    back_photo_url: product?.backPhotoUrl ?? '',
+    detail_photo_url: product?.detailPhotoUrl ?? '',
+  });
   const [photoFiles, setPhotoFiles] = useState<Record<PhotoField, File | null>>({ photo_url: null, back_photo_url: null, detail_photo_url: null });
   const [photoFits, setPhotoFits] = useState<Record<PhotoField, PhotoFit>>({ photo_url: DEFAULT_FIT, back_photo_url: DEFAULT_FIT, detail_photo_url: DEFAULT_FIT });
   const [uploadState, setUploadState] = useState<UploadState>('idle');
   const [uploadError, setUploadError] = useState('');
-  const [productName, setProductName] = useState('');
-  const [color, setColor] = useState('');
+  const [productName, setProductName] = useState(product?.name ?? '');
+  const [color, setColor] = useState(product?.color ?? '');
+  const title = isEdit ? 'Editar Produto' : 'Novo Produto';
 
   async function handleFile(file: File) {
     const field = activeFieldRef.current;
@@ -113,11 +126,17 @@ export function ProductForm({ collections, workflowConfig }: { collections: Coll
 
   return (
     <>
-      <AppBar title="Novo Produto" back onBack={() => router.back()} />
-      <Topbar eyebrow="Estoque" title="Novo Produto" />
+      <AppBar title={title} back onBack={() => router.back()} />
+      <Topbar eyebrow="Estoque" title={title} />
       <main className="flex-1 px-5 pb-28 pt-4 md:px-9 md:py-8">
         <div className="mx-auto max-w-3xl">
           <form action={formAction} className="space-y-4">
+            {isEdit && (
+              <>
+                <input type="hidden" name="stock_item_id" value={product?.id ?? ''} />
+                <input type="hidden" name="piece_id" value={product?.pieceId ?? ''} />
+              </>
+            )}
             <input type="hidden" name="photo_url" value={photos.photo_url} />
             <input type="hidden" name="back_photo_url" value={photos.back_photo_url} />
             <input type="hidden" name="detail_photo_url" value={photos.detail_photo_url} />
@@ -193,50 +212,64 @@ export function ProductForm({ collections, workflowConfig }: { collections: Coll
               <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft">Identificação</p>
               <div className="grid gap-3 md:grid-cols-2">
                 <Input name="name" label="Nome do produto *" placeholder="Ex: Vestido Lis" required value={productName} onChange={(e) => setProductName(e.target.value)} />
-                <Select name="collection_id" label="Coleção">
+                <Select name="collection_id" label="Coleção" defaultValue={product?.collectionId ?? ''}>
                   <option value="">Sem coleção</option>
                   {collections.map((collection) => (
                     <option key={collection.id} value={collection.id}>{collection.name}</option>
                   ))}
                 </Select>
-                <Select name="category" label="Categoria">
+                <Select name="category" label="Categoria" defaultValue={product?.category ?? ''}>
                   <option value="">Selecione</option>
                   {workflowConfig.product_categories.map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                   <option value="__outro__">Outro…</option>
                 </Select>
-                <Select name="fabric" label="Tecido">
+                <Select name="fabric" label="Tecido" defaultValue={product?.fabric ?? ''}>
                   <option value="">Selecione</option>
                   {workflowConfig.product_fabrics.map((f) => (
                     <option key={f} value={f}>{f}</option>
                   ))}
                   <option value="__outro__">Outro…</option>
                 </Select>
-                <Select name="color" label="Cor" onChange={(e) => setColor(e.target.value)}>
+                <Select name="color" label="Cor" value={color} onChange={(e) => setColor(e.target.value)}>
                   <option value="">Selecione</option>
                   {workflowConfig.product_colors.map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                   <option value="__outro__">Outro…</option>
                 </Select>
-                <Select name="size" label="Tamanho">
+                <Select name="size" label="Tamanho" defaultValue={product?.size ?? workflowConfig.product_sizes[0]}>
                   {workflowConfig.product_sizes.map((s) => (
                     <option key={s} value={s}>{s}</option>
                   ))}
                   <option value="__outro__">Outro…</option>
                 </Select>
               </div>
-              <Textarea className="mt-3" name="description" label="Descrição" placeholder="Descrição da peça, acabamento, bordado, coleção..." />
+              <Textarea className="mt-3" name="description" label="Descrição" placeholder="Descrição da peça, acabamento, bordado, coleção..." defaultValue={product?.description ?? ''} />
             </Card>
 
             <Card pad={20}>
               <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft">Preço e estoque</p>
               <div className="grid gap-3 md:grid-cols-4">
-                <Input name="cost_price" label="Custo" type="number" step="0.01" placeholder="0,00" />
-                <Input name="sale_price" label="Preço venda" type="number" step="0.01" placeholder="0,00" />
-                <Input name="quantity" label="Estoque *" type="number" min="0" placeholder="0" required />
-                <Input name="low_threshold" label="Mínimo" type="number" min="0" defaultValue="3" />
+                <Input name="cost_price" label="Custo" type="number" step="0.01" placeholder="0,00" defaultValue={product?.costPrice ?? ''} />
+                <Input name="sale_price" label="Preço venda" type="number" step="0.01" placeholder="0,00" defaultValue={product?.price ?? ''} />
+                <Input name="quantity" label="Estoque *" type="number" min="0" placeholder="0" required defaultValue={product?.quantity ?? ''} />
+                <Input name="low_threshold" label="Mínimo" type="number" min="0" defaultValue={product?.lowThreshold ?? 3} />
+              </div>
+            </Card>
+
+            <Card pad={20}>
+              <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft">Loja online</p>
+              <div className="grid gap-3 md:grid-cols-2">
+                <label className="flex min-h-12 items-center gap-3 rounded-[12px] border border-line bg-paper px-4 text-[13px] text-ink">
+                  <input name="published" type="checkbox" defaultChecked={Boolean(product?.published)} className="h-4 w-4 accent-primary" />
+                  Publicado na loja
+                </label>
+                <label className="flex min-h-12 items-center gap-3 rounded-[12px] border border-line bg-paper px-4 text-[13px] text-ink">
+                  <input name="featured" type="checkbox" defaultChecked={Boolean(product?.featured)} className="h-4 w-4 accent-primary" />
+                  Destaque
+                </label>
               </div>
             </Card>
 
@@ -244,7 +277,9 @@ export function ProductForm({ collections, workflowConfig }: { collections: Coll
 
             <div className="flex gap-3">
               <Button type="button" variant="secondary" onClick={() => router.back()} icon={<ChevronLeft size={14} />}>Voltar</Button>
-              <Button type="submit" block disabled={pending || uploadState === 'uploading' || uploadState === 'enhancing'}>{pending ? 'Salvando...' : 'Salvar produto'}</Button>
+              <Button type="submit" block disabled={pending || uploadState === 'uploading' || uploadState === 'enhancing'}>
+                {pending ? 'Salvando...' : isEdit ? 'Salvar alterações' : 'Salvar produto'}
+              </Button>
             </div>
           </form>
         </div>

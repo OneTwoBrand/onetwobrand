@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, History, Package, Plus, RotateCw, Search, SlidersHorizontal } from 'lucide-react';
+import { ArrowDown, ArrowUp, History, Package, Pencil, Plus, RotateCw, Search, SlidersHorizontal } from 'lucide-react';
 import Link from 'next/link';
 import { AppBar, Topbar } from '@/components/layout/Navigation';
 import { Button } from '@/components/ui/Button';
@@ -59,7 +59,15 @@ export default async function EstoquePage() {
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {products.map((product) => (
               <Card key={product.id} pad={14}>
-                <div className="mb-2 flex justify-end">
+                <div className="mb-2 flex justify-end gap-2">
+                  <Link
+                    href={`/estoque/${product.id}/editar`}
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-paper text-ink-soft transition-colors hover:border-primary hover:text-primary"
+                    aria-label={`Editar ${product.name}`}
+                    title={`Editar ${product.name}`}
+                  >
+                    <Pencil size={15} strokeWidth={1.7} />
+                  </Link>
                   <DeleteStockItemButton stockItemId={product.id} pieceId={product.pieceId} name={product.name} />
                 </div>
                 <div className="mb-3 flex aspect-[4/5] items-center justify-center rounded-[14px] border border-line bg-surface text-primary">

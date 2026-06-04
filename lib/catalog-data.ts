@@ -10,7 +10,9 @@ export type CollectionOption = {
 export type CatalogStockItem = {
   id: string;
   pieceId: string;
+  slug?: string | null;
   name: string;
+  collectionId?: string | null;
   collectionName?: string | null;
   category?: string | null;
   description?: string | null;
@@ -24,6 +26,8 @@ export type CatalogStockItem = {
   lowThreshold: number;
   costPrice: number;
   price: number;
+  published?: boolean;
+  featured?: boolean;
 };
 
 const fallbackCollections: CollectionOption[] = [
@@ -39,6 +43,25 @@ const fallbackProducts: CatalogStockItem[] = [
   { id: 'saia-margarida', pieceId: 'saia-margarida', name: 'Saia Margarida', collectionName: 'Casual', category: 'Saia', fabric: 'Linho', color: 'Rosé', size: 'G', quantity: 12, lowThreshold: 3, costPrice: 120, price: 380 },
 ];
 
+type PieceRow = {
+  id?: string;
+  slug: string | null;
+  name: string;
+  collection_id: string | null;
+  fabric: string | null;
+  color: string | null;
+  category: string | null;
+  description: string | null;
+  cost_price: number;
+  price: number;
+  photo_url: string | null;
+  back_photo_url: string | null;
+  detail_photo_url: string | null;
+  published: boolean;
+  featured: boolean;
+  collections: { id: string; name: string } | { id: string; name: string }[] | null;
+};
+
 type StockRow = {
   id: string;
   piece_id: string;
@@ -46,39 +69,40 @@ type StockRow = {
   color: string | null;
   quantity: number;
   low_threshold: number;
-  pieces:
-    | {
-        name: string;
-        fabric: string | null;
-        color: string | null;
-        category: string | null;
-        description: string | null;
-        cost_price: number;
-        price: number;
-        photo_url: string | null;
-        back_photo_url: string | null;
-        detail_photo_url: string | null;
-        collections: { name: string } | { name: string }[] | null;
-      }
-    | {
-        name: string;
-        fabric: string | null;
-        color: string | null;
-        category: string | null;
-        description: string | null;
-        cost_price: number;
-        price: number;
-        photo_url: string | null;
-        back_photo_url: string | null;
-        detail_photo_url: string | null;
-        collections: { name: string } | { name: string }[] | null;
-      }[]
-    | null;
+  pieces: PieceRow | PieceRow[] | null;
 };
 
 function firstRelated<T>(value: T | T[] | null): T | null {
   if (Array.isArray(value)) return value[0] ?? null;
   return value;
+}
+
+function mapStockRow(item: StockRow): CatalogStockItem {
+  const piece = firstRelated(item.pieces);
+  const collection = firstRelated(piece?.collections ?? null);
+
+  return {
+    id: item.id,
+    pieceId: item.piece_id,
+    slug: piece?.slug,
+    name: piece?.name ?? 'Produto',
+    collectionId: piece?.collection_id,
+    collectionName: collection?.name,
+    category: piece?.category,
+    description: piece?.description,
+    fabric: piece?.fabric,
+    color: item.color ?? piece?.color,
+    photoUrl: piece?.photo_url,
+    backPhotoUrl: piece?.back_photo_url,
+    detailPhotoUrl: piece?.detail_photo_url,
+    size: item.size,
+    quantity: item.quantity,
+    lowThreshold: item.low_threshold,
+    costPrice: Number(piece?.cost_price ?? 0),
+    price: Number(piece?.price ?? 0),
+    published: Boolean(piece?.published),
+    featured: Boolean(piece?.featured),
+  };
 }
 
 export async function getCollections(): Promise<{ collections: CollectionOption[]; source: 'supabase' | 'fallback'; error?: string }> {
@@ -115,7 +139,10 @@ export async function getCatalogStock(): Promise<{ products: CatalogStockItem[];
         quantity,
         low_threshold,
         pieces(
+          id,
+          slug,
           name,
+          collection_id,
           fabric,
           color,
           category,
@@ -125,7 +152,9 @@ export async function getCatalogStock(): Promise<{ products: CatalogStockItem[];
           photo_url,
           back_photo_url,
           detail_photo_url,
-          collections(name)
+          published,
+          featured,
+          collections(id, name)
         )
       `)
       .order('updated_at', { ascending: false });
@@ -134,30 +163,63 @@ export async function getCatalogStock(): Promise<{ products: CatalogStockItem[];
 
     return {
       source: 'supabase',
-      products: (data as StockRow[]).map((item) => {
-        const piece = firstRelated(item.pieces);
-        const collection = firstRelated(piece?.collections ?? null);
-        return {
-          id: item.id,
-          pieceId: item.piece_id,
-          name: piece?.name ?? 'Produto',
-          collectionName: collection?.name,
-          category: piece?.category,
-          description: piece?.description,
-          fabric: piece?.fabric,
-          color: item.color ?? piece?.color,
-          photoUrl: piece?.photo_url,
-          backPhotoUrl: piece?.back_photo_url,
-          detailPhotoUrl: piece?.detail_photo_url,
-          size: item.size,
-          quantity: item.quantity,
-          lowThreshold: item.low_threshold,
-          costPrice: Number(piece?.cost_price ?? 0),
-          price: Number(piece?.price ?? 0),
-        };
-      }),
+      products: (data as StockRow[]).map(mapStockRow),
     };
   } catch (error) {
     return { products: fallbackProducts, source: 'fallback', error: error instanceof Error ? error.message : 'Erro ao buscar produtos.' };
+  }
+}
+
+export async function getCatalogStockItem(stockItemId: string): Promise<{
+  product: CatalogStockItem | null;
+  source: 'supabase' | 'fallback';
+  error?: string;
+}> {
+  if (!hasSupabasePublicEnv()) {
+    return {
+      source: 'fallback',
+      product: fallbackProducts.find((product) => product.id === stockItemId) ?? null,
+    };
+  }
+
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('stock_items')
+      .select(`
+        id,
+        piece_id,
+        size,
+        color,
+        quantity,
+        low_threshold,
+        pieces(
+          id,
+          slug,
+          name,
+          collection_id,
+          fabric,
+          color,
+          category,
+          description,
+          cost_price,
+          price,
+          photo_url,
+          back_photo_url,
+          detail_photo_url,
+          published,
+          featured,
+          collections(id, name)
+        )
+      `)
+      .eq('id', stockItemId)
+      .maybeSingle();
+
+    if (error) return { product: null, source: 'supabase', error: error.message };
+    if (!data) return { product: null, source: 'supabase' };
+
+    return { product: mapStockRow(data as StockRow), source: 'supabase' };
+  } catch (error) {
+    return { product: null, source: 'supabase', error: error instanceof Error ? error.message : 'Erro ao buscar produto.' };
   }
 }
