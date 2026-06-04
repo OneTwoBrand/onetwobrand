@@ -9,11 +9,29 @@ import { Select } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Primitives';
 import type { ProductionOrderListItem } from '@/lib/production/orders';
+import type { SeamstressListItem } from '@/lib/app-data';
 import { createShipment } from './actions';
 
-export function ShipmentForm({ orders }: { orders: ProductionOrderListItem[] }) {
+export function ShipmentForm({
+  orders,
+  seamstresses,
+  shipmentCodes,
+  nextCode,
+  embroideryTypes,
+}: {
+  orders: ProductionOrderListItem[];
+  seamstresses: SeamstressListItem[];
+  shipmentCodes: string[];
+  nextCode: string;
+  embroideryTypes: string[];
+}) {
   const router = useRouter();
   const [state, formAction, pending] = useActionState(createShipment, {});
+  const recentCodes = shipmentCodes
+    .filter((code) => /^BD-\d+$/i.test(code))
+    .sort((a, b) => Number(b.replace(/\D/g, '')) - Number(a.replace(/\D/g, '')))
+    .slice(0, 3);
+  const noSeamstresses = seamstresses.length === 0;
 
   return (
     <>
@@ -25,9 +43,26 @@ export function ShipmentForm({ orders }: { orders: ProductionOrderListItem[] }) 
             <Card pad={20}>
               <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft">Remessa</p>
               <div className="space-y-3">
-                <Input name="code" label="Código da remessa *" placeholder="Ex: BD-119" required />
-                <Input name="seamstress_name" label="Costureira *" placeholder="Ex: Maria Helena" required />
-                <Input name="embroidery_type" label="Tipo de bordagem" placeholder="Ex: Ponto cruz, Richelieu…" />
+                <Input
+                  label="Código da remessa *"
+                  value={nextCode}
+                  readOnly
+                  hint={recentCodes.length ? `Gerado automaticamente. Últimas remessas: ${recentCodes.join(', ')}.` : 'Gerado automaticamente pela plataforma.'}
+                />
+                <Select name="seamstress_id" label="Costureira *" required disabled={noSeamstresses}>
+                  <option value="">{noSeamstresses ? 'Cadastre uma costureira primeiro' : 'Selecione'}</option>
+                  {seamstresses.map((seamstress) => (
+                    <option key={seamstress.id} value={seamstress.id}>
+                      {seamstress.name}
+                    </option>
+                  ))}
+                </Select>
+                <Select name="embroidery_type" label="Tipo de bordagem">
+                  <option value="">Selecione</option>
+                  {embroideryTypes.map((type) => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </Select>
                 <Input name="qty" label="Quantidade de peças *" type="number" min="1" placeholder="0" required />
                 <Select name="op_id" label="Vincular OP">
                   <option value="">Sem vínculo</option>
@@ -50,7 +85,7 @@ export function ShipmentForm({ orders }: { orders: ProductionOrderListItem[] }) 
             {state?.error && <p className="text-[12px] font-medium text-danger">{state.error}</p>}
             <div className="flex gap-3">
               <Button type="button" variant="secondary" onClick={() => router.back()} icon={<ChevronLeft size={14} />}>Voltar</Button>
-              <Button type="submit" block disabled={pending}>{pending ? 'Salvando...' : 'Salvar bordagem'}</Button>
+              <Button type="submit" block disabled={pending || noSeamstresses}>{pending ? 'Salvando...' : 'Salvar bordagem'}</Button>
             </div>
           </form>
         </div>

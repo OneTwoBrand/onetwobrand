@@ -10,6 +10,7 @@ import {
   OpStatusesForm,
   ProductionStepsForm,
   SeamstressRolesForm,
+  EmbroideryTypesForm,
 } from '../WorkflowConfigForms';
 
 async function requireAdmin() {
@@ -75,6 +76,13 @@ export default async function AtelierConfigPage() {
             <SectionHead eyebrow="Equipe" title="Funções de costureira" />
             <div className="mt-3">
               <SeamstressRolesForm config={config} />
+            </div>
+
+            <Divider className="my-6" />
+
+            <SectionHead eyebrow="Bordagem" title="Tipos de bordagem" />
+            <div className="mt-3">
+              <EmbroideryTypesForm config={config} />
             </div>
           </Card>
 

@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { hasSupabasePublicEnv } from '@/lib/env';
+import { getNextEmbroideryShipmentCode } from '@/lib/app-data';
+import { getWorkflowConfig } from '@/lib/workflow-config';
 
 export type ShipmentActionState = { error?: string };
 
@@ -11,8 +13,7 @@ export async function createShipment(
   _prev: ShipmentActionState,
   formData: FormData
 ): Promise<ShipmentActionState> {
-  const code = String(formData.get('code') ?? '').trim();
-  const seamstress_name = String(formData.get('seamstress_name') ?? '').trim();
+  const seamstress_id = String(formData.get('seamstress_id') ?? '').trim();
   const embroidery_type = String(formData.get('embroidery_type') ?? '').trim() || null;
   const qty = parseInt(String(formData.get('qty') ?? '0'), 10) || 0;
   const sent_at = String(formData.get('sent_at') ?? '').trim();
@@ -20,8 +21,7 @@ export async function createShipment(
   const value = Number.parseFloat(String(formData.get('value') ?? '0')) || 0;
   const op_id = String(formData.get('op_id') ?? '').trim() || null;
 
-  if (!code) return { error: 'Código é obrigatório.' };
-  if (!seamstress_name) return { error: 'Costureira é obrigatória.' };
+  if (!seamstress_id) return { error: 'Selecione uma costureira cadastrada.' };
   if (!qty || qty < 1) return { error: 'Quantidade deve ser ao menos 1.' };
   if (!sent_at) return { error: 'Data de envio é obrigatória.' };
   if (!expected_return_at) return { error: 'Previsão de retorno é obrigatória.' };
@@ -35,35 +35,30 @@ export async function createShipment(
 
   if (!user) return { error: 'Faça login para cadastrar bordagens.' };
 
-  const { data: existingSeamstress, error: findError } = await supabase
+  const { data: seamstress, error: seamstressError } = await supabase
     .from('seamstresses')
-    .select('id')
-    .eq('name', seamstress_name)
+    .select('id, active')
+    .eq('id', seamstress_id)
     .maybeSingle();
 
-  if (findError) return { error: findError.message };
-
-  let seamstressId = existingSeamstress?.id;
-
-  if (!seamstressId) {
-    const { data: newSeamstress, error: seamstressError } = await supabase
-      .from('seamstresses')
-      .insert({ name: seamstress_name, role: 'Bordadeira' })
-      .select('id')
-      .single();
-
-    if (seamstressError || !newSeamstress) {
-      return { error: seamstressError?.message ?? 'Erro ao criar costureira.' };
-    }
-
-    seamstressId = newSeamstress.id;
+  if (seamstressError) return { error: seamstressError.message };
+  if (!seamstress?.id || !seamstress.active) {
+    return { error: 'Selecione uma costureira ativa cadastrada.' };
   }
 
+  if (embroidery_type) {
+    const config = await getWorkflowConfig();
+    if (!config.embroidery_types.includes(embroidery_type)) {
+      return { error: 'Selecione um tipo de bordagem válido.' };
+    }
+  }
+
+  const code = await getNextEmbroideryShipmentCode();
   const { data: shipment, error } = await supabase
     .from('embroidery_shipments')
     .insert({
       code,
-      seamstress_id: seamstressId,
+      seamstress_id,
       qty,
       sent_at,
       expected_return_at,

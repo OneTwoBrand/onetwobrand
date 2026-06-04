@@ -423,6 +423,29 @@ export async function getEmbroideryShipments(): Promise<{ source: DataSource; sh
   }
 }
 
+export async function getNextEmbroideryShipmentCode(): Promise<string> {
+  if (!hasSupabasePublicEnv()) return 'BD-119';
+
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('embroidery_shipments')
+      .select('code')
+      .like('code', 'BD-%');
+
+    if (error || !data) return 'BD-119';
+
+    const lastNumber = data.reduce((max, item) => {
+      const match = String(item.code ?? '').match(/^BD-(\d+)$/i);
+      return match ? Math.max(max, Number(match[1])) : max;
+    }, 0);
+
+    return `BD-${String(lastNumber + 1).padStart(3, '0')}`;
+  } catch {
+    return 'BD-119';
+  }
+}
+
 type SeamstressRow = {
   id: string;
   name: string;

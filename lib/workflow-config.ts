@@ -35,6 +35,14 @@ export const DEFAULT_SEAMSTRESS_ROLES = [
   'Atelier · QA',
 ];
 
+export const DEFAULT_EMBROIDERY_TYPES = [
+  'Ponto cruz',
+  'Richelieu',
+  'Floral à mão',
+  'Aplicação',
+  'Personalizada',
+];
+
 export const DEFAULT_PRODUCT_SIZES = ['PP', 'P', 'M', 'G', 'GG', 'Único'];
 
 export const DEFAULT_PRODUCT_FABRICS = [
@@ -54,6 +62,7 @@ export type WorkflowConfigKey =
   | 'production_steps'
   | 'payment_methods'
   | 'seamstress_roles'
+  | 'embroidery_types'
   | 'product_sizes'
   | 'product_fabrics'
   | 'product_categories'
@@ -66,6 +75,7 @@ export type WorkflowConfig = {
   production_steps: string[];
   payment_methods: PaymentMethod[];
   seamstress_roles: string[];
+  embroidery_types: string[];
   product_sizes: string[];
   product_fabrics: string[];
   product_categories: string[];
@@ -89,6 +99,7 @@ export async function getWorkflowConfig(): Promise<WorkflowConfig> {
       production_steps:   (map.get('production_steps') as string[])       ?? DEFAULT_PRODUCTION_STEPS,
       payment_methods:    (map.get('payment_methods') as PaymentMethod[]) ?? DEFAULT_PAYMENT_METHODS,
       seamstress_roles:   (map.get('seamstress_roles') as string[])       ?? DEFAULT_SEAMSTRESS_ROLES,
+      embroidery_types:   (map.get('embroidery_types') as string[])       ?? DEFAULT_EMBROIDERY_TYPES,
       product_sizes:      (map.get('product_sizes') as string[])          ?? DEFAULT_PRODUCT_SIZES,
       product_fabrics:    (map.get('product_fabrics') as string[])        ?? DEFAULT_PRODUCT_FABRICS,
       product_categories: (map.get('product_categories') as string[])     ?? DEFAULT_PRODUCT_CATEGORIES,
@@ -105,6 +116,7 @@ function getDefaults(): WorkflowConfig {
     production_steps:   DEFAULT_PRODUCTION_STEPS,
     payment_methods:    DEFAULT_PAYMENT_METHODS,
     seamstress_roles:   DEFAULT_SEAMSTRESS_ROLES,
+    embroidery_types:   DEFAULT_EMBROIDERY_TYPES,
     product_sizes:      DEFAULT_PRODUCT_SIZES,
     product_fabrics:    DEFAULT_PRODUCT_FABRICS,
     product_categories: DEFAULT_PRODUCT_CATEGORIES,

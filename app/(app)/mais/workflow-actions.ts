@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
-import { setWorkflowConfig, type WorkflowConfigKey } from '@/lib/workflow-config';
+import { setWorkflowConfig } from '@/lib/workflow-config';
 
 type State = { error?: string; success?: string };
 
@@ -89,6 +89,22 @@ export async function saveSeamstressRoles(_prev: State, formData: FormData): Pro
     revalidatePath('/mais');
     revalidatePath('/costureiras');
     return { success: 'Funções de costureira salvas.' };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Erro ao salvar.' };
+  }
+}
+
+export async function saveEmbroideryTypes(_prev: State, formData: FormData): Promise<State> {
+  try {
+    const userId = await getAdminUserId();
+    const raw = String(formData.get('embroidery_types') ?? '');
+    const list = parseLines(raw);
+    if (list.length < 1) return { error: 'Informe ao menos 1 tipo de bordagem.' };
+    await setWorkflowConfig('embroidery_types', list, userId);
+    revalidatePath('/mais');
+    revalidatePath('/bordagem');
+    revalidatePath('/producao');
+    return { success: 'Tipos de bordagem salvos.' };
   } catch (e) {
     return { error: e instanceof Error ? e.message : 'Erro ao salvar.' };
   }

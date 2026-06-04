@@ -9,6 +9,7 @@ import {
   saveProductionSteps,
   savePaymentMethods,
   saveSeamstressRoles,
+  saveEmbroideryTypes,
   saveProductSizes,
   saveProductFabrics,
   saveProductCategories,
@@ -129,6 +130,25 @@ export function SeamstressRolesForm({ config }: { config: WorkflowConfig }) {
       <FormFeedback state={state} />
       <Button type="submit" size="sm" disabled={pending} block>
         {pending ? 'Salvando…' : 'Salvar funções'}
+      </Button>
+    </form>
+  );
+}
+
+export function EmbroideryTypesForm({ config }: { config: WorkflowConfig }) {
+  const [state, action, pending] = useActionState<State, FormData>(saveEmbroideryTypes, {});
+  return (
+    <form action={action} className="space-y-4">
+      <SectionHead eyebrow="Bordagem" title="Tipos de bordagem" />
+      <ConfigField
+        name="embroidery_types"
+        label="Um tipo por linha"
+        hint="Opções exibidas no campo Tipo de bordagem ao cadastrar uma remessa."
+        defaultValue={config.embroidery_types.join('\n')}
+      />
+      <FormFeedback state={state} />
+      <Button type="submit" size="sm" disabled={pending} block>
+        {pending ? 'Salvando…' : 'Salvar tipos'}
       </Button>
     </form>
   );
