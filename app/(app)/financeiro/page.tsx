@@ -16,10 +16,14 @@ export default async function FinanceiroPage() {
   ]);
   const { summary, source, error } = financial;
 
+  const monthTitle = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' })
+    .format(new Date())
+    .replace(/^\w/, (c) => c.toUpperCase());
+
   return (
     <>
-      <AppBar large eyebrow="Financeiro" title="Junho 2026" />
-      <Topbar eyebrow="Financeiro" title="Junho 2026" />
+      <AppBar large eyebrow="Financeiro" title={monthTitle} />
+      <Topbar eyebrow="Financeiro" title={monthTitle} />
       <main className="flex-1 px-5 pb-28 pt-3 md:px-9 md:py-8">
         <section className="mx-auto max-w-5xl">
           <DataNotice source={source} error={error} />
