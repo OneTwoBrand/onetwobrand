@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import OpenAI, { toFile } from 'openai';
 import sharp from 'sharp';
 import { createClient } from '@/lib/supabase/server';
 import { hasSupabasePublicEnv } from '@/lib/env';
+import { getOpenAIKey } from '@/lib/platform-config';
 
 export const runtime = 'nodejs';
 
@@ -23,7 +25,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Faça login para refinar imagens.' }, { status: 401 });
     }
 
-    const { imageUrl } = (await request.json()) as { imageUrl: string };
+    const { imageUrl, productName, color } = (await request.json()) as {
+      imageUrl: string;
+      productName?: string;
+      color?: string;
+    };
 
     if (!imageUrl) {
       return NextResponse.json({ error: 'imageUrl é obrigatório.' }, { status: 400 });
@@ -35,9 +41,53 @@ export async function POST(request: NextRequest) {
     }
 
     const rawBuffer = Buffer.from(await response.arrayBuffer());
-    const webpBuffer = await sharp(rawBuffer)
+    const apiKey = await getOpenAIKey();
+    if (!apiKey) {
+      return NextResponse.json({
+        error: 'A integração com IA não está configurada. Solicite ao administrador que configure a chave OpenAI em Configurações.',
+      }, { status: 503 });
+    }
+
+    const promptParts = [
+      'Regenerate this ONE TWO product image preserving the same garment, silhouette, fabric texture, embroidery details, proportions, and color.',
+      'Keep it as a clean fashion product photograph for an online store, centered, natural light, neutral background, premium handcrafted look.',
+      'Do not invent a different product. Do not add text, logos, labels, mannequins, people, hands, watermarks, or extra objects.',
+      productName ? `Product name/context: ${productName}.` : '',
+      color ? `Dominant color to preserve: ${color}.` : '',
+    ].filter(Boolean).join(' ');
+
+    let generatedBuffer: Buffer | null = null;
+
+    try {
+      const openai = new OpenAI({ apiKey });
+      const imageFile = await toFile(rawBuffer, 'onetwo-product.webp', { type: 'image/webp' });
+      const result = await openai.images.edit({
+        model: 'gpt-image-1',
+        image: imageFile,
+        prompt: promptParts,
+        input_fidelity: 'high',
+        output_format: 'webp',
+        quality: 'medium',
+        size: '1024x1536',
+      });
+
+      const first = result.data?.[0];
+      if (first?.b64_json) {
+        generatedBuffer = Buffer.from(first.b64_json, 'base64');
+      } else if (first?.url) {
+        const generatedResponse = await fetch(first.url);
+        if (generatedResponse.ok) {
+          generatedBuffer = Buffer.from(await generatedResponse.arrayBuffer());
+        }
+      }
+    } catch {
+      generatedBuffer = null;
+    }
+
+    const sourceBuffer = generatedBuffer ?? rawBuffer;
+    const webpBuffer = await sharp(sourceBuffer)
       .rotate()
-      .resize(TARGET_W, TARGET_H, { fit: 'cover', position: 'attention' })
+      .resize(TARGET_W, TARGET_H, { fit: 'cover', position: 'center' })
       .modulate({ brightness: 1.03, saturation: 0.98 })
       .sharpen({ sigma: 0.8 })
       .webp({ quality: 88 })

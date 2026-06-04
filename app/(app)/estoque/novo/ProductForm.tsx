@@ -1,8 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useActionState, useRef, useState } from 'react';
-import { ChevronLeft, Sparkles, Upload, X } from 'lucide-react';
+import { useActionState, useRef, useState, type ReactNode } from 'react';
+import { ChevronLeft, Maximize2, MoveHorizontal, MoveVertical, RotateCcw, Sparkles, Upload, X } from 'lucide-react';
 import Image from 'next/image';
 import { AppBar, Topbar } from '@/components/layout/Navigation';
 import { Button } from '@/components/ui/Button';
@@ -15,6 +15,18 @@ import { createProduct } from './actions';
 
 type UploadState = 'idle' | 'uploading' | 'enhancing' | 'done' | 'error';
 type PhotoField = 'photo_url' | 'back_photo_url' | 'detail_photo_url';
+type PhotoFit = { zoom: number; offsetX: number; offsetY: number };
+
+const DEFAULT_FIT: PhotoFit = { zoom: 1, offsetX: 0, offsetY: 0 };
+
+function fitFormData(file: File, fit: PhotoFit) {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('zoom', String(fit.zoom));
+  fd.append('offsetX', String(fit.offsetX));
+  fd.append('offsetY', String(fit.offsetY));
+  return fd;
+}
 
 export function ProductForm({ collections, workflowConfig }: { collections: CollectionOption[]; workflowConfig: WorkflowConfig }) {
   const router = useRouter();
@@ -23,19 +35,20 @@ export function ProductForm({ collections, workflowConfig }: { collections: Coll
   const activeFieldRef = useRef<PhotoField>('photo_url');
 
   const [photos, setPhotos] = useState<Record<PhotoField, string>>({ photo_url: '', back_photo_url: '', detail_photo_url: '' });
+  const [photoFiles, setPhotoFiles] = useState<Record<PhotoField, File | null>>({ photo_url: null, back_photo_url: null, detail_photo_url: null });
+  const [photoFits, setPhotoFits] = useState<Record<PhotoField, PhotoFit>>({ photo_url: DEFAULT_FIT, back_photo_url: DEFAULT_FIT, detail_photo_url: DEFAULT_FIT });
   const [uploadState, setUploadState] = useState<UploadState>('idle');
   const [uploadError, setUploadError] = useState('');
   const [productName, setProductName] = useState('');
   const [color, setColor] = useState('');
 
   async function handleFile(file: File) {
+    const field = activeFieldRef.current;
+    const fit = DEFAULT_FIT;
     setUploadState('uploading');
     setUploadError('');
 
-    const fd = new FormData();
-    fd.append('file', file);
-
-    const res = await fetch('/api/upload', { method: 'POST', body: fd });
+    const res = await fetch('/api/upload', { method: 'POST', body: fitFormData(file, fit) });
     const data = await res.json();
 
     if (!res.ok) {
@@ -44,7 +57,28 @@ export function ProductForm({ collections, workflowConfig }: { collections: Coll
       return;
     }
 
-    setPhotos((current) => ({ ...current, [activeFieldRef.current]: data.url }));
+    setPhotoFiles((current) => ({ ...current, [field]: file }));
+    setPhotoFits((current) => ({ ...current, [field]: fit }));
+    setPhotos((current) => ({ ...current, [field]: data.url }));
+    setUploadState('done');
+  }
+
+  async function applyFit(field: PhotoField) {
+    const file = photoFiles[field];
+    if (!file) return;
+    setUploadState('uploading');
+    setUploadError('');
+
+    const res = await fetch('/api/upload', { method: 'POST', body: fitFormData(file, photoFits[field]) });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setUploadState('error');
+      setUploadError(data.error ?? 'Erro ao aplicar enquadramento.');
+      return;
+    }
+
+    setPhotos((current) => ({ ...current, [field]: data.url }));
     setUploadState('done');
   }
 
@@ -68,6 +102,7 @@ export function ProductForm({ collections, workflowConfig }: { collections: Coll
     }
 
     setPhotos((current) => ({ ...current, [field]: data.url }));
+    setPhotoFiles((current) => ({ ...current, [field]: null }));
     setUploadState('done');
   }
 
@@ -90,9 +125,54 @@ export function ProductForm({ collections, workflowConfig }: { collections: Coll
             <Card pad={20}>
               <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft">Fotos</p>
               <div className="grid gap-3 md:grid-cols-3">
-                <PhotoUploader title="Principal" value={photos.photo_url} state={uploadState} onChoose={() => chooseFile('photo_url')} onEnhance={() => handleEnhance('photo_url')} onRemove={() => setPhotos((current) => ({ ...current, photo_url: '' }))} />
-                <PhotoUploader title="Traseira" value={photos.back_photo_url} state={uploadState} onChoose={() => chooseFile('back_photo_url')} onEnhance={() => handleEnhance('back_photo_url')} onRemove={() => setPhotos((current) => ({ ...current, back_photo_url: '' }))} />
-                <PhotoUploader title="Detalhe" value={photos.detail_photo_url} state={uploadState} onChoose={() => chooseFile('detail_photo_url')} onEnhance={() => handleEnhance('detail_photo_url')} onRemove={() => setPhotos((current) => ({ ...current, detail_photo_url: '' }))} />
+                <PhotoUploader
+                  title="Principal"
+                  value={photos.photo_url}
+                  state={uploadState}
+                  fit={photoFits.photo_url}
+                  canApplyFit={Boolean(photoFiles.photo_url)}
+                  onFitChange={(fit) => setPhotoFits((current) => ({ ...current, photo_url: fit }))}
+                  onApplyFit={() => applyFit('photo_url')}
+                  onChoose={() => chooseFile('photo_url')}
+                  onEnhance={() => handleEnhance('photo_url')}
+                  onRemove={() => {
+                    setPhotos((current) => ({ ...current, photo_url: '' }));
+                    setPhotoFiles((current) => ({ ...current, photo_url: null }));
+                    setPhotoFits((current) => ({ ...current, photo_url: DEFAULT_FIT }));
+                  }}
+                />
+                <PhotoUploader
+                  title="Traseira"
+                  value={photos.back_photo_url}
+                  state={uploadState}
+                  fit={photoFits.back_photo_url}
+                  canApplyFit={Boolean(photoFiles.back_photo_url)}
+                  onFitChange={(fit) => setPhotoFits((current) => ({ ...current, back_photo_url: fit }))}
+                  onApplyFit={() => applyFit('back_photo_url')}
+                  onChoose={() => chooseFile('back_photo_url')}
+                  onEnhance={() => handleEnhance('back_photo_url')}
+                  onRemove={() => {
+                    setPhotos((current) => ({ ...current, back_photo_url: '' }));
+                    setPhotoFiles((current) => ({ ...current, back_photo_url: null }));
+                    setPhotoFits((current) => ({ ...current, back_photo_url: DEFAULT_FIT }));
+                  }}
+                />
+                <PhotoUploader
+                  title="Detalhe"
+                  value={photos.detail_photo_url}
+                  state={uploadState}
+                  fit={photoFits.detail_photo_url}
+                  canApplyFit={Boolean(photoFiles.detail_photo_url)}
+                  onFitChange={(fit) => setPhotoFits((current) => ({ ...current, detail_photo_url: fit }))}
+                  onApplyFit={() => applyFit('detail_photo_url')}
+                  onChoose={() => chooseFile('detail_photo_url')}
+                  onEnhance={() => handleEnhance('detail_photo_url')}
+                  onRemove={() => {
+                    setPhotos((current) => ({ ...current, detail_photo_url: '' }));
+                    setPhotoFiles((current) => ({ ...current, detail_photo_url: null }));
+                    setPhotoFits((current) => ({ ...current, detail_photo_url: DEFAULT_FIT }));
+                  }}
+                />
               </div>
               {uploadError && <p className="mt-2 text-[12px] text-danger">{uploadError}</p>}
               <input
@@ -177,6 +257,10 @@ function PhotoUploader({
   title,
   value,
   state,
+  fit,
+  canApplyFit,
+  onFitChange,
+  onApplyFit,
   onChoose,
   onEnhance,
   onRemove,
@@ -184,24 +268,74 @@ function PhotoUploader({
   title: string;
   value: string;
   state: UploadState;
+  fit: PhotoFit;
+  canApplyFit: boolean;
+  onFitChange: (fit: PhotoFit) => void;
+  onApplyFit: () => void;
   onChoose: () => void;
   onEnhance: () => void;
   onRemove: () => void;
 }) {
+  const isBusy = state === 'uploading' || state === 'enhancing';
+  const previewTransform = `translate(${fit.offsetX / 3}%, ${fit.offsetY / 3}%) scale(${fit.zoom})`;
+  const resetFit = () => onFitChange(DEFAULT_FIT);
+
   return (
     <div>
       <p className="mb-2 text-[10px] uppercase tracking-[0.16em] text-ink-soft">{title}</p>
       {value ? (
         <div className="space-y-2">
           <div className="relative aspect-[4/5] overflow-hidden rounded-[14px] border border-line">
-            <Image src={value} alt={`Foto ${title}`} width={240} height={300} className="h-full w-full object-cover" />
+            <Image
+              src={value}
+              alt={`Foto ${title}`}
+              width={240}
+              height={300}
+              className="h-full w-full object-cover object-center transition-transform duration-200"
+              style={{ transform: previewTransform }}
+            />
             <button type="button" onClick={onRemove} className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full border border-line bg-paper text-ink-soft" aria-label="Remover foto">
               <X size={14} />
             </button>
           </div>
+          <div className="space-y-2 rounded-[12px] border border-line bg-surface p-3">
+            <PhotoSlider
+              icon={<Maximize2 size={12} />}
+              label="Zoom"
+              value={fit.zoom}
+              min={1}
+              max={2.2}
+              step={0.05}
+              onChange={(zoom) => onFitChange({ ...fit, zoom })}
+            />
+            <PhotoSlider
+              icon={<MoveVertical size={12} />}
+              label="Vertical"
+              value={fit.offsetY}
+              min={-100}
+              max={100}
+              step={1}
+              onChange={(offsetY) => onFitChange({ ...fit, offsetY })}
+            />
+            <PhotoSlider
+              icon={<MoveHorizontal size={12} />}
+              label="Horizontal"
+              value={fit.offsetX}
+              min={-100}
+              max={100}
+              step={1}
+              onChange={(offsetX) => onFitChange({ ...fit, offsetX })}
+            />
+            <div className="grid grid-cols-2 gap-2">
+              <Button type="button" size="sm" variant="ghost" icon={<RotateCcw size={13} />} onClick={resetFit}>Centralizar</Button>
+              <Button type="button" size="sm" variant="soft" onClick={onApplyFit} disabled={!canApplyFit || isBusy}>
+                {state === 'uploading' ? '...' : 'Aplicar'}
+              </Button>
+            </div>
+          </div>
           <div className="grid grid-cols-2 gap-2">
             <Button type="button" size="sm" variant="ghost" onClick={onChoose}>Trocar</Button>
-            <Button type="button" size="sm" variant="soft" icon={<Sparkles size={13} />} onClick={onEnhance} disabled={state === 'enhancing'}>{state === 'enhancing' ? '...' : 'Refinar'}</Button>
+            <Button type="button" size="sm" variant="soft" icon={<Sparkles size={13} />} onClick={onEnhance} disabled={isBusy}>{state === 'enhancing' ? '...' : 'Regenerar IA'}</Button>
           </div>
         </div>
       ) : (
@@ -211,5 +345,41 @@ function PhotoUploader({
         </button>
       )}
     </div>
+  );
+}
+
+function PhotoSlider({
+  icon,
+  label,
+  value,
+  min,
+  max,
+  step,
+  onChange,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <label className="grid gap-1 text-[10px] text-ink-soft">
+      <span className="flex items-center justify-between gap-2 uppercase tracking-[0.14em]">
+        <span className="flex items-center gap-1.5">{icon}{label}</span>
+        <span>{label === 'Zoom' ? value.toFixed(2) : Math.round(value)}</span>
+      </span>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+        className="w-full accent-primary"
+      />
+    </label>
   );
 }

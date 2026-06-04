@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import sharp from 'sharp';
 import { createClient } from '@/lib/supabase/server';
 import { hasSupabasePublicEnv } from '@/lib/env';
+import { parseImageFitValue, renderImageFit } from '@/lib/image-fit';
 
 export const runtime = 'nodejs';
 
@@ -47,11 +47,14 @@ export async function POST(request: NextRequest) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const webpBuffer = await sharp(buffer)
-      .rotate()
-      .resize(TARGET_W, TARGET_H, { fit: 'cover', position: 'attention' })
-      .webp({ quality: 90 })
-      .toBuffer();
+    const webpBuffer = await renderImageFit(buffer, {
+      width: TARGET_W,
+      height: TARGET_H,
+      quality: 90,
+      zoom: parseImageFitValue(formData.get('zoom'), 1),
+      offsetX: parseImageFitValue(formData.get('offsetX'), 0),
+      offsetY: parseImageFitValue(formData.get('offsetY'), 0),
+    });
 
     const filename = `hero-${Date.now()}.webp`;
     const path = `hero/${filename}`;
