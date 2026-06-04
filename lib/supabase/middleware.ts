@@ -39,7 +39,13 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  const { data: { user } } = await supabase.auth.getUser();
+  let user = null;
+  try {
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  } catch {
+    // refresh_token_not_found ou outro erro de auth — trata como anônimo
+  }
 
   const { pathname } = request.nextUrl;
 
