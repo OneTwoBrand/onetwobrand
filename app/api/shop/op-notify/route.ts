@@ -1,16 +1,23 @@
 /**
- * ONE TWO · POST /api/shop/op-notify
+ * ONE TWO · GET|POST /api/shop/op-notify
  * Consome a shop_email_queue e envia e-mails de status ao cliente.
- * Chamada por: cron job ou webhook interno.
- * Segurança: verifica header Authorization Bearer CRON_SECRET.
+ * Chamada por: Vercel Cron (GET) ou webhook interno (POST).
+ * Segurança: ?secret=CRON_SECRET (query) ou Authorization Bearer (header).
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendOrderStatusEmail } from '@/lib/shop/email';
 
-export async function POST(req: NextRequest) {
-  const auth = req.headers.get('authorization') ?? '';
-  if (process.env.CRON_SECRET && auth !== `Bearer ${process.env.CRON_SECRET}`) {
+function isAuthorized(req: NextRequest): boolean {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return true; // sem secret configurado, permite (dev)
+  const querySecret = req.nextUrl.searchParams.get('secret');
+  const headerAuth  = req.headers.get('authorization') ?? '';
+  return querySecret === secret || headerAuth === `Bearer ${secret}`;
+}
+
+async function handle(req: NextRequest): Promise<NextResponse> {
+  if (!isAuthorized(req)) {
     return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
   }
 
@@ -84,3 +91,6 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ sent, failed, total: queue.length });
 }
+
+export async function GET(req: NextRequest)  { return handle(req); }
+export async function POST(req: NextRequest) { return handle(req); }

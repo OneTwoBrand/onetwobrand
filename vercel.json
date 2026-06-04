@@ -3,5 +3,11 @@
     "deploymentEnabled": {
       "master": true
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/shop/op-notify",
+      "schedule": "*/5 * * * *"
+    }
+  ]
 }
