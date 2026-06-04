@@ -7,7 +7,7 @@
   "crons": [
     {
       "path": "/api/shop/op-notify",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 8 * * *"
     }
   ]
 }
