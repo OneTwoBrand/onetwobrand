@@ -11,8 +11,8 @@ export default async function ColecoesPage() {
 
   return (
     <>
-      <AppBar large eyebrow="Coleções" title={`${collections.length} linhas`} action={<Link href="/colecoes/novo"><Button size="sm" icon={<Plus size={14} />}>Nova</Button></Link>} />
-      <Topbar eyebrow="Coleções" title={`${collections.length} linhas`} action={<Link href="/colecoes/novo"><Button size="sm" icon={<Plus size={14} />}>Nova coleção</Button></Link>} />
+      <AppBar large eyebrow="Coleções" title={`${collections.length} linhas`} action={<Link href="/catalogo/novo"><Button size="sm" icon={<Plus size={14} />}>Nova</Button></Link>} />
+      <Topbar eyebrow="Coleções" title={`${collections.length} linhas`} action={<Link href="/catalogo/novo"><Button size="sm" icon={<Plus size={14} />}>Nova coleção</Button></Link>} />
       <main className="flex-1 px-5 pb-28 pt-3 md:px-9 md:py-8">
         <section className="mx-auto max-w-5xl">
           <DataNotice source={source} error={error} />
