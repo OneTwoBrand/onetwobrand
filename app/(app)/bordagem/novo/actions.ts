@@ -88,6 +88,17 @@ export async function createShipment(
   redirect('/bordagem');
 }
 
+export async function deleteShipment(id: string): Promise<ShipmentActionState> {
+  if (!hasSupabasePublicEnv()) return { error: 'Supabase não configurado.' };
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Faça login para excluir remessas.' };
+  const { error } = await supabase.from('embroidery_shipments').delete().eq('id', id);
+  if (error) return { error: error.message };
+  revalidatePath('/bordagem');
+  redirect('/bordagem');
+}
+
 export async function finishShipment(formData: FormData) {
   const id = String(formData.get('id') ?? '').trim();
   if (!id || !hasSupabasePublicEnv()) return;

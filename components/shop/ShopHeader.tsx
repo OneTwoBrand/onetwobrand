@@ -13,8 +13,8 @@ import { Search, ShoppingBag, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const desktopNav = [
-  { href: '/loja',      label: 'Loja' },
-  { href: '/colecoes',  label: 'Coleções' },
+  { href: '/loja',             label: 'Loja' },
+  { href: '/loja/colecoes',    label: 'Coleções' },
 ];
 
 export function ShopHeader({ cartCount = 0 }: { cartCount?: number }) {

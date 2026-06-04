@@ -1,33 +1,46 @@
 /**
  * ONE TWO · /loja — Vitrine principal
  * SSG + ISR 600s.
- * Seções: hero coleção em destaque · carrossel de coleções · grid de produtos.
+ * Seções: hero (foto full-screen ou card fallback) · carrossel · grid de produtos.
  */
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
 import { getShopCollections, getShopProducts } from '@/lib/shop/catalog';
+import { getPlatformConfig } from '@/lib/platform-config';
 import { CollectionCarousel } from '@/components/shop/CollectionCarousel';
-import { ProductCard, ProductCardSkeleton } from '@/components/shop/ProductCard';
+import { ProductCard } from '@/components/shop/ProductCard';
+import { ShopHero } from '@/components/shop/ShopHero';
 import { SectionHead } from '@/components/ui/Primitives';
 
 export const revalidate = 600;
 
-export const metadata: Metadata = {
-  title: 'Loja · ONE TWO',
-  description: 'Peças artesanais feitas em pequenas tiragens pelo atelier ONE TWO.',
-  openGraph: {
-    title: 'ONE TWO · crafted pieces',
-    description: 'Peças artesanais feitas em pequenas tiragens.',
-    type: 'website',
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const [title, description] = await Promise.all([
+    getPlatformConfig('shop_meta_title'),
+    getPlatformConfig('shop_meta_description'),
+  ]);
+
+  const t = title       || 'Loja · ONE TWO';
+  const d = description || 'Peças artesanais feitas em pequenas tiragens pelo atelier ONE TWO.';
+
+  return {
+    title: t,
+    description: d,
+    openGraph: { title: t, description: d, type: 'website' },
+  };
+}
 
 export default async function LojaPage() {
-  const [{ collections }, { products }] = await Promise.all([
-    getShopCollections(),
-    getShopProducts(),
-  ]);
+  const [{ collections }, { products }, heroImageUrl, heroEyebrow, heroTitle, heroCtaLabel, heroCtaHref] =
+    await Promise.all([
+      getShopCollections(),
+      getShopProducts(),
+      getPlatformConfig('shop_hero_image_url'),
+      getPlatformConfig('shop_hero_eyebrow'),
+      getPlatformConfig('shop_hero_title'),
+      getPlatformConfig('shop_hero_cta_label'),
+      getPlatformConfig('shop_hero_cta_href'),
+    ]);
 
   const featured = collections[0] ?? null;
   const featuredProducts = products.filter((p) => p.isNew).slice(0, 8);
@@ -35,37 +48,18 @@ export default async function LojaPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      {/* ── Hero coleção em destaque ──────────────────────── */}
-      {featured && (
-        <Link
-          href={`/colecoes/${featured.slug}`}
-          className="block rounded-[22px] bg-primary px-6 py-8 relative overflow-hidden"
-        >
-          {/* Diamond decorativo */}
-          <svg
-            aria-hidden
-            className="absolute bottom-[-20%] right-[-8%] w-[55%] opacity-[0.14] pointer-events-none"
-            viewBox="0 0 200 200"
-            fill="none"
-          >
-            <rect x="100" y="4" width="136" height="136" rx="4" transform="rotate(45 100 4)" stroke="#FBF6E4" strokeWidth="1.5" />
-          </svg>
-
-          <div className="relative z-10 flex flex-col gap-2 max-w-[280px]">
-            <span className="text-[9px] font-medium tracking-[0.24em] uppercase text-paper/70">
-              Coleção em destaque
-            </span>
-            <h1 className="font-serif text-[32px] leading-[1.05] font-light text-paper">
-              {featured.name}
-            </h1>
-            {featured.subtitle && (
-              <p className="text-[12px] text-paper/75 leading-[1.55]">{featured.subtitle}</p>
-            )}
-            <span className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-medium tracking-[0.16em] uppercase text-paper underline underline-offset-4">
-              Ver coleção <ArrowRight size={13} />
-            </span>
-          </div>
-        </Link>
+      {/* ── Hero ──────────────────────────────────────────── */}
+      {(featured || heroTitle) && (
+        <ShopHero
+          imageUrl={heroImageUrl ?? undefined}
+          eyebrow={heroEyebrow ?? undefined}
+          title={heroTitle ?? undefined}
+          ctaLabel={heroCtaLabel ?? undefined}
+          ctaHref={heroCtaHref ?? undefined}
+          fallbackCollectionName={featured?.name}
+          fallbackCollectionSubtitle={featured?.subtitle ?? undefined}
+          fallbackCollectionSlug={featured?.slug}
+        />
       )}
 
       {/* ── Carrossel de coleções ─────────────────────────── */}

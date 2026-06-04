@@ -5,10 +5,12 @@ import { getSupabasePublicEnv, hasSupabasePublicEnv } from '@/lib/env';
 const PUBLIC_PATHS = [
   '/login', '/recuperar', '/nova-senha', '/manifest.webmanifest',
   // Loja pública — sem autenticação
-  '/loja', '/colecoes', '/produto', '/carrinho',
+  '/loja', '/produto', '/carrinho',
   '/checkout', '/conta',
   '/api/shop',
   '/sitemap.xml', '/robots.txt',
+  // /colecoes mantido temporariamente para compatibilidade com redirects
+  '/colecoes',
 ];
 
 function isPublicPath(pathname: string) {
@@ -48,6 +50,13 @@ export async function updateSession(request: NextRequest) {
   }
 
   const { pathname } = request.nextUrl;
+
+  // Visitante não logado na raiz → vitrine da loja
+  if (!user && pathname === '/') {
+    const lojaUrl = request.nextUrl.clone();
+    lojaUrl.pathname = '/loja';
+    return NextResponse.redirect(lojaUrl);
+  }
 
   if (!user && !isPublicPath(pathname)) {
     const loginUrl = request.nextUrl.clone();

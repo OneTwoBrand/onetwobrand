@@ -27,9 +27,12 @@ export function ShopFooter() {
             </Link>
           ))}
         </nav>
-        <span className="text-[10px] text-ink-mute tracking-[0.14em] uppercase">
+        <Link
+          href="/login"
+          className="text-[10px] text-ink-mute tracking-[0.14em] uppercase hover:text-ink-soft transition-colors"
+        >
           Desenvolvido por Girassol Inteligência
-        </span>
+        </Link>
       </div>
     </footer>
   );

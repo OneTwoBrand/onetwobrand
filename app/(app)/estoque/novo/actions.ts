@@ -1,6 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { hasSupabasePublicEnv } from '@/lib/env';
 
@@ -70,5 +71,28 @@ export async function createProduct(
 
   if (stockError) return { error: stockError.message };
 
+  redirect('/estoque');
+}
+
+export async function deleteStockItem(stockItemId: string, pieceId: string): Promise<ProductActionState> {
+  if (!hasSupabasePublicEnv()) return { error: 'Supabase não configurado.' };
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Faça login para excluir produtos.' };
+
+  const { error: stockError } = await supabase.from('stock_items').delete().eq('id', stockItemId);
+  if (stockError) return { error: stockError.message };
+
+  // Remove a peça-mãe se não houver outros SKUs vinculados
+  const { count } = await supabase
+    .from('stock_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('piece_id', pieceId);
+
+  if (count === 0) {
+    await supabase.from('pieces').delete().eq('id', pieceId);
+  }
+
+  revalidatePath('/estoque');
   redirect('/estoque');
 }

@@ -9,7 +9,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
 import { useCartStore } from '@/lib/shop/cart-store';
-import { lookupCep, formatCep, getShippingOptions } from '@/lib/shop/shipping';
+import { lookupCep, formatCep, getShippingOptions, type ShippingOption } from '@/lib/shop/shipping';
+import { getShippingConfig } from '@/lib/shop/checkout-actions';
 import { brl } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { CheckoutStepper } from './CheckoutStepper';
@@ -35,9 +36,17 @@ export default function CheckoutPage() {
   const [cepLoading, setCepLoading] = useState(false);
   const [shipping, setShipping]     = useState<string>('sedex');
   const [errors, setErrors]         = useState<Record<string, string>>({});
+  const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>(() => getShippingOptions(sub));
+  const [freeThreshold, setFreeThreshold]     = useState<number>(800);
 
-  const options = getShippingOptions(sub);
+  const options = shippingOptions;
   const selectedOption = options.find((o) => o.id === shipping) ?? options[0];
+
+  async function loadShippingConfig() {
+    const cfg = await getShippingConfig(sub);
+    setShippingOptions(cfg.options);
+    setFreeThreshold(cfg.freeThreshold);
+  }
 
   if (count === 0) {
     router.replace('/carrinho');
@@ -145,7 +154,7 @@ export default function CheckoutPage() {
 
           <button
             type="button"
-            onClick={() => validateStep1() && setStep(2)}
+            onClick={() => { if (validateStep1()) { setStep(2); loadShippingConfig(); } }}
             className="mt-2 w-full h-[52px] rounded-full bg-primary text-paper text-[12px] font-medium tracking-[0.20em] uppercase hover:bg-primary-hover transition-colors"
           >
             Continuar para entrega

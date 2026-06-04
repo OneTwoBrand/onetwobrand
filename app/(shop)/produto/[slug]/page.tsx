@@ -11,6 +11,7 @@ import {
   getShopProductBySlug,
   getAllProductSlugs,
 } from '@/lib/shop/catalog';
+import { getPlatformConfig } from '@/lib/platform-config';
 import { Gallery } from '@/components/shop/Gallery';
 import { AddToCartButton } from './AddToCartButton';
 import { brl } from '@/lib/utils';
@@ -46,7 +47,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ProdutoPage({ params }: PageProps) {
   const { slug } = await params;
-  const { product } = await getShopProductBySlug(slug);
+  const [{ product }, deliveryMessage] = await Promise.all([
+    getShopProductBySlug(slug),
+    getPlatformConfig('shop_delivery_message'),
+  ]);
 
   if (!product) notFound();
 
@@ -171,7 +175,7 @@ export default async function ProdutoPage({ params }: PageProps) {
             <p className="mt-5 text-[13px] text-ink-soft leading-[1.6]">{product.description}</p>
           )}
 
-          {/* Card informativo */}
+          {/* Card informativo — mensagem de entrega */}
           <div className="mt-6 rounded-[14px] bg-surface p-4 flex gap-3 items-start">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5 shrink-0 text-ink-mute mt-0.5">
               <path d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5" />
@@ -179,7 +183,7 @@ export default async function ProdutoPage({ params }: PageProps) {
             <div>
               <div className="text-[12px] font-medium text-ink">Feita à mão sob demanda</div>
               <div className="text-[11px] text-ink-soft mt-0.5 leading-[1.5]">
-                Cada peça é produzida no atelier ONE TWO após o pedido confirmado.
+                {deliveryMessage ?? 'Cada peça é produzida no atelier ONE TWO após o pedido confirmado.'}
               </div>
             </div>
           </div>

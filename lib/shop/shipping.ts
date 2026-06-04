@@ -63,11 +63,11 @@ export function formatCep(value: string): string {
   return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
 }
 
-const FREE_SHIPPING_THRESHOLD = 800;
+export const DEFAULT_FREE_THRESHOLD = 800;
 
-/** Calcula opções de frete. Substitua pela API dos Correios se necessário. */
-export function getShippingOptions(subtotal: number): ShippingOption[] {
-  const isFree = subtotal >= FREE_SHIPPING_THRESHOLD;
+/** Calcula opções de frete com threshold dinâmico. */
+export function buildShippingOptions(subtotal: number, freeThreshold: number): ShippingOption[] {
+  const isFree = subtotal >= freeThreshold;
   return [
     {
       id:      'sedex',
@@ -96,4 +96,9 @@ export function getShippingOptions(subtotal: number): ShippingOption[] {
   ];
 }
 
-export const FREE_THRESHOLD = FREE_SHIPPING_THRESHOLD;
+/** Versão síncrona com threshold fixo — mantida para compatibilidade com código legado. */
+export function getShippingOptions(subtotal: number): ShippingOption[] {
+  return buildShippingOptions(subtotal, DEFAULT_FREE_THRESHOLD);
+}
+
+export const FREE_THRESHOLD = DEFAULT_FREE_THRESHOLD;

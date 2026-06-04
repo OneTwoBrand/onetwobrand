@@ -7,6 +7,7 @@ import { Card, SectionHead } from '@/components/ui/Primitives';
 import { getCatalogStock } from '@/lib/catalog-data';
 import { getStockMovements, type StockMovementItem, type StockMovementType } from '@/lib/stock-data';
 import { brl } from '@/lib/utils';
+import { DeleteStockItemButton } from './DeleteStockItemButton';
 
 export default async function EstoquePage() {
   const [{ products, source }, { movements }] = await Promise.all([
@@ -58,6 +59,9 @@ export default async function EstoquePage() {
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {products.map((product) => (
               <Card key={product.id} pad={14}>
+                <div className="mb-2 flex justify-end">
+                  <DeleteStockItemButton stockItemId={product.id} pieceId={product.pieceId} name={product.name} />
+                </div>
                 <div className="mb-3 flex aspect-[4/5] items-center justify-center rounded-[14px] border border-line bg-surface text-primary">
                   {product.photoUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element

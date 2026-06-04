@@ -1,6 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 import { hasSupabasePublicEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
 
@@ -41,5 +42,16 @@ export async function createSeamstress(_prev: SeamstressActionState, formData: F
 
   if (error) return { error: error.message };
 
+  redirect('/costureiras');
+}
+
+export async function deleteSeamstress(id: string): Promise<SeamstressActionState> {
+  if (!hasSupabasePublicEnv()) return { error: 'Supabase não configurado.' };
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Faça login para excluir costureiras.' };
+  const { error } = await supabase.from('seamstresses').delete().eq('id', id);
+  if (error) return { error: error.message };
+  revalidatePath('/costureiras');
   redirect('/costureiras');
 }

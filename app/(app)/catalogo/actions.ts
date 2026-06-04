@@ -1,6 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 import { hasSupabasePublicEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
 
@@ -37,5 +38,16 @@ export async function createCollection(_prev: CollectionActionState, formData: F
   });
   if (error) return { error: error.message };
 
+  redirect('/catalogo');
+}
+
+export async function deleteCollection(id: string): Promise<CollectionActionState> {
+  if (!hasSupabasePublicEnv()) return { error: 'Supabase não configurado.' };
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Faça login para excluir coleções.' };
+  const { error } = await supabase.from('collections').delete().eq('id', id);
+  if (error) return { error: error.message };
+  revalidatePath('/catalogo');
   redirect('/catalogo');
 }

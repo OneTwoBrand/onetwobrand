@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import {
   BarChart3, Bot, CircleDollarSign, Gem, KeyRound, LogOut,
-  Package, Scissors, Settings, Shield, User, Users, SlidersHorizontal,
+  Package, Scissors, Settings, Shield, Store, User, Users, SlidersHorizontal,
 } from 'lucide-react';
 import { AppBar, Topbar } from '@/components/layout/Navigation';
 import { Avatar, Card, Divider, SectionHead } from '@/components/ui/Primitives';
@@ -22,6 +22,8 @@ import {
   ProductCategoriesForm,
   ProductColorsForm,
 } from './WorkflowConfigForms';
+import { getShopConfig } from './shop-config-actions';
+import { HeroConfigForm, StoreSettingsForm } from './ShopConfigForm';
 
 async function getProfileRole(userId: string): Promise<string> {
   try {
@@ -58,9 +60,10 @@ export default async function MaisPage() {
 
   const role = authUser ? await getProfileRole(authUser.id) : 'admin';
   const isAdmin = role === 'admin';
-  const [aiConfigured, workflowConfig] = await Promise.all([
+  const [aiConfigured, workflowConfig, shopConfig] = await Promise.all([
     isAdmin ? checkOpenAIConfigured() : Promise.resolve(false),
     isAdmin ? getWorkflowConfig() : Promise.resolve(null),
+    isAdmin ? getShopConfig() : Promise.resolve({}),
   ]);
 
   const roleLabel: Record<string, string> = {
@@ -172,6 +175,34 @@ export default async function MaisPage() {
                 <PaymentMethodsForm config={workflowConfig} />
                 <Divider />
                 <SeamstressRolesForm config={workflowConfig} />
+              </div>
+            </Card>
+          )}
+
+          {/* Admin — Loja (vitrine e parâmetros) */}
+          {isAdmin && (
+            <Card pad={20}>
+              <div className="mb-5 flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-primary-soft text-primary">
+                  <Store size={18} strokeWidth={1.5} />
+                </div>
+                <div>
+                  <p className="text-[13px] font-medium text-ink">Configurações da loja</p>
+                  <p className="text-[11px] text-ink-soft">Hero, frete, comunicação, SEO · Restrito ao administrador</p>
+                </div>
+              </div>
+              <Divider className="mb-5" />
+
+              <SectionHead eyebrow="Vitrine" title="Hero da página inicial" />
+              <div className="mt-3">
+                <HeroConfigForm config={shopConfig} />
+              </div>
+
+              <Divider className="my-6" />
+
+              <SectionHead eyebrow="Parâmetros" title="Configurações gerais" />
+              <div className="mt-3">
+                <StoreSettingsForm config={shopConfig} />
               </div>
             </Card>
           )}

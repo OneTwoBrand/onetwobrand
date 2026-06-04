@@ -7,10 +7,10 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Minus, Plus, Trash2, Tag, ShoppingBag } from 'lucide-react';
 import { useCartStore } from '@/lib/shop/cart-store';
-import { validateCoupon } from '@/lib/shop/checkout-actions';
+import { validateCoupon, getShippingConfig } from '@/lib/shop/checkout-actions';
 import { brl } from '@/lib/utils';
 import { FREE_THRESHOLD } from '@/lib/shop/shipping';
 
@@ -21,10 +21,16 @@ export default function CarrinhoPage() {
   const [couponError, setCouponError] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponOpen, setCouponOpen] = useState(false);
+  const [freeThreshold, setFreeThreshold] = useState(FREE_THRESHOLD);
 
   const sub   = subtotal();
   const count = itemCount();
-  const toFree = Math.max(0, FREE_THRESHOLD - sub);
+  const toFree = Math.max(0, freeThreshold - sub);
+
+  useEffect(() => {
+    getShippingConfig(sub).then((cfg) => setFreeThreshold(cfg.freeThreshold));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleCoupon() {
     setCouponLoading(true);

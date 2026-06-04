@@ -25,7 +25,7 @@ export function CollectionCarousel({ collections, activeSlug }: CollectionCarous
         return (
           <Link
             key={col.id}
-            href={`/colecoes/${col.slug}`}
+            href={`/loja/colecoes/${col.slug}`}
             style={{ scrollSnapAlign: 'start', minWidth: 110 }}
             className={cn(
               'flex flex-col items-start justify-end shrink-0 rounded-[14px] overflow-hidden h-[110px] w-[110px] p-3 relative transition-colors',

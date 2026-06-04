@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Avatar, Card, SectionHead } from '@/components/ui/Primitives';
 import { getSeamstresses } from '@/lib/app-data';
 import { brl } from '@/lib/utils';
+import { DeleteSeamstressButton } from './DeleteSeamstressButton';
 
 export default async function CostureirasPage() {
   const { seamstresses, source, error } = await getSeamstresses();
@@ -40,9 +41,12 @@ export default async function CostureirasPage() {
                 <div className="flex items-start gap-3">
                   <Avatar name={item.name} tone={item.role === 'Bordadeira' ? 'secondary' : 'primary'} />
                   <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="m-0 font-serif text-[19px] font-normal text-ink">{item.name}</h2>
-                      <Badge tone={item.active ? 'success' : 'neutral'} size="sm">{item.active ? 'ativa' : 'inativa'}</Badge>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="m-0 font-serif text-[19px] font-normal text-ink">{item.name}</h2>
+                        <Badge tone={item.active ? 'success' : 'neutral'} size="sm">{item.active ? 'ativa' : 'inativa'}</Badge>
+                      </div>
+                      <DeleteSeamstressButton id={item.id} name={item.name} />
                     </div>
                     <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-ink-soft">{item.role}</p>
                     {item.specialty && <p className="mt-2 text-[12px] text-ink-soft">{item.specialty}</p>}

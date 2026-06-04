@@ -21,11 +21,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${BASE}/`,         lastModified: now, changeFrequency: 'weekly',  priority: 0.5 },
     { url: `${BASE}/loja`,     lastModified: now, changeFrequency: 'daily',   priority: 1.0 },
-    { url: `${BASE}/colecoes`, lastModified: now, changeFrequency: 'weekly',  priority: 0.8 },
+    { url: `${BASE}/loja/colecoes`, lastModified: now, changeFrequency: 'weekly',  priority: 0.8 },
   ];
 
   const collectionRoutes: MetadataRoute.Sitemap = collectionSlugs.map((slug) => ({
-    url:             `${BASE}/colecoes/${slug}`,
+    url:             `${BASE}/loja/colecoes/${slug}`,
     lastModified:    now,
     changeFrequency: 'weekly' as const,
     priority:        0.8,

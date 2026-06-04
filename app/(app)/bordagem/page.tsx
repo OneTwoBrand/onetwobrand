@@ -9,6 +9,7 @@ import { Card, SectionHead } from '@/components/ui/Primitives';
 import { getEmbroideryShipments } from '@/lib/app-data';
 import { brl, daysUntil } from '@/lib/utils';
 import { finishShipment } from './novo/actions';
+import { DeleteShipmentButton } from './DeleteShipmentButton';
 
 export default async function BordagemPage() {
   const { shipments, source, error } = await getEmbroideryShipments();
@@ -35,7 +36,10 @@ export default async function BordagemPage() {
                 <Card key={shipment.id} pad={16}>
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-[11px] text-ink-soft">{shipment.code}</span>
-                    <Badge tone={shipment.status === 'Finalizada' ? 'success' : 'secondary'} size="sm">{shipment.status}</Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge tone={shipment.status === 'Finalizada' ? 'success' : 'secondary'} size="sm">{shipment.status}</Badge>
+                      <DeleteShipmentButton id={shipment.id} code={shipment.code} />
+                    </div>
                   </div>
                   <h2 className="m-0 mt-3 font-serif text-[20px] font-normal text-ink">{shipment.seamstressName}</h2>
                   <p className="mt-1 text-[12px] text-ink-soft">{shipment.qty} peças · enviadas em {shipment.sentAt}</p>

@@ -7,6 +7,7 @@ import { Badge, StatusBadge } from '@/components/ui/Badge';
 import { Avatar, Card, Divider, SectionHead } from '@/components/ui/Primitives';
 import { getClientDetail, getClientShopOrders } from '@/lib/app-data';
 import { brl } from '@/lib/utils';
+import { DeleteClientButton } from './DeleteClientButton';
 
 const PAYMENT_LABEL: Record<string, string> = {
   pix: 'PIX', card: 'Cartão', cash: 'Dinheiro', transfer: 'Transferência',
@@ -45,11 +46,16 @@ export default async function ClienteDetalhePage({ params }: { params: Promise<{
 
   return (
     <>
-      <AppBar title={client.name} back />
+      <AppBar title={client.name} back action={<DeleteClientButton id={client.id} />} />
       <Topbar
         eyebrow="Clientes"
         title={client.name}
-        action={<Link href="/clientes"><Button size="sm" variant="ghost" icon={<ArrowLeft size={14} />}>Voltar</Button></Link>}
+        action={
+          <div className="flex items-center gap-2">
+            <DeleteClientButton id={client.id} />
+            <Link href="/clientes"><Button size="sm" variant="ghost" icon={<ArrowLeft size={14} />}>Voltar</Button></Link>
+          </div>
+        }
       />
 
       <main className="flex-1 px-5 pb-28 pt-3 md:px-9 md:py-8">

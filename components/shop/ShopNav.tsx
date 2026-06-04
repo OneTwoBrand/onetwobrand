@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/loja',      label: 'Loja',     Icon: Home },
-  { href: '/colecoes',  label: 'Coleções', Icon: Layers3 },
+  { href: '/loja/colecoes',  label: 'Coleções', Icon: Layers3 },
   { href: '/carrinho',  label: 'Sacola',   Icon: ShoppingBag },
   { href: '/conta',     label: 'Conta',    Icon: User },
 ];
