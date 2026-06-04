@@ -1,4 +1,4 @@
-import { Calendar, Clock, FileText, Scissors, UserRound } from 'lucide-react';
+import { Calendar, Clock, ExternalLink, FileText, Scissors, ShoppingBag, UserRound } from 'lucide-react';
 import Link from 'next/link';
 import { AppBar, Topbar } from '@/components/layout/Navigation';
 import { Button } from '@/components/ui/Button';
@@ -61,7 +61,15 @@ export default async function ProducaoDetalhePage({ params }: { params: Promise<
                 <Scissors size={42} strokeWidth={1.2} />
               </div>
               <div className="flex items-center justify-between gap-3 flex-wrap">
-                <StatusBadge status={order.status} />
+                <div className="flex items-center gap-2">
+                  <StatusBadge status={order.status} />
+                  {order.orderSource === 'shop' && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-semibold tracking-wide-1 uppercase bg-primary/10 text-primary">
+                      <ShoppingBag size={9} />
+                      Loja
+                    </span>
+                  )}
+                </div>
                 <span className="font-mono text-[11px] text-ink-soft">#{order.opNumber}</span>
               </div>
               <h1 className="m-0 mt-4 font-serif text-[32px] font-normal leading-[1.05] text-ink">

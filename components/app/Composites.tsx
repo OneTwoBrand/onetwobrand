@@ -41,7 +41,7 @@ export function KPI({ icon, label, value, delta, tone = 'neutral' }: {
 
 // ────────── OPRow — Production Order card ──────────
 export function OPRow({
-  opNumber, productName, clientName, qty, seamstressName, dueDate, status, href,
+  opNumber, productName, clientName, qty, seamstressName, dueDate, status, href, orderSource,
 }: {
   opNumber: string;
   productName: string;
@@ -51,13 +51,22 @@ export function OPRow({
   dueDate: string;       // ISO
   status: OPStatus;
   href?: string;
+  orderSource?: string;
 }) {
   const due = daysUntil(dueDate);
   const dueColor = due.tone === 'danger' ? 'text-danger' : due.tone === 'warning' ? 'text-warning' : 'text-ink-soft';
+  const isShop = orderSource === 'shop';
   const inner = (
     <Card pad={16}>
-      <div className="flex justify-between items-center">
-        <span className="font-mono text-[11px] text-ink-soft">OP · {opNumber}</span>
+      <div className="flex justify-between items-center gap-2">
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-[11px] text-ink-soft">OP · {opNumber}</span>
+          {isShop && (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-semibold tracking-wide-1 uppercase bg-primary/10 text-primary">
+              Loja
+            </span>
+          )}
+        </div>
         <StatusBadge status={status} size="sm" />
       </div>
       <div className="font-serif text-[17px] text-ink mt-2 leading-[1.2]">{productName}</div>

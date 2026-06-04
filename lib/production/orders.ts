@@ -12,12 +12,16 @@ export type ProductionOrderListItem = {
   seamstressName?: string;
   dueDate: string;
   status: OPStatus;
+  orderSource?: string;  // 'shop' para OPs originadas da loja
+  orderId?: string;
 };
 
 export type ProductionOrderDetail = ProductionOrderListItem & {
   fabricUsed?: string;
   embroideryNotes?: string;
   createdAt?: string;
+  orderSource?: string;
+  orderId?: string;
 };
 
 export type OPHistoryEntry = {
@@ -65,6 +69,8 @@ type ProductionOrderRow = {
   qty: number;
   due_date: string;
   status: OPStatus;
+  order_source: string | null;
+  order_id: string | null;
   clients: RelatedRecord<{ name: string }>;
   pieces: RelatedRecord<{ name: string; fabric: string | null; color: string | null }>;
   seamstresses: RelatedRecord<{ name: string }>;
@@ -74,6 +80,8 @@ type ProductionOrderDetailRow = ProductionOrderRow & {
   fabric_used: string | null;
   embroidery_notes: string | null;
   created_at: string;
+  order_source: string | null;
+  order_id: string | null;
 };
 
 function firstRelated<T>(value: RelatedRecord<T>): T | null {
@@ -107,6 +115,8 @@ export async function getProductionOrders(): Promise<{
         qty,
         due_date,
         status,
+        order_source,
+        order_id,
         clients(name),
         pieces(name, fabric, color),
         seamstresses(name)
@@ -135,6 +145,8 @@ export async function getProductionOrders(): Promise<{
         seamstressName: seamstress?.name,
         dueDate: row.due_date,
         status: row.status,
+        orderSource: row.order_source ?? undefined,
+        orderId: row.order_id ?? undefined,
       };
     });
 
@@ -177,6 +189,8 @@ export async function getProductionOrderDetail(identifier: string): Promise<{
         fabric_used,
         embroidery_notes,
         created_at,
+        order_source,
+        order_id,
         clients(name),
         pieces(name, fabric, color),
         seamstresses(name)
@@ -207,6 +221,8 @@ export async function getProductionOrderDetail(identifier: string): Promise<{
         fabricUsed: row.fabric_used ?? undefined,
         embroideryNotes: row.embroidery_notes ?? undefined,
         createdAt: row.created_at,
+        orderSource: row.order_source ?? undefined,
+        orderId: row.order_id ?? undefined,
       },
     };
   } catch (error) {

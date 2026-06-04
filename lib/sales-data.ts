@@ -44,6 +44,8 @@ export type SaleListItem = {
   paymentMethod: string;
   itemCount: number;
   createdAt: string;
+  orderSource?: string;   // 'shop' quando originada da loja
+  orderNumber?: string;   // L-0001 quando originada da loja
 };
 
 export type SaleDetail = SaleListItem & {
@@ -63,6 +65,8 @@ type SaleRow = {
   status: string;
   payment_method: string;
   created_at: string;
+  order_source: string | null;
+  order_number: string | null;
   clients: { id: string; name: string } | { id: string; name: string }[] | null;
   sale_items: { id: string }[] | null;
 };
@@ -105,7 +109,7 @@ export async function getSalesList(): Promise<{
     const supabase = await createClient();
     const { data, error } = await supabase
       .from('sales')
-      .select('id, total, status, payment_method, created_at, clients(id, name), sale_items(id)')
+      .select('id, total, status, payment_method, created_at, order_source, order_number, clients(id, name), sale_items(id)')
       .order('created_at', { ascending: false })
       .limit(50);
 
@@ -122,6 +126,8 @@ export async function getSalesList(): Promise<{
         paymentMethod: row.payment_method,
         itemCount: row.sale_items?.length ?? 0,
         createdAt: formatSaleDate(row.created_at),
+        orderSource: row.order_source ?? undefined,
+        orderNumber: row.order_number ?? undefined,
       };
     });
 

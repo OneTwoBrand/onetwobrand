@@ -1,10 +1,10 @@
 import Link from 'next/link';
-import { AlertTriangle, BarChart3, Gem, Package, Scissors, ShoppingCart, TrendingUp } from 'lucide-react';
+import { AlertTriangle, BarChart3, Gem, Package, Scissors, ShoppingBag, ShoppingCart, TrendingUp } from 'lucide-react';
 import { AppBar, Topbar } from '@/components/layout/Navigation';
 import { DataNotice } from '@/components/app/DataNotice';
 import { Badge } from '@/components/ui/Badge';
 import { Card, SectionHead, Divider } from '@/components/ui/Primitives';
-import { getReportsSummary } from '@/lib/app-data';
+import { getReportsSummary, getShopKpis } from '@/lib/app-data';
 import { brl } from '@/lib/utils';
 
 const PAYMENT_LABEL: Record<string, string> = {
@@ -20,7 +20,10 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default async function RelatoriosPage() {
-  const { summary, source, error } = await getReportsSummary();
+  const [{ summary, source, error }, shopKpis] = await Promise.all([
+    getReportsSummary(),
+    getShopKpis(30),
+  ]);
   const maxUnits = Math.max(1, ...summary.topPieces.map((item) => item.unitsSold));
   const maxSale = Math.max(1, ...summary.salesMonth.map((s) => s.total));
 
@@ -40,28 +43,28 @@ export default async function RelatoriosPage() {
                 <TrendingUp size={15} strokeWidth={1.5} />
               </div>
               <p className="font-serif text-[24px] leading-none text-ink">{brl(summary.revenueMonth)}</p>
-              <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-ink-soft">Faturamento</p>
+              <p className="mt-1 text-[10px] uppercase tracking-wide-2 text-ink-soft">Faturamento</p>
             </Card>
             <Card pad={16}>
               <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-[10px] bg-primary-soft text-primary">
                 <BarChart3 size={15} strokeWidth={1.5} />
               </div>
               <p className="font-serif text-[24px] leading-none text-ink">{brl(summary.grossMonth)}</p>
-              <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-ink-soft">Lucro bruto</p>
+              <p className="mt-1 text-[10px] uppercase tracking-wide-2 text-ink-soft">Lucro bruto</p>
             </Card>
             <Card pad={16}>
               <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-[10px] bg-primary-soft text-primary">
                 <ShoppingCart size={15} strokeWidth={1.5} />
               </div>
               <p className="font-serif text-[24px] leading-none text-ink">{summary.piecesSold}</p>
-              <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-ink-soft">Peças vendidas</p>
+              <p className="mt-1 text-[10px] uppercase tracking-wide-2 text-ink-soft">Peças vendidas</p>
             </Card>
             <Card pad={16}>
               <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-[10px] bg-warning-soft text-warning">
                 <AlertTriangle size={15} strokeWidth={1.5} />
               </div>
               <p className="font-serif text-[24px] leading-none text-ink">{summary.lowStock.length}</p>
-              <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-ink-soft">Estoque baixo</p>
+              <p className="mt-1 text-[10px] uppercase tracking-wide-2 text-ink-soft">Estoque baixo</p>
             </Card>
           </div>
 
@@ -82,7 +85,7 @@ export default async function RelatoriosPage() {
                         </div>
                         <span className="text-ink-soft">{item.unitsSold} un · {brl(item.gross)}</span>
                       </div>
-                      <div className="h-1.5 overflow-hidden rounded-full bg-ink/[0.08]">
+                      <div className="h-1.5 overflow-hidden rounded-full bg-ink/8">
                         <div
                           className="h-full rounded-full bg-primary transition-all"
                           style={{ width: `${Math.max(6, (item.unitsSold / maxUnits) * 100)}%` }}
@@ -122,7 +125,7 @@ export default async function RelatoriosPage() {
                           )}
                         </div>
                       </div>
-                      <div className="mt-1 h-1 overflow-hidden rounded-full bg-ink/[0.06]">
+                      <div className="mt-1 h-1 overflow-hidden rounded-full bg-ink/6">
                         <div className="h-full rounded-full bg-primary/50" style={{ width: `${Math.max(4, (sale.total / maxSale) * 100)}%` }} />
                       </div>
                     </Link>
@@ -195,6 +198,69 @@ export default async function RelatoriosPage() {
                     </div>
                   ))}
                 </div>
+              </Card>
+            )}
+          </div>
+
+          {/* Loja online */}
+          <div>
+            <SectionHead
+              eyebrow="Últimos 30 dias"
+              title="Loja online"
+              action={
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-semibold tracking-wide-1 uppercase bg-primary/10 text-primary">
+                  <ShoppingBag size={9} />
+                  E-commerce
+                </span>
+              }
+            />
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <Card pad={16}>
+                <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-[10px] bg-primary-soft text-primary">
+                  <TrendingUp size={15} strokeWidth={1.5} />
+                </div>
+                <p className="font-serif text-[24px] leading-none text-ink">{brl(shopKpis.totalRevenue)}</p>
+                <p className="mt-1 text-[10px] uppercase tracking-wide-2 text-ink-soft">Receita loja</p>
+              </Card>
+              <Card pad={16}>
+                <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-[10px] bg-primary-soft text-primary">
+                  <ShoppingBag size={15} strokeWidth={1.5} />
+                </div>
+                <p className="font-serif text-[24px] leading-none text-ink">{shopKpis.ordersPaid}</p>
+                <p className="mt-1 text-[10px] uppercase tracking-wide-2 text-ink-soft">Pedidos pagos</p>
+              </Card>
+              <Card pad={16}>
+                <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-[10px] bg-primary-soft text-primary">
+                  <BarChart3 size={15} strokeWidth={1.5} />
+                </div>
+                <p className="font-serif text-[24px] leading-none text-ink">{brl(shopKpis.avgOrderValue)}</p>
+                <p className="mt-1 text-[10px] uppercase tracking-wide-2 text-ink-soft">Ticket médio</p>
+              </Card>
+              <Card pad={16}>
+                <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-[10px] bg-warning-soft text-warning">
+                  <ShoppingCart size={15} strokeWidth={1.5} />
+                </div>
+                <p className="font-serif text-[24px] leading-none text-ink">{shopKpis.ordersPending}</p>
+                <p className="mt-1 text-[10px] uppercase tracking-wide-2 text-ink-soft">Aguard. pagto.</p>
+              </Card>
+            </div>
+            {shopKpis.topPieceName && (
+              <Card pad={16} className="mt-3">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wide-2 text-ink-soft">Peça mais vendida (loja)</p>
+                    <p className="mt-1 font-serif text-[18px] text-ink">{shopKpis.topPieceName}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="font-serif text-[28px] leading-none text-ink">{shopKpis.topPieceQty}</p>
+                    <p className="text-[10px] text-ink-soft">unidades</p>
+                  </div>
+                </div>
+              </Card>
+            )}
+            {shopKpis.totalOrders === 0 && (
+              <Card pad={16} className="mt-3">
+                <p className="text-[13px] text-ink-soft">Nenhum pedido na loja nos últimos 30 dias.</p>
               </Card>
             )}
           </div>

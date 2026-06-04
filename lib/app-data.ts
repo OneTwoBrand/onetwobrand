@@ -323,6 +323,57 @@ export async function getClientDetail(clientId: string): Promise<{ client: Clien
   }
 }
 
+export type ClientShopOrder = {
+  id:                string;
+  orderNumber:       string;
+  total:             number;
+  paymentStatus:     string;
+  fulfillmentStatus: string;
+  itemCount:         number;
+  createdAt:         string;
+};
+
+export async function getClientShopOrders(clientId: string): Promise<ClientShopOrder[]> {
+  if (!hasSupabasePublicEnv()) return [];
+  try {
+    const supabase = await createClient();
+    // Busca customer com client_id reconciliado
+    const { data: custData } = await supabase
+      .from('customers')
+      .select('id')
+      .eq('client_id', clientId)
+      .maybeSingle();
+
+    if (!custData?.id) return [];
+
+    const { data } = await supabase
+      .from('orders')
+      .select('id, order_number, total, payment_status, fulfillment_status, created_at, order_items(qty)')
+      .eq('customer_id', custData.id)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (!data) return [];
+
+    const fmt = (iso: string) => new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' }).format(new Date(iso));
+
+    return data.map((o) => {
+      const items = (o.order_items ?? []) as Array<{ qty: number }>;
+      return {
+        id:                o.id,
+        orderNumber:       o.order_number,
+        total:             Number(o.total),
+        paymentStatus:     o.payment_status,
+        fulfillmentStatus: o.fulfillment_status,
+        itemCount:         items.reduce((s, i) => s + (i.qty ?? 1), 0),
+        createdAt:         fmt(o.created_at),
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
 type ShipmentRow = {
   id: string;
   code: string;
@@ -606,5 +657,50 @@ export async function getSalesSummary(): Promise<{ source: DataSource; summary: 
     };
   } catch (error) {
     return { source: 'fallback', summary: fallbackSales, error: error instanceof Error ? error.message : 'Erro ao buscar vendas.' };
+  }
+}
+
+// ── KPIs da loja para /relatorios ────────────────────────────────
+
+export type ShopKpis = {
+  totalOrders:    number;
+  totalRevenue:   number;
+  avgOrderValue:  number;
+  ordersPaid:     number;
+  ordersPending:  number;
+  topPieceName:   string | null;
+  topPieceQty:    number;
+};
+
+export async function getShopKpis(days = 30): Promise<ShopKpis> {
+  const empty: ShopKpis = {
+    totalOrders: 0, totalRevenue: 0, avgOrderValue: 0,
+    ordersPaid: 0, ordersPending: 0, topPieceName: null, topPieceQty: 0,
+  };
+
+  if (!hasSupabasePublicEnv()) return empty;
+
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase.rpc('shop_kpis', { p_days: days });
+    if (!data || !Array.isArray(data) || data.length === 0) return empty;
+
+    const row = data[0] as {
+      total_orders: number; total_revenue: number; avg_order_value: number;
+      orders_paid: number; orders_pending: number;
+      top_piece_name: string | null; top_piece_qty: number;
+    };
+
+    return {
+      totalOrders:   Number(row.total_orders   ?? 0),
+      totalRevenue:  Number(row.total_revenue  ?? 0),
+      avgOrderValue: Number(row.avg_order_value ?? 0),
+      ordersPaid:    Number(row.orders_paid    ?? 0),
+      ordersPending: Number(row.orders_pending ?? 0),
+      topPieceName:  row.top_piece_name ?? null,
+      topPieceQty:   Number(row.top_piece_qty  ?? 0),
+    };
+  } catch {
+    return empty;
   }
 }

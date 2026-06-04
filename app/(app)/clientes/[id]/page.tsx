@@ -1,11 +1,11 @@
 import Link from 'next/link';
-import { ArrowLeft, Calendar, Mail, MapPin, Phone, Scissors, ShoppingCart } from 'lucide-react';
+import { ArrowLeft, Calendar, Mail, MapPin, Package, Phone, Scissors, ShoppingBag, ShoppingCart } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { AppBar, Topbar } from '@/components/layout/Navigation';
 import { Button } from '@/components/ui/Button';
 import { Badge, StatusBadge } from '@/components/ui/Badge';
 import { Avatar, Card, Divider, SectionHead } from '@/components/ui/Primitives';
-import { getClientDetail } from '@/lib/app-data';
+import { getClientDetail, getClientShopOrders } from '@/lib/app-data';
 import { brl } from '@/lib/utils';
 
 const PAYMENT_LABEL: Record<string, string> = {
@@ -20,7 +20,10 @@ const SALE_LABEL: Record<string, string> = {
 
 export default async function ClienteDetalhePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { client, source } = await getClientDetail(id);
+  const [{ client, source }, shopOrders] = await Promise.all([
+    getClientDetail(id),
+    getClientShopOrders(id),
+  ]);
 
   if (!client && source === 'supabase') notFound();
 
@@ -83,6 +86,49 @@ export default async function ClienteDetalhePage({ params }: { params: Promise<{
                 </div>
               )}
             </Card>
+
+            {/* Pedidos online */}
+            {shopOrders.length > 0 && (
+              <Card pad={20}>
+                <SectionHead
+                  eyebrow="Loja online"
+                  title="Pedidos"
+                  action={
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-semibold tracking-wide-1 uppercase bg-primary/10 text-primary">
+                      <ShoppingBag size={9} />
+                      {shopOrders.length}
+                    </span>
+                  }
+                />
+                <div className="mt-2 space-y-2">
+                  {shopOrders.map((order) => (
+                    <div key={order.id} className="flex items-center gap-3 rounded-[10px] p-2">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">
+                        <Package size={15} strokeWidth={1.5} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-[11px] text-ink-soft">{order.orderNumber}</span>
+                          <span className="text-[13px] font-medium text-ink">{brl(order.total)}</span>
+                        </div>
+                        <p className="mt-0.5 text-[11px] text-ink-soft">
+                          {order.itemCount} {order.itemCount === 1 ? 'peça' : 'peças'} · {order.createdAt}
+                        </p>
+                      </div>
+                      <Badge
+                        tone={
+                          order.paymentStatus === 'paid'    ? 'success' :
+                          order.paymentStatus === 'pending' ? 'warning' : 'danger'
+                        }
+                        size="sm"
+                      >
+                        {order.paymentStatus === 'paid' ? 'Pago' : order.paymentStatus === 'pending' ? 'Pendente' : 'Falhou'}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
 
             {/* OPs vinculadas */}
             <Card pad={20}>
