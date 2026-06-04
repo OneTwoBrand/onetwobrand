@@ -6,6 +6,14 @@ import { setPlatformConfig, getPlatformConfig } from '@/lib/platform-config';
 
 export type ShopConfigState = { error?: string; success?: string };
 
+export type HeroSlide = {
+  imageUrl:  string;
+  eyebrow:   string;
+  title:     string;
+  ctaLabel:  string;
+  ctaHref:   string;
+};
+
 // ─── Auth guard helper ────────────────────────────────────────────────────────
 async function requireAdmin() {
   const supabase = await createClient();
@@ -23,7 +31,7 @@ async function requireAdmin() {
   return { supabase, user, error: null };
 }
 
-// ─── Save hero config ─────────────────────────────────────────────────────────
+// ─── Save hero slides (3 slots + interval) ────────────────────────────────────
 export async function saveHeroConfig(
   _prev: ShopConfigState,
   formData: FormData
@@ -31,15 +39,22 @@ export async function saveHeroConfig(
   const { user, error: authError } = await requireAdmin();
   if (authError || !user) return { error: authError ?? 'Não autenticado.' };
 
-  const fields: Record<string, string> = {
-    shop_hero_image_url: String(formData.get('shop_hero_image_url') ?? '').trim(),
-    shop_hero_eyebrow:   String(formData.get('shop_hero_eyebrow') ?? '').trim(),
-    shop_hero_title:     String(formData.get('shop_hero_title') ?? '').trim(),
-    shop_hero_cta_label: String(formData.get('shop_hero_cta_label') ?? '').trim(),
-    shop_hero_cta_href:  String(formData.get('shop_hero_cta_href') ?? '').trim(),
-  };
+  // At least slot 1 must have a title
+  const title1 = String(formData.get('shop_hero_1_title') ?? '').trim();
+  if (!title1) return { error: 'O título do slide 1 é obrigatório.' };
 
-  if (!fields.shop_hero_title) return { error: 'Título do hero é obrigatório.' };
+  const fields: Record<string, string> = {};
+
+  for (const n of [1, 2, 3] as const) {
+    fields[`shop_hero_${n}_image_url`] = String(formData.get(`shop_hero_${n}_image_url`) ?? '').trim();
+    fields[`shop_hero_${n}_eyebrow`]   = String(formData.get(`shop_hero_${n}_eyebrow`)   ?? '').trim();
+    fields[`shop_hero_${n}_title`]     = String(formData.get(`shop_hero_${n}_title`)      ?? '').trim();
+    fields[`shop_hero_${n}_cta_label`] = String(formData.get(`shop_hero_${n}_cta_label`)  ?? '').trim();
+    fields[`shop_hero_${n}_cta_href`]  = String(formData.get(`shop_hero_${n}_cta_href`)   ?? '').trim();
+  }
+
+  const interval = String(formData.get('shop_hero_interval') ?? '').trim();
+  if (interval) fields['shop_hero_interval'] = interval;
 
   try {
     await Promise.all(
@@ -53,7 +68,7 @@ export async function saveHeroConfig(
 
   revalidatePath('/loja');
   revalidatePath('/mais');
-  return { success: 'Hero da vitrine atualizado.' };
+  return { success: 'Slides do hero atualizados.' };
 }
 
 // ─── Save store settings ──────────────────────────────────────────────────────
@@ -96,11 +111,12 @@ export async function saveStoreSettings(
 // ─── Read all shop config keys ────────────────────────────────────────────────
 export async function getShopConfig(): Promise<Record<string, string>> {
   const keys = [
-    'shop_hero_image_url',
-    'shop_hero_eyebrow',
-    'shop_hero_title',
-    'shop_hero_cta_label',
-    'shop_hero_cta_href',
+    // Hero slots
+    'shop_hero_1_image_url', 'shop_hero_1_eyebrow', 'shop_hero_1_title', 'shop_hero_1_cta_label', 'shop_hero_1_cta_href',
+    'shop_hero_2_image_url', 'shop_hero_2_eyebrow', 'shop_hero_2_title', 'shop_hero_2_cta_label', 'shop_hero_2_cta_href',
+    'shop_hero_3_image_url', 'shop_hero_3_eyebrow', 'shop_hero_3_title', 'shop_hero_3_cta_label', 'shop_hero_3_cta_href',
+    'shop_hero_interval',
+    // Store settings
     'shop_free_shipping_above',
     'shop_production_lead_time',
     'shop_delivery_message',
@@ -120,3 +136,4 @@ export async function getShopConfig(): Promise<Record<string, string>> {
 
   return Object.fromEntries(entries);
 }
+

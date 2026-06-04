@@ -7,6 +7,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getShopCollections, getShopProducts } from '@/lib/shop/catalog';
 import { getPlatformConfig } from '@/lib/platform-config';
+import { getShopConfig } from '@/app/(app)/mais/shop-config-actions';
+import { parseHeroSlides } from '@/lib/shop/hero-utils';
 import { CollectionCarousel } from '@/components/shop/CollectionCarousel';
 import { ProductCard } from '@/components/shop/ProductCard';
 import { ShopHero } from '@/components/shop/ShopHero';
@@ -31,31 +33,25 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function LojaPage() {
-  const [{ collections }, { products }, heroImageUrl, heroEyebrow, heroTitle, heroCtaLabel, heroCtaHref] =
-    await Promise.all([
-      getShopCollections(),
-      getShopProducts(),
-      getPlatformConfig('shop_hero_image_url'),
-      getPlatformConfig('shop_hero_eyebrow'),
-      getPlatformConfig('shop_hero_title'),
-      getPlatformConfig('shop_hero_cta_label'),
-      getPlatformConfig('shop_hero_cta_href'),
-    ]);
+  const [{ collections }, { products }, shopConfig] = await Promise.all([
+    getShopCollections(),
+    getShopProducts(),
+    getShopConfig(),
+  ]);
 
-  const featured = collections[0] ?? null;
-  const featuredProducts = products.filter((p) => p.isNew).slice(0, 8);
-  const displayProducts = featuredProducts.length > 0 ? featuredProducts : products.slice(0, 8);
+  const slides    = parseHeroSlides(shopConfig);
+  const interval  = parseInt(shopConfig['shop_hero_interval'] || '7', 10);
+  const featured  = collections[0] ?? null;
+  const featuredProducts  = products.filter((p) => p.isNew).slice(0, 8);
+  const displayProducts   = featuredProducts.length > 0 ? featuredProducts : products.slice(0, 8);
 
   return (
     <div className="flex flex-col gap-8">
       {/* ── Hero ──────────────────────────────────────────── */}
-      {(featured || heroTitle) && (
+      {(slides.length > 0 || featured) && (
         <ShopHero
-          imageUrl={heroImageUrl ?? undefined}
-          eyebrow={heroEyebrow ?? undefined}
-          title={heroTitle ?? undefined}
-          ctaLabel={heroCtaLabel ?? undefined}
-          ctaHref={heroCtaHref ?? undefined}
+          slides={slides}
+          interval={interval}
           fallbackCollectionName={featured?.name}
           fallbackCollectionSubtitle={featured?.subtitle ?? undefined}
           fallbackCollectionSlug={featured?.slug}
