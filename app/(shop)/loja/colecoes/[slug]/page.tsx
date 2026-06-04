@@ -11,21 +11,16 @@ import Image from 'next/image';
 import {
   getShopCollectionBySlug,
   getShopProducts,
-  getAllCollectionSlugs,
 } from '@/lib/shop/catalog';
 import { FavoriteProductGrid } from '@/components/shop/FavoriteProductGrid';
 import { CollectionFilters } from './CollectionFilters';
 
 export const revalidate = 600;
+export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ tamanho?: string; categoria?: string; disponivel?: string }>;
-}
-
-export async function generateStaticParams() {
-  const slugs = await getAllCollectionSlugs();
-  return slugs.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {

@@ -10,7 +10,6 @@ import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import {
   getShopProductBySlug,
-  getAllProductSlugs,
 } from '@/lib/shop/catalog';
 import { Gallery } from '@/components/shop/Gallery';
 import { AddToCartButton } from './AddToCartButton';
@@ -18,14 +17,10 @@ import { DeliveryMessage } from './DeliveryMessage';
 import { brl } from '@/lib/utils';
 
 export const revalidate = 300;
+export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
-}
-
-export async function generateStaticParams() {
-  const slugs = await getAllProductSlugs();
-  return slugs.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
