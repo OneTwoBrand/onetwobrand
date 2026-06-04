@@ -182,13 +182,22 @@ export function HeroConfigForm({ config }: { config: Record<string, string> }) {
 }
 
 // ─── Store Settings Form ──────────────────────────────────────────────────────
-export function StoreSettingsForm({ config }: { config: Record<string, string> }) {
+type StoreSection = 'all' | 'frete' | 'comunicacao' | 'seo';
+
+export function StoreSettingsForm({
+  config,
+  section = 'all',
+}: {
+  config: Record<string, string>;
+  section?: StoreSection;
+}) {
   const [state, action, pending] = useActionState(saveStoreSettings, {} as ShopConfigState);
+  const show = (s: StoreSection) => section === 'all' || section === s;
 
   return (
     <form action={action} className="space-y-6">
 
-      <fieldset className="space-y-4">
+      {show('frete') && <fieldset className="space-y-4">
         <legend className="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft">Frete e entrega</legend>
         <Input
           name="shop_free_shipping_above"
@@ -210,9 +219,9 @@ export function StoreSettingsForm({ config }: { config: Record<string, string> }
           defaultValue={config.shop_delivery_message}
           placeholder="Peça artesanal sob encomenda. Prazo de produção: 5 a 10 dias úteis."
         />
-      </fieldset>
+      </fieldset>}
 
-      <fieldset className="space-y-4">
+      {show('frete') && <fieldset className="space-y-4">
         <legend className="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft">Catálogo</legend>
         <div className="flex items-center gap-3">
           <input
@@ -227,9 +236,9 @@ export function StoreSettingsForm({ config }: { config: Record<string, string> }
             Exibir produtos esgotados na vitrine
           </label>
         </div>
-      </fieldset>
+      </fieldset>}
 
-      <fieldset className="space-y-4">
+      {show('comunicacao') && <fieldset className="space-y-4">
         <legend className="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft">Comunicação</legend>
         <Input
           name="shop_whatsapp"
@@ -263,9 +272,9 @@ export function StoreSettingsForm({ config }: { config: Record<string, string> }
           defaultValue={config.shop_announcement_bar}
           placeholder="Use BEMVINDA10 e ganhe 10% off no primeiro pedido"
         />
-      </fieldset>
+      </fieldset>}
 
-      <fieldset className="space-y-4">
+      {show('seo') && <fieldset className="space-y-4">
         <legend className="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft">SEO</legend>
         <Input
           name="shop_meta_title"
@@ -279,7 +288,7 @@ export function StoreSettingsForm({ config }: { config: Record<string, string> }
           defaultValue={config.shop_meta_description}
           placeholder="Peças artesanais feitas em pequenas tiragens pelo atelier ONE TWO."
         />
-      </fieldset>
+      </fieldset>}
 
       {state?.error && <p className="text-[12px] text-danger">{state.error}</p>}
       {state?.success && (
