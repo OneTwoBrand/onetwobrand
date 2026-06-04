@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * ONE TWO · POST /api/shop/webhooks
  * Recebe eventos do Stripe (payment_intent.succeeded).

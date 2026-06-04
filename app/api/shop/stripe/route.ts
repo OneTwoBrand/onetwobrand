@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * ONE TWO · POST /api/shop/stripe
  * Cria um PaymentIntent para o Stripe Elements.

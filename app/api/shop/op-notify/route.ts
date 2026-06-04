@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * ONE TWO · GET|POST /api/shop/op-notify
  * Consome a shop_email_queue e envia e-mails de status ao cliente.

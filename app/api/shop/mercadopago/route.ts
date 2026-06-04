@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * ONE TWO · POST /api/shop/mercadopago
  * Gera PIX (QR Code + copia/cola) ou Boleto via MercadoPago.
