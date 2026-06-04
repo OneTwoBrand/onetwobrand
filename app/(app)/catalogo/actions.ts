@@ -21,8 +21,21 @@ export async function createCollection(_prev: CollectionActionState, formData: F
 
   if (!user) return { error: 'Faça login para criar coleções.' };
 
-  const { error } = await supabase.from('collections').insert({ name, category, description, active: true });
+  const slug = name
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+
+  const { error } = await supabase.from('collections').insert({
+    name,
+    category,
+    description,
+    active: true,
+    slug,
+    published_at: new Date().toISOString(),
+  });
   if (error) return { error: error.message };
 
-  redirect('/colecoes');
+  redirect('/catalogo');
 }
