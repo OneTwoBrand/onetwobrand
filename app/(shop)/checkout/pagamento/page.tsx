@@ -17,9 +17,16 @@ import { CheckoutStepper } from '../CheckoutStepper';
 
 const STEPS = ['Identificação', 'Entrega', 'Pagamento', 'Concluir'];
 
-const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
-  : null;
+// loadStripe deve ser chamado só no browser — lazy singleton
+let stripePromise: ReturnType<typeof loadStripe> | null = null;
+function getStripePromise() {
+  if (typeof window === 'undefined') return null;
+  if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) return null;
+  if (!stripePromise) {
+    stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+  }
+  return stripePromise;
+}
 
 type PayMethod = 'card' | 'pix' | 'boleto';
 
@@ -140,9 +147,9 @@ export default function PagamentoPage() {
           <div className="flex flex-col gap-4">
             <p className="text-[10px] font-medium tracking-[0.24em] uppercase text-ink-soft">Dados do cartão</p>
             {loading && <p className="text-[12px] text-ink-mute">Carregando formulário…</p>}
-            {clientSecret && stripePromise ? (
+            {clientSecret && getStripePromise() ? (
               <Elements
-                stripe={stripePromise}
+                stripe={getStripePromise()}
                 options={{
                   clientSecret,
                   appearance: {

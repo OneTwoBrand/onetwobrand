@@ -2,7 +2,10 @@
  * ONE TWO · Layout público da loja
  * Envolve todas as rotas (shop): ShopHeader + ShopFooter + ShopNav.
  * Sem autenticação obrigatória.
+ * force-dynamic: rotas da loja usam sessionStorage/cookies em runtime.
  */
+export const dynamic = 'force-dynamic';
+
 import type { ReactNode } from 'react';
 import { ToastProvider } from '@/components/ui/Overlays';
 import { ShopHeader } from '@/components/shop/ShopHeader';

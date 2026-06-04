@@ -7,9 +7,12 @@ import { Resend } from 'resend';
 import { brl } from '@/lib/utils';
 import type { OrderSummary } from './checkout-actions';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM   = 'ONE TWO · Loja <noreply@one2brand.com.br>';
-const SITE   = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://one2brand.com.br';
+const FROM = 'ONE TWO · Loja <noreply@one2brand.com.br>';
+const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://one2brand.com.br';
+
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY);
+}
 
 function shell(content: string): string {
   return `<!DOCTYPE html>
@@ -94,7 +97,7 @@ export async function sendOrderConfirmationEmail(order: OrderSummary) {
     </p>
   `;
 
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM,
     to:   order.customerEmail,
     subject: `Pedido ${order.orderNumber} confirmado — ONE TWO`,
@@ -137,7 +140,7 @@ export async function sendOrderStatusEmail({
     </table>
   `;
 
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM,
     to,
     subject: `${stage} — Pedido ${orderNumber} · ONE TWO`,
