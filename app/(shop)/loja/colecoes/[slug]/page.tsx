@@ -6,6 +6,7 @@
  */
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import Image from 'next/image';
 import {
   getShopCollectionBySlug,
   getShopProducts,
@@ -73,19 +74,46 @@ export default async function ColecaoPage({ params, searchParams }: PageProps) {
   return (
     <div className="flex flex-col gap-6">
       {/* ── Cabeçalho da coleção ──────────────────────────── */}
-      <div>
-        <span className="text-[10px] font-medium tracking-[0.24em] uppercase text-ink-mute">
-          Coleção · {collection.pieceCount} peças
-        </span>
-        <h1 className="font-serif text-[36px] font-light text-ink leading-[1.1] mt-1">
-          {collection.name}
-        </h1>
-        {collection.subtitle && (
-          <p className="text-[12px] text-ink-soft leading-[1.55] mt-1.5 max-w-[480px]">
-            {collection.subtitle}
-          </p>
-        )}
-      </div>
+      {collection.heroUrl ? (
+        <div className="relative -mx-5 lg:-mx-14 overflow-hidden rounded-b-[22px]" style={{ height: 'min(55vh, 420px)' }}>
+          <Image
+            src={collection.heroUrl}
+            alt={collection.name}
+            fill
+            priority
+            className="object-cover object-center"
+            sizes="100vw"
+          />
+          <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 px-6 pb-7 lg:px-14 lg:pb-10">
+            <span className="block text-[9px] font-medium tracking-[0.28em] uppercase text-white/60 mb-1.5">
+              Coleção · {collection.pieceCount} {collection.pieceCount === 1 ? 'peça' : 'peças'}
+            </span>
+            <h1 className="font-serif text-[clamp(28px,5vw,52px)] font-light text-white leading-[1.05]">
+              {collection.name}
+            </h1>
+            {collection.subtitle && (
+              <p className="text-[12px] text-white/75 leading-[1.55] mt-1.5 max-w-[480px]">
+                {collection.subtitle}
+              </p>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div>
+          <span className="text-[10px] font-medium tracking-[0.24em] uppercase text-ink-mute">
+            Coleção · {collection.pieceCount} {collection.pieceCount === 1 ? 'peça' : 'peças'}
+          </span>
+          <h1 className="font-serif text-[36px] font-light text-ink leading-[1.1] mt-1">
+            {collection.name}
+          </h1>
+          {collection.subtitle && (
+            <p className="text-[12px] text-ink-soft leading-[1.55] mt-1.5 max-w-[480px]">
+              {collection.subtitle}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* ── Filtros ───────────────────────────────────────── */}
       <CollectionFilters

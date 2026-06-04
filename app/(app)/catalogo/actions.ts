@@ -8,18 +8,16 @@ import { createClient } from '@/lib/supabase/server';
 export type CollectionActionState = { error?: string };
 
 export async function createCollection(_prev: CollectionActionState, formData: FormData): Promise<CollectionActionState> {
-  const name = String(formData.get('name') ?? '').trim();
-  const category = String(formData.get('category') ?? '').trim() || null;
+  const name        = String(formData.get('name')        ?? '').trim();
+  const category    = String(formData.get('category')    ?? '').trim() || null;
   const description = String(formData.get('description') ?? '').trim() || null;
+  const cover_url   = String(formData.get('cover_url')   ?? '').trim() || null;
 
   if (!name) return { error: 'Nome é obrigatório.' };
   if (!hasSupabasePublicEnv()) return { error: 'Supabase não configurado.' };
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Faça login para criar coleções.' };
 
   const slug = name
@@ -35,6 +33,7 @@ export async function createCollection(_prev: CollectionActionState, formData: F
     active: true,
     slug,
     published_at: new Date().toISOString(),
+    hero_url: cover_url,
   });
   if (error) return { error: error.message };
 

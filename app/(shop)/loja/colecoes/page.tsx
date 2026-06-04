@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowRight } from 'lucide-react';
 import { getShopCollections } from '@/lib/shop/catalog';
 import { SectionHead } from '@/components/ui/Primitives';
@@ -36,18 +37,31 @@ export default async function ColecoesShopPage() {
             <Link
               key={col.id}
               href={`/loja/colecoes/${col.slug}`}
-              className="block rounded-[22px] bg-primary px-6 py-8 relative overflow-hidden group"
+              className="block rounded-[22px] relative overflow-hidden group"
+              style={{ minHeight: '220px' }}
             >
-              <svg
-                aria-hidden
-                className="absolute bottom-[-20%] right-[-8%] w-[55%] opacity-[0.14] pointer-events-none"
-                viewBox="0 0 200 200"
-                fill="none"
-              >
-                <rect x="100" y="4" width="136" height="136" rx="4" transform="rotate(45 100 4)" stroke="#FBF6E4" strokeWidth="1.5" />
-              </svg>
+              {/* Foto de capa ou fundo colorido */}
+              {col.heroUrl ? (
+                <>
+                  <Image
+                    src={col.heroUrl}
+                    alt={col.name}
+                    fill
+                    className="object-cover object-center transition-transform duration-700 group-hover:scale-105"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  />
+                  <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                </>
+              ) : (
+                <>
+                  <div className="absolute inset-0 bg-primary" />
+                  <svg aria-hidden className="absolute bottom-[-20%] right-[-8%] w-[55%] opacity-[0.14] pointer-events-none" viewBox="0 0 200 200" fill="none">
+                    <rect x="100" y="4" width="136" height="136" rx="4" transform="rotate(45 100 4)" stroke="#FBF6E4" strokeWidth="1.5" />
+                  </svg>
+                </>
+              )}
 
-              <div className="relative z-10 flex flex-col gap-2">
+              <div className="relative z-10 flex flex-col gap-2 px-6 py-8">
                 <span className="text-[9px] font-medium tracking-[0.24em] uppercase text-paper/70">
                   {col.pieceCount} {col.pieceCount === 1 ? 'peça' : 'peças'}
                 </span>
