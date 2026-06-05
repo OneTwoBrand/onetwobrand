@@ -339,9 +339,9 @@ function PhotoUploader({
               icon={<Maximize2 size={12} />}
               label="Zoom"
               value={fit.zoom}
-              min={1}
+              min={0.2}
               max={2.2}
-              step={0.05}
+              step={0.02}
               onChange={(zoom) => onFitChange({ ...fit, zoom })}
             />
             <PhotoSlider

@@ -132,7 +132,7 @@ export default function NovaColecaoPage() {
 
                 {/* Controles de enquadramento */}
                 <div className="space-y-2 rounded-[12px] border border-line bg-surface p-3">
-                  <HeroSlider icon={<Maximize2 size={12} />} label="Zoom" value={fit.zoom} min={1} max={2.2} step={0.05} onChange={(zoom) => setFit((f) => ({ ...f, zoom }))} />
+                  <HeroSlider icon={<Maximize2 size={12} />} label="Zoom" value={fit.zoom} min={0.2} max={2.2} step={0.02} onChange={(zoom) => setFit((f) => ({ ...f, zoom }))} />
                   <HeroSlider icon={<MoveVertical size={12} />} label="Vertical" value={fit.offsetY} min={-100} max={100} step={1} onChange={(offsetY) => setFit((f) => ({ ...f, offsetY }))} />
                   <HeroSlider icon={<MoveHorizontal size={12} />} label="Horizontal" value={fit.offsetX} min={-100} max={100} step={1} onChange={(offsetX) => setFit((f) => ({ ...f, offsetX }))} />
                   <div className="grid grid-cols-2 gap-2">

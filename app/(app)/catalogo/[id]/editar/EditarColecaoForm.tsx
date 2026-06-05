@@ -148,9 +148,9 @@ export function EditarColecaoForm({ collection }: { collection: CollectionDetail
                     icon={<Maximize2 size={12} />}
                     label="Zoom"
                     value={fit.zoom}
-                    min={1}
+                    min={0.2}
                     max={2.2}
-                    step={0.05}
+                    step={0.02}
                     onChange={(zoom) => setFit((f) => ({ ...f, zoom }))}
                   />
                   <HeroSlider
