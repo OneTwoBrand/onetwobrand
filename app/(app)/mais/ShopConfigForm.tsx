@@ -1,7 +1,7 @@
 'use client';
 
-import { useActionState, useRef, useState } from 'react';
-import { Check, Upload, X } from 'lucide-react';
+import { useActionState, useRef, useState, type ReactNode } from 'react';
+import { Check, Maximize2, MoveHorizontal, MoveVertical, RotateCcw, Sparkles, Upload, X } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -10,7 +10,60 @@ import { Select, Textarea } from '@/components/ui/Field';
 import { parseShopVisualConfig } from '@/lib/shop/visual-config';
 import { saveHeroConfig, saveStoreSettings, saveVisualSettings, type ShopConfigState } from './shop-config-actions';
 
-// ─── Single slide uploader + fields ──────────────────────────────────────────
+type UploadState = 'idle' | 'uploading' | 'enhancing' | 'done' | 'error';
+type HeroFit = { zoom: number; offsetX: number; offsetY: number };
+const DEFAULT_FIT: HeroFit = { zoom: 1, offsetX: 0, offsetY: 0 };
+
+function fitFormData(file: File, fit: HeroFit) {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('zoom', String(fit.zoom));
+  fd.append('offsetX', String(fit.offsetX));
+  fd.append('offsetY', String(fit.offsetY));
+  return fd;
+}
+
+function SlideSlider({ icon, label, value, min, max, step, onChange }: {
+  icon: ReactNode; label: string; value: number;
+  min: number; max: number; step: number; onChange: (v: number) => void;
+}) {
+  return (
+    <label className="grid gap-1 text-[10px] text-ink-soft">
+      <span className="flex items-center justify-between gap-2 uppercase tracking-[0.14em]">
+        <span className="flex items-center gap-1.5">{icon}{label}</span>
+        <span>{label === 'Zoom' ? value.toFixed(2) : Math.round(value)}</span>
+      </span>
+      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-full accent-primary" />
+    </label>
+  );
+}
+
+function SlideActionButton({ icon, label, title, tone = 'ghost', disabled, onClick }: {
+  icon: ReactNode; label: string; title: string;
+  tone?: 'ghost' | 'soft'; disabled?: boolean; onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      title={title}
+      aria-label={title}
+      disabled={disabled}
+      onClick={onClick}
+      className={[
+        'flex h-9 min-w-0 items-center justify-center gap-1.5 rounded-full border px-2.5 text-[10px] font-medium uppercase tracking-[0.08em] transition-colors',
+        'disabled:cursor-not-allowed disabled:opacity-40',
+        tone === 'soft'
+          ? 'border-transparent bg-primary-soft text-primary hover:bg-primary/15'
+          : 'border-line bg-transparent text-ink hover:bg-ink/[0.05]',
+      ].join(' ')}
+    >
+      <span className="shrink-0">{icon}</span>
+      <span className="min-w-0 truncate whitespace-nowrap">{label}</span>
+    </button>
+  );
+}
+
+// ─── Single slide uploader + controls ────────────────────────────────────────
 function SlotUploader({
   slot,
   imageUrl,
@@ -20,23 +73,71 @@ function SlotUploader({
   imageUrl: string;
   onImageUrl: (url: string) => void;
 }) {
-  const [uploadState, setUploadState] = useState<'idle' | 'uploading' | 'error'>('idle');
+  const [uploadState, setUploadState] = useState<UploadState>('idle');
   const [uploadError, setUploadError] = useState('');
+  const [fit, setFit] = useState<HeroFit>(DEFAULT_FIT);
+  const [currentFile, setCurrentFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isBusy = uploadState === 'uploading' || uploadState === 'enhancing';
+  const previewTransform = `translate(${fit.offsetX / 4}%, ${fit.offsetY / 4}%) scale(${fit.zoom})`;
 
   async function handleFile(file: File) {
     setUploadState('uploading');
     setUploadError('');
-    const fd = new FormData();
-    fd.append('file', file);
-    const res = await fetch('/api/upload-hero', { method: 'POST', body: fd });
+    const currentFit = DEFAULT_FIT;
+    setFit(currentFit);
+    const res = await fetch('/api/upload-hero', { method: 'POST', body: fitFormData(file, currentFit) });
     const data = await res.json();
     if (!res.ok) {
       setUploadState('error');
       setUploadError(data.error ?? 'Erro ao enviar imagem.');
       return;
     }
+    setCurrentFile(file);
     onImageUrl(data.url);
+    setUploadState('done');
+  }
+
+  async function applyFit() {
+    if (!currentFile) return;
+    setUploadState('uploading');
+    setUploadError('');
+    const res = await fetch('/api/upload-hero', { method: 'POST', body: fitFormData(currentFile, fit) });
+    const data = await res.json();
+    if (!res.ok) {
+      setUploadState('error');
+      setUploadError(data.error ?? 'Erro ao aplicar enquadramento.');
+      return;
+    }
+    onImageUrl(data.url);
+    setUploadState('done');
+  }
+
+  async function handleEnhance() {
+    if (!imageUrl) return;
+    setUploadState('enhancing');
+    setUploadError('');
+    const res = await fetch('/api/ai/enhance-photo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageUrl, productName: `Slide ${slot}` }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setUploadState('error');
+      setUploadError(data.error ?? 'Erro ao refinar imagem.');
+      return;
+    }
+    onImageUrl(data.url);
+    setCurrentFile(null);
+    setUploadState('done');
+  }
+
+  function handleRemove() {
+    onImageUrl('');
+    setCurrentFile(null);
+    setFit(DEFAULT_FIT);
     setUploadState('idle');
   }
 
@@ -48,19 +149,38 @@ function SlotUploader({
       {imageUrl ? (
         <div className="space-y-2">
           <div className="relative aspect-video overflow-hidden rounded-[12px] border border-line">
-            <Image src={imageUrl} alt={`Slide ${slot}`} fill className="object-cover" />
+            <Image
+              src={imageUrl}
+              alt={`Slide ${slot}`}
+              fill
+              className="object-cover object-center transition-transform duration-200"
+              style={{ transform: previewTransform }}
+            />
             <button
               type="button"
-              onClick={() => onImageUrl('')}
+              onClick={handleRemove}
               className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full border border-line bg-paper text-ink-soft hover:bg-danger-soft hover:text-danger transition-colors"
               aria-label="Remover foto"
             >
               <X size={14} />
             </button>
           </div>
-          <Button type="button" size="sm" variant="ghost" block onClick={() => fileInputRef.current?.click()}>
-            Trocar foto
-          </Button>
+
+          {/* Controles de enquadramento */}
+          <div className="space-y-2 rounded-[12px] border border-line bg-surface p-3">
+            <SlideSlider icon={<Maximize2 size={12} />} label="Zoom" value={fit.zoom} min={0.2} max={2.2} step={0.02} onChange={(zoom) => setFit((f) => ({ ...f, zoom }))} />
+            <SlideSlider icon={<MoveVertical size={12} />} label="Vertical" value={fit.offsetY} min={-100} max={100} step={1} onChange={(offsetY) => setFit((f) => ({ ...f, offsetY }))} />
+            <SlideSlider icon={<MoveHorizontal size={12} />} label="Horizontal" value={fit.offsetX} min={-100} max={100} step={1} onChange={(offsetX) => setFit((f) => ({ ...f, offsetX }))} />
+            <div className="grid grid-cols-2 gap-2">
+              <SlideActionButton icon={<RotateCcw size={13} />} label="Centro" title="Centralizar foto" onClick={() => setFit(DEFAULT_FIT)} />
+              <SlideActionButton icon={<Check size={13} />} label={uploadState === 'uploading' ? '...' : 'Aplicar'} title="Aplicar enquadramento" tone="soft" onClick={applyFit} disabled={!currentFile || isBusy} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <SlideActionButton icon={<Upload size={13} />} label="Trocar foto" title="Trocar foto do slide" onClick={() => fileInputRef.current?.click()} />
+            <SlideActionButton icon={<Sparkles size={13} />} label={uploadState === 'enhancing' ? '...' : 'Gerar com IA'} title="Refinar imagem com IA" tone="soft" onClick={handleEnhance} disabled={isBusy} />
+          </div>
         </div>
       ) : (
         <button
@@ -84,7 +204,7 @@ function SlotUploader({
         aria-label={`Foto do slide ${slot}`}
         title={`Foto do slide ${slot}`}
         className="hidden"
-        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }}
       />
       {uploadError && <p className="mt-1 text-[11px] text-danger">{uploadError}</p>}
     </div>

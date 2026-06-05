@@ -12,13 +12,17 @@ type Role = 'admin' | 'atelier' | 'viewer';
 export function RoleSelector({ userId, currentRole }: { userId: string; currentRole: Role }) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const role = e.target.value as Role;
     setError('');
+    setSuccess('');
     startTransition(async () => {
       try {
         await updateUserRole(userId, role);
+        setSuccess('Categoria salva.');
+        setTimeout(() => setSuccess(''), 3000);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Erro.');
       }
@@ -26,7 +30,7 @@ export function RoleSelector({ userId, currentRole }: { userId: string; currentR
   }
 
   return (
-    <div>
+    <div className="text-right">
       <select
         defaultValue={currentRole}
         onChange={handleChange}
@@ -38,6 +42,7 @@ export function RoleSelector({ userId, currentRole }: { userId: string; currentR
         <option value="viewer">Visualizador</option>
       </select>
       {error && <p className="mt-1 text-[10px] text-danger">{error}</p>}
+      {success && <p className="mt-1 text-[10px] text-success">{success}</p>}
     </div>
   );
 }
