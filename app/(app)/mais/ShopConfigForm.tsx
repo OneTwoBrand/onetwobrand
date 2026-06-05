@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { MoneyInput, PhoneInput } from '@/components/ui/MaskedInput';
 import { Select, Textarea } from '@/components/ui/Field';
 import { parseShopVisualConfig } from '@/lib/shop/visual-config';
-import { saveHeroConfig, saveStoreSettings, saveVisualSettings, saveCanaisSettings, type ShopConfigState } from './shop-config-actions';
+import { saveHeroConfig, saveStoreSettings, saveVisualSettings, saveCanaisSettings, savePagesSettings, type ShopConfigState } from './shop-config-actions';
 
 type UploadState = 'idle' | 'uploading' | 'enhancing' | 'done' | 'error';
 type HeroFit = { zoom: number; offsetX: number; offsetY: number };
@@ -527,6 +527,179 @@ export function CanaisForm({ config }: { config: Record<string, string> }) {
         {pending ? 'Salvando…' : 'Salvar canais'}
       </Button>
     </form>
+  );
+}
+
+// ─── Conteúdo padrão para fallback ───────────────────────────────────────────
+const DEFAULT_PRIVACIDADE = `## Quem somos
+ONE TWO é um atelier de moda artesanal que produz peças em pequenas tiragens. Esta política descreve como coletamos e usamos seus dados quando você realiza uma compra ou nos contata.
+
+## Dados que coletamos
+Coletamos apenas os dados necessários para processar seu pedido: nome completo, e-mail, telefone, endereço de entrega e dados de pagamento (processados pela Stripe ou MercadoPago — não armazenamos dados de cartão).
+
+## Como usamos seus dados
+Seus dados são usados exclusivamente para processar e entregar seu pedido, comunicar atualizações de produção e entrega, responder dúvidas e cumprir obrigações legais. **Não vendemos, alugamos ou compartilhamos seus dados** com terceiros para fins comerciais.
+
+## Armazenamento e segurança
+Seus dados são armazenados em servidores seguros (Supabase/AWS) com criptografia em trânsito (TLS) e em repouso. O acesso é restrito à equipe responsável pelo atendimento e produção.
+
+## Cookies
+Utilizamos apenas cookies estritamente necessários para o funcionamento da loja (sessão do carrinho e preferências de navegação). Não usamos cookies de rastreamento ou publicidade de terceiros.
+
+## Seus direitos (LGPD)
+Em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018), você tem direito a confirmar a existência de tratamento dos seus dados, acessar, corrigir ou solicitar a exclusão, e revogar o consentimento a qualquer momento. Para exercer qualquer desses direitos, entre em contato pelo e-mail ou WhatsApp disponíveis no rodapé.
+
+## Alterações nesta política
+Podemos atualizar esta política periodicamente. A data de última atualização estará sempre indicada no topo desta página.`;
+
+const DEFAULT_TROCAS = `## Peças sob encomenda
+Todas as peças ONE TWO são produzidas artesanalmente sob encomenda após a confirmação do pedido. Por essa razão, **não realizamos trocas ou devoluções por arrependimento** em peças feitas sob medida ou personalizadas.
+
+## Defeito de fabricação
+Caso sua peça apresente defeito de fabricação comprovado, você tem até **7 dias corridos** após o recebimento para nos contatar. Envie fotos detalhadas do problema para o nosso WhatsApp ou e-mail. Após análise, realizaremos o conserto sem custo, a substituição da peça ou o reembolso integral.
+
+## Prazo de envio para troca
+A peça deve ser devolvida em até **14 dias corridos** após a autorização, sem sinais de uso, com etiquetas originais e na embalagem original sempre que possível. O frete de devolução é de responsabilidade do cliente, exceto nos casos de defeito comprovado.
+
+## Como entrar em contato
+Fale conosco pelo WhatsApp ou pelo e-mail listado no rodapé da loja. Informe o número do pedido, descreva o problema e anexe fotos se possível. Respondemos em até 2 dias úteis.
+
+## Reembolso
+Reembolsos aprovados são processados no mesmo meio de pagamento utilizado na compra, em até **10 dias úteis** após a confirmação da devolução. Para pagamentos via cartão de crédito, o prazo pode variar conforme a operadora.`;
+
+const DEFAULT_FAQ: FaqItem[] = [
+  { pergunta: 'As peças são feitas à mão mesmo?', resposta: 'Sim, de verdade. Cada peça passa pelas mãos das nossas costureiras antes de chegar até você. Não tem robô, não tem linha de montagem — tem gente de verdade com muito cuidado no processo.' },
+  { pergunta: 'Tem estoque disponível ou é tudo sob encomenda?', resposta: 'Depende da peça! Algumas estão disponíveis imediatamente, outras são produzidas depois do seu pedido. A própria página do produto deixa claro quando é o caso.' },
+  { pergunta: 'Como sei qual tamanho escolher?', resposta: 'Na página de cada produto há um guia de medidas. Se ainda ficou com dúvida, pergunte pelo WhatsApp antes de comprar — a vendedora conhece cada peça e ajuda a escolher.' },
+  { pergunta: 'Quanto tempo demora para meu pedido chegar?', resposta: 'São alguns dias úteis de produção + o prazo de entrega do frete escolhido. Você pode conferir o prazo estimado direto na página do produto.' },
+  { pergunta: 'Quais formas de pagamento vocês aceitam?', resposta: 'Cartão de crédito, PIX (com 5% de desconto!) e boleto bancário. Se preferir negociar direto, pode usar o WhatsApp no checkout.' },
+  { pergunta: 'Posso devolver se não gostei?', resposta: 'Como as peças são feitas sob encomenda, não aceitamos devoluções por desistência. Mas se chegou com defeito de fabricação, a gente resolve — prazo de 7 dias após o recebimento.' },
+  { pergunta: 'Vocês têm loja física?', resposta: 'Somos um atelier, então o atendimento é por agendamento. Se quiser visitar, fala pelo WhatsApp antes de aparecer de surpresa (a gente pode estar costurando com fone de ouvido).' },
+];
+
+export type FaqItem = { pergunta: string; resposta: string };
+
+export function PagesForm({ config }: { config: Record<string, string> }) {
+  const [activePage, setActivePage] = useState<'privacidade' | 'trocas' | 'faq'>('privacidade');
+  const [state, action, pending] = useActionState(savePagesSettings, {} as ShopConfigState);
+
+  // FAQ state
+  const parsedFaq: FaqItem[] = (() => {
+    try { return JSON.parse(config['shop_faq'] || '[]'); } catch { return []; }
+  })();
+  const [faqItems, setFaqItems] = useState<FaqItem[]>(parsedFaq.length ? parsedFaq : DEFAULT_FAQ);
+
+  function addItem() { setFaqItems((prev) => [...prev, { pergunta: '', resposta: '' }]); }
+  function removeItem(i: number) { setFaqItems((prev) => prev.filter((_, idx) => idx !== i)); }
+  function updateItem(i: number, field: 'pergunta' | 'resposta', value: string) {
+    setFaqItems((prev) => prev.map((item, idx) => idx === i ? { ...item, [field]: value } : item));
+  }
+
+  const tabs: Array<{ id: 'privacidade' | 'trocas' | 'faq'; label: string; key: string; defaultContent: string; hint: string }> = [
+    { id: 'privacidade', label: 'Privacidade', key: 'shop_page_privacidade', defaultContent: DEFAULT_PRIVACIDADE, hint: 'Política de privacidade e LGPD' },
+    { id: 'trocas',      label: 'Trocas',      key: 'shop_page_trocas',      defaultContent: DEFAULT_TROCAS,      hint: 'Política de trocas e devoluções' },
+    { id: 'faq',         label: 'FAQ',          key: 'shop_faq',              defaultContent: '',                  hint: 'Perguntas frequentes' },
+  ];
+  const current = tabs.find((t) => t.id === activePage)!;
+
+  return (
+    <div className="space-y-5">
+      {/* Subtabs */}
+      <div className="flex gap-1 border-b border-line">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActivePage(tab.id)}
+            className={[
+              'shrink-0 px-3 py-2 text-[11px] font-medium tracking-wide-1 uppercase transition-colors border-b-2 -mb-px',
+              activePage === tab.id ? 'border-primary text-primary' : 'border-transparent text-ink-soft hover:text-ink',
+            ].join(' ')}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <p className="text-[11px] text-ink-soft">{current.hint}</p>
+
+      {activePage !== 'faq' ? (
+        <form action={action} className="space-y-4">
+          <input type="hidden" name="page" value={activePage} />
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-medium uppercase tracking-wide-2 text-ink-soft">
+              Conteúdo — suporta **negrito**, ## Títulos, listas com -
+            </p>
+            <textarea
+              name="content"
+              rows={18}
+              defaultValue={config[current.key] || current.defaultContent}
+              placeholder={current.defaultContent}
+              className="w-full rounded-[12px] border border-line bg-paper px-4 py-3 text-[12px] text-ink placeholder:text-ink-mute font-mono leading-relaxed resize-y focus:outline-none focus:border-primary/60"
+            />
+          </div>
+          <p className="text-[11px] text-ink-mute leading-relaxed">
+            Use <code className="bg-surface px-1 rounded">## Título</code> para seções, <code className="bg-surface px-1 rounded">**texto**</code> para negrito e <code className="bg-surface px-1 rounded">- item</code> para listas. Deixe em branco para usar o conteúdo padrão.
+          </p>
+          {state?.error && <p className="text-[12px] text-danger">{state.error}</p>}
+          {state?.success && (
+            <p className="flex items-center gap-1.5 text-[12px] text-success">
+              <Check size={13} /> {state.success}
+            </p>
+          )}
+          <Button type="submit" size="sm" disabled={pending} block>
+            {pending ? 'Salvando…' : `Salvar página de ${activePage}`}
+          </Button>
+        </form>
+      ) : (
+        <form action={action} className="space-y-4">
+          <input type="hidden" name="page" value="faq" />
+          <input type="hidden" name="faq_json" value={JSON.stringify(faqItems)} />
+          <div className="space-y-3">
+            {faqItems.map((item, i) => (
+              <div key={i} className="rounded-[12px] border border-line bg-paper p-4 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-medium uppercase tracking-wide-2 text-ink-soft">Pergunta {i + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeItem(i)}
+                    className="text-[11px] text-danger hover:underline"
+                  >
+                    Remover
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={item.pergunta}
+                  onChange={(e) => updateItem(i, 'pergunta', e.target.value)}
+                  placeholder="Ex: As peças são feitas à mão?"
+                  className="w-full h-10 rounded-[10px] border border-line bg-surface px-3 text-[12px] text-ink placeholder:text-ink-mute focus:outline-none focus:border-primary/60"
+                />
+                <textarea
+                  value={item.resposta}
+                  onChange={(e) => updateItem(i, 'resposta', e.target.value)}
+                  placeholder="Resposta clara e direta..."
+                  rows={3}
+                  className="w-full rounded-[10px] border border-line bg-surface px-3 py-2 text-[12px] text-ink placeholder:text-ink-mute leading-relaxed resize-none focus:outline-none focus:border-primary/60"
+                />
+              </div>
+            ))}
+          </div>
+          <Button type="button" variant="secondary" size="sm" onClick={addItem} block>
+            + Adicionar pergunta
+          </Button>
+          {state?.error && <p className="text-[12px] text-danger">{state.error}</p>}
+          {state?.success && (
+            <p className="flex items-center gap-1.5 text-[12px] text-success">
+              <Check size={13} /> {state.success}
+            </p>
+          )}
+          <Button type="submit" size="sm" disabled={pending} block>
+            {pending ? 'Salvando…' : 'Salvar FAQ'}
+          </Button>
+        </form>
+      )}
+    </div>
   );
 }
 

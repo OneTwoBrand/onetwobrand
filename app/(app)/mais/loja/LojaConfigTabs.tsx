@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { HeroConfigForm, StoreSettingsForm, VisualEffectsForm, CanaisForm } from '../ShopConfigForm';
+import { HeroConfigForm, StoreSettingsForm, VisualEffectsForm, CanaisForm, PagesForm } from '../ShopConfigForm';
 
-type Tab = 'vitrine' | 'visual' | 'canais' | 'frete' | 'comunicacao' | 'seo';
+type Tab = 'vitrine' | 'visual' | 'canais' | 'frete' | 'comunicacao' | 'seo' | 'paginas';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'vitrine',     label: 'Vitrine' },
@@ -13,6 +13,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'frete',       label: 'Frete' },
   { id: 'comunicacao', label: 'Comunicação' },
   { id: 'seo',         label: 'SEO' },
+  { id: 'paginas',     label: 'Páginas' },
 ];
 
 export function LojaConfigTabs({ config }: { config: Record<string, string> }) {
@@ -62,6 +63,10 @@ export function LojaConfigTabs({ config }: { config: Record<string, string> }) {
 
       {active === 'seo' && (
         <StoreSettingsForm config={config} section="seo" />
+      )}
+
+      {active === 'paginas' && (
+        <PagesForm config={config} />
       )}
     </div>
   );

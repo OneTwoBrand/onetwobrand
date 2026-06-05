@@ -202,6 +202,9 @@ export async function getShopConfig(): Promise<Record<string, string>> {
     'shop_visual_section_reveal',
     'shop_enable_cart',
     'shop_enable_whatsapp_button',
+    'shop_page_privacidade',
+    'shop_page_trocas',
+    'shop_faq',
   ];
 
   const entries = await Promise.all(
@@ -209,4 +212,47 @@ export async function getShopConfig(): Promise<Record<string, string>> {
   );
 
   return Object.fromEntries(entries);
+}
+
+// ─── Save editable pages ──────────────────────────────────────────────────────
+export async function savePagesSettings(
+  _prev: ShopConfigState,
+  formData: FormData
+): Promise<ShopConfigState> {
+  const { user, error: authError } = await requireAdmin();
+  if (authError || !user) return { error: authError ?? 'Não autenticado.' };
+
+  const page = String(formData.get('page') ?? '').trim();
+  const allowedPages = new Set(['privacidade', 'trocas', 'faq']);
+  if (!allowedPages.has(page)) return { error: 'Página inválida.' };
+
+  if (page === 'faq') {
+    const faqJson = String(formData.get('faq_json') ?? '').trim();
+    try {
+      JSON.parse(faqJson); // validate
+    } catch {
+      return { error: 'JSON do FAQ inválido.' };
+    }
+    try {
+      await setPlatformConfig('shop_faq', faqJson, user.id);
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : 'Erro ao salvar.' };
+    }
+    revalidatePath('/loja/faq');
+    revalidatePath('/mais/loja');
+    return { success: 'FAQ atualizado.' };
+  }
+
+  const content = String(formData.get('content') ?? '').trim();
+  const key = `shop_page_${page}` as const;
+
+  try {
+    await setPlatformConfig(key, content, user.id);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Erro ao salvar.' };
+  }
+
+  revalidatePath(`/loja/${page}`);
+  revalidatePath('/mais/loja');
+  return { success: 'Página atualizada.' };
 }

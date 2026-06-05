@@ -26,6 +26,7 @@ export async function ShopFooter() {
 
   const navLinks = [
     { href: '/loja',              label: 'Loja' },
+    { href: '/loja/faq',          label: 'FAQ' },
     { href: '/loja/trocas',       label: 'Trocas e devoluções' },
     { href: '/loja/privacidade',  label: 'Privacidade' },
     { href: instagramHref,        label: 'Instagram' },
