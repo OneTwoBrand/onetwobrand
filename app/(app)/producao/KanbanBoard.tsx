@@ -14,7 +14,7 @@ import {
   useDraggable,
 } from '@dnd-kit/core';
 import { Calendar, GripVertical } from 'lucide-react';
-import { Badge, StatusBadge } from '@/components/ui/Badge';
+import { StatusBadge } from '@/components/ui/Badge';
 import { moveOP } from './kanban/actions';
 import type { OPStatus } from '@/lib/types';
 import type { ProductionOrderListItem } from '@/lib/production/orders';
@@ -34,9 +34,13 @@ function KanbanCard({ order, isDragging = false, doneStatuses = [] }: { order: P
 
   return (
     <div className={`rounded-[14px] border bg-paper p-3 transition-shadow ${isDragging ? 'shadow-s2 opacity-90 rotate-1' : 'border-line hover:shadow-s1'}`}>
-      <div className="flex items-start justify-between gap-2">
-        <span className="font-mono text-[10px] text-ink-soft">#{order.opNumber}</span>
-        <StatusBadge status={order.status} />
+      <div className="flex min-w-0 items-start justify-between gap-2">
+        <span className="shrink-0 font-mono text-[10px] text-ink-soft">#{order.opNumber}</span>
+        <StatusBadge
+          status={order.status}
+          size="sm"
+          className="max-w-[116px] min-w-0 overflow-hidden text-ellipsis px-2 text-[8px] tracking-[0.08em]"
+        />
       </div>
       <p className="mt-2 text-[13px] font-medium leading-tight text-ink line-clamp-2">{order.productName}</p>
       <p className="mt-1 text-[11px] text-ink-soft truncate">{order.clientName}</p>

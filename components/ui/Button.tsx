@@ -26,7 +26,7 @@ const sizeCls: Record<Size, string> = {
 
 const variantCls: Record<Variant, string> = {
   primary:
-    'bg-primary text-paper border border-transparent hover:bg-primary-hover',
+    'bg-primary text-paper border border-transparent hover:bg-primary-hover [&>span]:text-paper [&_svg]:text-paper',
   secondary:
     'bg-transparent text-ink border border-ink hover:bg-ink/[0.05]',
   ghost:

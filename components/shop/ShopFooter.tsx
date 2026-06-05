@@ -35,7 +35,7 @@ export async function ShopFooter() {
   return (
     <footer className="border-t border-line mt-16 mb-20 lg:mb-0">
       <div className="max-w-[1400px] mx-auto px-5 lg:px-14 py-6 flex flex-col lg:flex-row items-center justify-between gap-4">
-        <span className="text-[11px] text-ink-mute tracking-[0.14em] uppercase">
+        <span className="text-[9px] text-ink-mute opacity-70 tracking-[0.14em] uppercase">
           © ONE TWO · crafted pieces
         </span>
         <nav className="flex items-center gap-5 flex-wrap justify-center">
@@ -52,7 +52,7 @@ export async function ShopFooter() {
         </nav>
         <Link
           href="/login"
-          className="text-[10px] text-ink-mute tracking-[0.14em] uppercase hover:text-ink-soft transition-colors"
+          className="text-[8px] text-ink-mute opacity-70 tracking-[0.14em] uppercase hover:text-ink-soft hover:opacity-100 transition-colors"
         >
           Desenvolvido por Girassol Inteligência
         </Link>

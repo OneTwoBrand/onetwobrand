@@ -53,7 +53,10 @@ export function BottomNav({
   const [sheetOpen, setSheetOpen] = useState(false);
   const isAdmin = userRole === 'admin';
 
-  useEffect(() => { setSheetOpen(false); }, [pathname]);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setSheetOpen(false));
+    return () => cancelAnimationFrame(frame);
+  }, [pathname]);
 
   useEffect(() => {
     document.body.style.overflow = sheetOpen ? 'hidden' : '';
@@ -160,7 +163,7 @@ export function BottomNav({
                   className={cn(
                     'flex flex-col items-center gap-2 rounded-[16px] py-4 px-2 transition-colors',
                     active
-                      ? 'bg-primary text-paper'
+                      ? 'bg-primary text-paper [&_*]:text-paper'
                       : 'bg-ink/[0.04] text-ink-soft hover:bg-ink/[0.08]'
                   )}
                 >
@@ -263,7 +266,7 @@ export function Sidebar({
               className={cn(
                 'flex items-center gap-3 rounded-xl transition-colors',
                 expanded ? 'px-3 py-2.5' : 'p-2.5 justify-center',
-                active ? 'bg-primary text-paper' : 'text-ink-soft hover:bg-ink/[0.04]'
+                active ? 'bg-primary text-paper [&_*]:text-paper' : 'text-ink-soft hover:bg-ink/[0.04]'
               )}
             >
               <Icon size={18} strokeWidth={1.5} />

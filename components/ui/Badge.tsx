@@ -47,6 +47,6 @@ export function Badge({ tone = 'neutral', size = 'md', dot = true, children, cla
 }
 
 /** Status-bound badge — reads tone from status name */
-export function StatusBadge({ status, size = 'md' }: { status: OPStatus; size?: Size }) {
-  return <Badge tone={statusTone[status]} size={size}>{status}</Badge>;
+export function StatusBadge({ status, size = 'md', className }: { status: OPStatus; size?: Size; className?: string }) {
+  return <Badge tone={statusTone[status]} size={size} className={className}>{status}</Badge>;
 }
