@@ -1,13 +1,15 @@
 import Link from 'next/link';
-import { ArrowLeft, Calendar, Mail, MapPin, Package, Phone, Scissors, ShoppingBag, ShoppingCart } from 'lucide-react';
+import { ArrowLeft, Calendar, Mail, MapPin, Package, Pencil, Phone, Scissors, ShoppingBag, ShoppingCart } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { AppBar, Topbar } from '@/components/layout/Navigation';
 import { Button } from '@/components/ui/Button';
 import { Badge, StatusBadge } from '@/components/ui/Badge';
 import { Avatar, Card, Divider, SectionHead } from '@/components/ui/Primitives';
 import { getClientDetail, getClientShopOrders } from '@/lib/app-data';
+import { getLoyaltyInfo } from '@/lib/client-loyalty';
 import { brl } from '@/lib/utils';
 import { DeleteClientButton } from './DeleteClientButton';
+import { VipToggleButton } from './VipToggleButton';
 
 const PAYMENT_LABEL: Record<string, string> = {
   pix: 'PIX', card: 'Cartão', cash: 'Dinheiro', transfer: 'Transferência',
@@ -18,6 +20,12 @@ const SALE_TONE: Record<string, 'success' | 'warning' | 'danger'> = {
 const SALE_LABEL: Record<string, string> = {
   paid: 'Pago', pending: 'Pendente', cancelled: 'Cancelado',
 };
+
+const LOYALTY_STEPS: { level: string; label: string }[] = [
+  { level: 'nova',      label: 'Nova' },
+  { level: 'frequente', label: 'Frequente' },
+  { level: 'fiel',      label: 'Fiel' },
+];
 
 export default async function ClienteDetalhePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -43,15 +51,22 @@ export default async function ClienteDetalhePage({ params }: { params: Promise<{
   }
 
   const totalRevenue = client.sales.filter((s) => s.status === 'paid').reduce((sum, s) => sum + s.total, 0);
+  const loyalty = getLoyaltyInfo(client.totalPieces, totalRevenue);
+  const isRealRecord = source === 'supabase';
 
   return (
     <>
-      <AppBar title={client.name} back action={<DeleteClientButton id={client.id} />} />
+      <AppBar title={client.name} back />
       <Topbar
         eyebrow="Clientes"
         title={client.name}
         action={
           <div className="flex items-center gap-2">
+            {isRealRecord && (
+              <Link href={`/clientes/${id}/editar`}>
+                <Button size="sm" variant="secondary" icon={<Pencil size={13} />}>Editar</Button>
+              </Link>
+            )}
             <DeleteClientButton id={client.id} />
             <Link href="/clientes"><Button size="sm" variant="ghost" icon={<ArrowLeft size={14} />}>Voltar</Button></Link>
           </div>
@@ -169,6 +184,7 @@ export default async function ClienteDetalhePage({ params }: { params: Promise<{
           </div>
 
           <aside className="space-y-5">
+
             {/* Hero */}
             <Card pad={20}>
               <div className="flex flex-col items-center text-center">
@@ -180,19 +196,62 @@ export default async function ClienteDetalhePage({ params }: { params: Promise<{
               <div className="grid grid-cols-2 gap-3 text-center">
                 <div>
                   <p className="font-serif text-[24px] text-ink">{client.totalPieces}</p>
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-ink-soft">Peças</p>
+                  <p className="text-[10px] uppercase tracking-wide-2 text-ink-soft">Peças</p>
                 </div>
                 <div>
                   <p className="font-serif text-[20px] text-ink">{brl(totalRevenue)}</p>
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-ink-soft">Gasto</p>
+                  <p className="text-[10px] uppercase tracking-wide-2 text-ink-soft">Gasto</p>
                 </div>
+              </div>
+              {/* Ações VIP + Editar */}
+              {isRealRecord && (
+                <div className="mt-4 flex items-center gap-2 border-t border-line pt-4">
+                  <VipToggleButton clientId={client.id} isVip={client.vip} />
+                  <Link href={`/clientes/${id}/editar`} className="flex-1">
+                    <Button size="sm" variant="secondary" block icon={<Pencil size={13} />}>Editar</Button>
+                  </Link>
+                  <DeleteClientButton id={client.id} />
+                </div>
+              )}
+            </Card>
+
+            {/* Fidelidade */}
+            <Card pad={20}>
+              <SectionHead eyebrow="Programa" title="Fidelidade" />
+              <div className="mt-3 flex items-center justify-between gap-3">
+                {LOYALTY_STEPS.map((step, i) => {
+                  const stepIndex = LOYALTY_STEPS.findIndex((s) => s.level === loyalty.level);
+                  const done = i < stepIndex;
+                  const current = i === stepIndex;
+                  return (
+                    <div key={step.level} className="flex flex-1 flex-col items-center gap-1.5">
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-semibold transition-colors ${
+                        current ? `${loyalty.bgColor} ${loyalty.color}` :
+                        done    ? 'bg-success text-white' :
+                                  'bg-surface text-ink-mute'
+                      }`}>
+                        {done ? '✓' : i + 1}
+                      </div>
+                      <span className={`text-[10px] font-medium ${current ? loyalty.color : done ? 'text-success' : 'text-ink-mute'}`}>
+                        {step.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className={`mt-4 rounded-[10px] px-3 py-2.5 ${loyalty.bgColor}`}>
+                <p className={`text-[12px] font-medium ${loyalty.color}`}>{loyalty.label}</p>
+                <p className="mt-0.5 text-[11px] text-ink-soft">{loyalty.description}</p>
+                {loyalty.nextLabel && (
+                  <p className="mt-1 text-[11px] text-ink-mute">{loyalty.nextLabel}</p>
+                )}
               </div>
             </Card>
 
             {/* Contato */}
             <Card pad={20}>
               <SectionHead eyebrow="Dados" title="Contato" />
-              <dl className="mt-3 space-y-3 text-[12px]">
+              <div className="mt-3 space-y-3 text-[12px]">
                 {client.phone && (
                   <div className="flex items-center gap-3">
                     <Phone size={14} className="shrink-0 text-ink-soft" />
@@ -220,7 +279,7 @@ export default async function ClienteDetalhePage({ params }: { params: Promise<{
                 {!client.phone && !client.email && !client.city && (
                   <p className="text-ink-soft">Nenhum dado de contato cadastrado.</p>
                 )}
-              </dl>
+              </div>
             </Card>
 
             {/* Observações */}
