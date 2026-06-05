@@ -29,7 +29,18 @@ export async function inviteUser(
       redirectTo: `${siteUrl}/auth/callback?next=/nova-senha`,
     });
 
-    if (error) return { error: error.message };
+    if (error) {
+      const msg = error.message.toLowerCase();
+      if (msg.includes('rate limit') || msg.includes('email rate')) {
+        return {
+          error:
+            'Limite de e-mails do Supabase atingido (2–3/hora no plano gratuito). ' +
+            'Aguarde alguns minutos e tente novamente, ou configure um SMTP próprio em ' +
+            'Authentication → Settings → SMTP no painel do Supabase.',
+        };
+      }
+      return { error: error.message };
+    }
 
     // Set role in profiles (trigger creates the row, we update the role)
     await admin.from('profiles').upsert({

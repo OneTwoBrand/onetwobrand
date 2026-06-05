@@ -1,8 +1,11 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useActionState, useRef, useState } from 'react';
-import { ChevronLeft, Upload, X } from 'lucide-react';
+import { useActionState, useRef, useState, type ReactNode } from 'react';
+import {
+  Check, ChevronLeft, Maximize2, MoveHorizontal,
+  MoveVertical, RotateCcw, Sparkles, Upload, X,
+} from 'lucide-react';
 import Image from 'next/image';
 import { AppBar, Topbar } from '@/components/layout/Navigation';
 import { Button } from '@/components/ui/Button';
@@ -12,30 +15,96 @@ import { Card } from '@/components/ui/Primitives';
 import { updateCollection } from '../../actions';
 import type { CollectionDetail } from '@/lib/catalog-data';
 
+type UploadState = 'idle' | 'uploading' | 'enhancing' | 'done' | 'error';
+type HeroFit = { zoom: number; offsetX: number; offsetY: number };
+const DEFAULT_FIT: HeroFit = { zoom: 1, offsetX: 0, offsetY: 0 };
+
+function fitFormData(file: File, fit: HeroFit) {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('zoom', String(fit.zoom));
+  fd.append('offsetX', String(fit.offsetX));
+  fd.append('offsetY', String(fit.offsetY));
+  return fd;
+}
+
 export function EditarColecaoForm({ collection }: { collection: CollectionDetail }) {
   const router = useRouter();
   const [state, formAction, pending] = useActionState(updateCollection, {});
 
   const [coverUrl, setCoverUrl] = useState(collection.heroUrl ?? '');
-  const [uploading, setUploading] = useState(false);
-  const [uploadErr, setUploadErr] = useState('');
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [fit, setFit] = useState<HeroFit>(DEFAULT_FIT);
+  const [uploadState, setUploadState] = useState<UploadState>('idle');
+  const [uploadError, setUploadError] = useState('');
+  const [collectionName, setCollectionName] = useState(collection.name);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const isBusy = uploadState === 'uploading' || uploadState === 'enhancing';
+
   async function handleFile(file: File) {
-    setUploading(true);
-    setUploadErr('');
-    const fd = new FormData();
-    fd.append('file', file);
-    const res = await fetch('/api/upload-hero', { method: 'POST', body: fd });
+    setUploadState('uploading');
+    setUploadError('');
+    const currentFit = DEFAULT_FIT;
+    setFit(currentFit);
+
+    const res = await fetch('/api/upload-hero', { method: 'POST', body: fitFormData(file, currentFit) });
     const data = await res.json();
+
     if (!res.ok) {
-      setUploadErr(data.error ?? 'Erro ao enviar imagem.');
-      setUploading(false);
+      setUploadState('error');
+      setUploadError(data.error ?? 'Erro ao fazer upload.');
       return;
     }
+
+    setCoverFile(file);
     setCoverUrl(data.url);
-    setUploading(false);
+    setUploadState('done');
   }
+
+  async function applyFit() {
+    if (!coverFile) return;
+    setUploadState('uploading');
+    setUploadError('');
+
+    const res = await fetch('/api/upload-hero', { method: 'POST', body: fitFormData(coverFile, fit) });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setUploadState('error');
+      setUploadError(data.error ?? 'Erro ao aplicar enquadramento.');
+      return;
+    }
+
+    setCoverUrl(data.url);
+    setUploadState('done');
+  }
+
+  async function handleEnhance() {
+    if (!coverUrl) return;
+    setUploadState('enhancing');
+    setUploadError('');
+
+    const res = await fetch('/api/ai/enhance-photo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageUrl: coverUrl, productName: collectionName }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setUploadState('error');
+      setUploadError(data.error ?? 'Erro ao refinar imagem.');
+      return;
+    }
+
+    setCoverUrl(data.url);
+    setCoverFile(null);
+    setUploadState('done');
+  }
+
+  // Preview transform — hero é 16:9, o divisor é maior para não exagerar no preview
+  const previewTransform = `translate(${fit.offsetX / 4}%, ${fit.offsetY / 4}%) scale(${fit.zoom})`;
 
   return (
     <>
@@ -46,27 +115,97 @@ export function EditarColecaoForm({ collection }: { collection: CollectionDetail
           <input type="hidden" name="id" value={collection.id} />
           <input type="hidden" name="cover_url" value={coverUrl} />
 
-          {/* Foto de capa */}
+          {/* ── Foto de capa ─────────────────────────────────── */}
           <Card pad={20}>
             <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft">
               Foto de capa
             </p>
+
             {coverUrl ? (
               <div className="space-y-2">
+                {/* Preview 16:9 com transform igual ao produto */}
                 <div className="relative aspect-video overflow-hidden rounded-[14px] border border-line">
-                  <Image src={coverUrl} alt="Capa da coleção" fill className="object-cover" />
+                  <Image
+                    src={coverUrl}
+                    alt="Capa da coleção"
+                    fill
+                    className="object-cover object-center transition-transform duration-200"
+                    style={{ transform: previewTransform }}
+                  />
                   <button
                     type="button"
-                    onClick={() => setCoverUrl('')}
+                    onClick={() => { setCoverUrl(''); setCoverFile(null); setFit(DEFAULT_FIT); }}
                     className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full border border-line bg-paper text-ink-soft hover:bg-danger-soft hover:text-danger transition-colors"
                     aria-label="Remover foto"
                   >
                     <X size={14} />
                   </button>
                 </div>
-                <Button type="button" size="sm" variant="ghost" block onClick={() => fileInputRef.current?.click()}>
-                  Trocar foto
-                </Button>
+
+                {/* Controles de enquadramento */}
+                <div className="space-y-2 rounded-[12px] border border-line bg-surface p-3">
+                  <HeroSlider
+                    icon={<Maximize2 size={12} />}
+                    label="Zoom"
+                    value={fit.zoom}
+                    min={1}
+                    max={2.2}
+                    step={0.05}
+                    onChange={(zoom) => setFit((f) => ({ ...f, zoom }))}
+                  />
+                  <HeroSlider
+                    icon={<MoveVertical size={12} />}
+                    label="Vertical"
+                    value={fit.offsetY}
+                    min={-100}
+                    max={100}
+                    step={1}
+                    onChange={(offsetY) => setFit((f) => ({ ...f, offsetY }))}
+                  />
+                  <HeroSlider
+                    icon={<MoveHorizontal size={12} />}
+                    label="Horizontal"
+                    value={fit.offsetX}
+                    min={-100}
+                    max={100}
+                    step={1}
+                    onChange={(offsetX) => setFit((f) => ({ ...f, offsetX }))}
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <HeroActionButton
+                      icon={<RotateCcw size={13} />}
+                      label="Centro"
+                      title="Centralizar foto"
+                      onClick={() => setFit(DEFAULT_FIT)}
+                    />
+                    <HeroActionButton
+                      icon={<Check size={13} />}
+                      label={uploadState === 'uploading' ? '...' : 'Aplicar'}
+                      title="Aplicar enquadramento"
+                      tone="soft"
+                      onClick={applyFit}
+                      disabled={!coverFile || isBusy}
+                    />
+                  </div>
+                </div>
+
+                {/* Trocar / IA */}
+                <div className="grid grid-cols-2 gap-2">
+                  <HeroActionButton
+                    icon={<Upload size={13} />}
+                    label="Trocar foto"
+                    title="Trocar foto de capa"
+                    onClick={() => fileInputRef.current?.click()}
+                  />
+                  <HeroActionButton
+                    icon={<Sparkles size={13} />}
+                    label={uploadState === 'enhancing' ? '...' : 'Gerar com IA'}
+                    title="Refinar imagem com IA"
+                    tone="soft"
+                    onClick={handleEnhance}
+                    disabled={isBusy}
+                  />
+                </div>
               </div>
             ) : (
               <button
@@ -74,16 +213,17 @@ export function EditarColecaoForm({ collection }: { collection: CollectionDetail
                 onClick={() => fileInputRef.current?.click()}
                 className="flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-[14px] border-2 border-dashed border-line bg-surface text-ink-soft hover:border-primary hover:text-primary transition-colors"
               >
-                {uploading
+                {uploadState === 'uploading'
                   ? <span className="h-7 w-7 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                   : <Upload size={20} />
                 }
                 <span className="text-[11px]">
-                  {uploading ? 'Enviando…' : 'Clique para selecionar'}
+                  {uploadState === 'uploading' ? 'Enviando…' : 'Clique para selecionar'}
                 </span>
-                <span className="text-[10px] text-ink-mute">JPG, PNG, HEIC ou WebP · convertido para WebP 1920×1080</span>
+                <span className="text-[10px] text-ink-mute">JPG, PNG, HEIC ou WebP · 1920×1080px WebP</span>
               </button>
             )}
+
             <input
               ref={fileInputRef}
               type="file"
@@ -91,22 +231,38 @@ export function EditarColecaoForm({ collection }: { collection: CollectionDetail
               aria-label="Selecionar foto de capa"
               title="Selecionar foto de capa"
               className="hidden"
-              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }}
             />
-            {uploadErr && <p className="mt-2 text-[12px] text-danger">{uploadErr}</p>}
+            {uploadError && <p className="mt-2 text-[12px] text-danger">{uploadError}</p>}
           </Card>
 
-          {/* Dados */}
+          {/* ── Dados da coleção ─────────────────────────────── */}
           <Card pad={20}>
             <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft">Coleção</p>
             <div className="space-y-3">
-              <Input name="name" label="Nome *" defaultValue={collection.name} required />
-              <Input name="category" label="Categoria" defaultValue={collection.category ?? ''} placeholder="Premium, Bordados, Casual..." />
-              <Textarea name="description" label="Descrição" defaultValue={collection.description ?? ''} placeholder="Resumo criativo e operacional da coleção." />
+              <Input
+                name="name"
+                label="Nome *"
+                value={collectionName}
+                onChange={(e) => setCollectionName(e.target.value)}
+                required
+              />
+              <Input
+                name="category"
+                label="Categoria"
+                defaultValue={collection.category ?? ''}
+                placeholder="Premium, Bordados, Casual..."
+              />
+              <Textarea
+                name="description"
+                label="Descrição"
+                defaultValue={collection.description ?? ''}
+                placeholder="Resumo criativo e operacional da coleção."
+              />
             </div>
           </Card>
 
-          {/* Loja */}
+          {/* ── Loja ─────────────────────────────────────────── */}
           <Card pad={20}>
             <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft">Loja</p>
             <div className="grid gap-3 md:grid-cols-[1fr_140px]">
@@ -114,10 +270,18 @@ export function EditarColecaoForm({ collection }: { collection: CollectionDetail
                 <input name="featured" type="checkbox" className="h-4 w-4 accent-primary" defaultChecked={Boolean(collection.featured)} />
                 Destacar na home da loja
               </label>
-              <Input name="featured_order" label="Ordem" type="number" min="0" defaultValue={String(collection.featuredOrder ?? 0)} />
+              <Input
+                name="featured_order"
+                label="Ordem"
+                type="number"
+                min="0"
+                defaultValue={String(collection.featuredOrder ?? 0)}
+              />
             </div>
             {!collection.publishedAt && (
-              <p className="mt-3 text-[11px] text-ink-mute">Esta coleção ainda não foi publicada — produtos não aparecerão na loja.</p>
+              <p className="mt-3 text-[11px] text-ink-mute">
+                Esta coleção ainda não foi publicada — produtos não aparecerão na loja.
+              </p>
             )}
           </Card>
 
@@ -127,12 +291,68 @@ export function EditarColecaoForm({ collection }: { collection: CollectionDetail
             <Button type="button" variant="secondary" onClick={() => router.back()} icon={<ChevronLeft size={14} />}>
               Voltar
             </Button>
-            <Button type="submit" block disabled={pending || uploading}>
+            <Button type="submit" block disabled={pending || isBusy}>
               {pending ? 'Salvando...' : 'Salvar alterações'}
             </Button>
           </div>
         </form>
       </main>
     </>
+  );
+}
+
+// ── Slider ────────────────────────────────────────────────────
+function HeroSlider({
+  icon, label, value, min, max, step, onChange,
+}: {
+  icon: ReactNode; label: string; value: number;
+  min: number; max: number; step: number;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <label className="grid gap-1 text-[10px] text-ink-soft">
+      <span className="flex items-center justify-between gap-2 uppercase tracking-[0.14em]">
+        <span className="flex items-center gap-1.5">{icon}{label}</span>
+        <span>{label === 'Zoom' ? value.toFixed(2) : Math.round(value)}</span>
+      </span>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full accent-primary"
+      />
+    </label>
+  );
+}
+
+// ── Botão de ação compacto ────────────────────────────────────
+function HeroActionButton({
+  icon, label, title, tone = 'ghost', disabled, onClick,
+}: {
+  icon: ReactNode; label: string; title: string;
+  tone?: 'ghost' | 'soft'; disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      title={title}
+      aria-label={title}
+      disabled={disabled}
+      onClick={onClick}
+      className={[
+        'flex h-9 min-w-0 items-center justify-center gap-1.5 rounded-full border px-2.5 text-[10px] font-medium uppercase tracking-[0.08em] transition-colors',
+        'disabled:cursor-not-allowed disabled:opacity-40',
+        tone === 'soft'
+          ? 'border-transparent bg-primary-soft text-primary hover:bg-primary/15'
+          : 'border-line bg-transparent text-ink hover:bg-ink/[0.05]',
+      ].join(' ')}
+    >
+      <span className="shrink-0">{icon}</span>
+      <span className="min-w-0 truncate whitespace-nowrap">{label}</span>
+    </button>
   );
 }
