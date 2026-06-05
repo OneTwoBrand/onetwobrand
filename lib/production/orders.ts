@@ -274,6 +274,66 @@ export async function updateOPStatus(opId: string, newStatus: OPStatus, note?: s
   });
 }
 
+export async function updateProductionOrder(
+  opId: string,
+  data: {
+    clientName?: string;
+    productName?: string;
+    fabricUsed?: string;
+    embroideryNotes?: string;
+    qty?: number;
+    dueDate?: string;
+    status?: OPStatus;
+    seamstressName?: string;
+  }
+) {
+  if (!hasSupabasePublicEnv()) throw new Error('Supabase não configurado.');
+  const supabase = await createClient();
+
+  const updates: Record<string, unknown> = {};
+  if (data.qty !== undefined) updates.qty = data.qty;
+  if (data.dueDate !== undefined) updates.due_date = data.dueDate;
+  if (data.status !== undefined) updates.status = data.status;
+  if (data.fabricUsed !== undefined) updates.fabric_used = data.fabricUsed;
+  if (data.embroideryNotes !== undefined) updates.embroidery_notes = data.embroideryNotes;
+
+  if (data.clientName !== undefined) {
+    const clientId = await findOrCreateClient(supabase, data.clientName);
+    updates.client_id = clientId;
+  }
+  if (data.seamstressName !== undefined) {
+    const seamstressId = await findOrCreateSeamstress(supabase, data.seamstressName);
+    updates.seamstress_id = seamstressId;
+  }
+  if (data.productName !== undefined) {
+    const existing = await supabase
+      .from('pieces')
+      .select('id')
+      .ilike('name', data.productName)
+      .maybeSingle();
+    if (existing.data?.id) {
+      updates.piece_id = existing.data.id;
+    }
+  }
+
+  const { error } = await supabase.from('production_orders').update(updates).eq('id', opId);
+  if (error) throw new Error(error.message);
+
+  await supabase.from('op_history').insert({
+    op_id: opId,
+    type: 'Sistema',
+    note: 'OP editada manualmente.',
+  });
+}
+
+export async function deleteProductionOrder(opId: string) {
+  if (!hasSupabasePublicEnv()) throw new Error('Supabase não configurado.');
+  const supabase = await createClient();
+  await supabase.from('op_history').delete().eq('op_id', opId);
+  const { error } = await supabase.from('production_orders').delete().eq('id', opId);
+  if (error) throw new Error(error.message);
+}
+
 async function findOrCreateClient(supabase: Awaited<ReturnType<typeof createClient>>, name: string) {
   const existing = await supabase
     .from('clients')

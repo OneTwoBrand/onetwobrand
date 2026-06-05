@@ -299,16 +299,22 @@ export function Sidebar({
       style={{ width: expanded ? 240 : 76 }}
       className="hidden md:flex flex-col shrink-0 bg-paper border-r border-line pt-[52px] px-3.5 pb-4 transition-[width] duration-200"
     >
-      {/* Brand lockup */}
-      <div className={cn('mb-6 flex items-center gap-3', expanded ? 'px-1.5' : 'justify-center')}>
-        <Image src="/one-two-logo.png" alt="ONE TWO" width={40} height={40} priority />
+      {/* Brand lockup — opens shop in new tab */}
+      <a
+        href="/loja"
+        target="_blank"
+        rel="noopener noreferrer"
+        className={cn('mb-6 flex items-center gap-3 group', expanded ? 'px-1.5' : 'justify-center')}
+        title="Abrir loja"
+      >
+        <Image src="/one-two-logo.png" alt="ONE TWO" width={40} height={40} priority className="group-hover:opacity-80 transition-opacity" />
         {expanded && (
           <div className="flex flex-col leading-none">
-            <span className="font-serif text-[15px] text-ink tracking-[0.12em] font-medium">ONE&nbsp;TWO</span>
+            <span className="font-serif text-[15px] text-ink tracking-[0.12em] font-medium group-hover:text-primary transition-colors">ONE&nbsp;TWO</span>
             <span className="text-[9px] text-ink-soft tracking-[0.28em] mt-1">crafted pieces</span>
           </div>
         )}
-      </div>
+      </a>
 
       {/* Items grouped */}
       <div className="flex flex-col gap-4 flex-1 min-h-0 overflow-y-auto">

@@ -1,4 +1,4 @@
-import { Calendar, Clock, ExternalLink, FileText, Scissors, ShoppingBag, UserRound } from 'lucide-react';
+import { Calendar, Clock, FileText, Pencil, Scissors, ShoppingBag, Trash2, UserRound } from 'lucide-react';
 import Link from 'next/link';
 import { AppBar, Topbar } from '@/components/layout/Navigation';
 import { Button } from '@/components/ui/Button';
@@ -8,6 +8,7 @@ import { getProductionOrderDetail, getOPHistory } from '@/lib/production/orders'
 import { daysUntil } from '@/lib/utils';
 import { getWorkflowConfig } from '@/lib/workflow-config';
 import { StatusActions } from './StatusActions';
+import { DeleteOPButton } from './DeleteOPButton';
 
 function stepState(steps: string[], index: number, allStatuses: string[]) {
   return (status: string) => {
@@ -79,11 +80,21 @@ export default async function ProducaoDetalhePage({ params }: { params: Promise<
                 {order.clientName} · {order.qty} {order.qty > 1 ? 'peças' : 'peça'}
               </p>
 
-              {/* Status change — only when we have a real op ID */}
+              {/* Status change + Edit/Delete — only for real Supabase OPs */}
               {order.id && source === 'supabase' && (
-                <div className="mt-4 flex items-center justify-between gap-3 border-t border-line pt-4">
-                  <span className="text-[11px] text-ink-soft">Alterar andamento</span>
-                  <StatusActions opId={order.id} currentStatus={order.status} allStatuses={allStatuses} />
+                <div className="mt-4 flex flex-col gap-3 border-t border-line pt-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[11px] text-ink-soft">Alterar andamento</span>
+                    <StatusActions opId={order.id} currentStatus={order.status} allStatuses={allStatuses} />
+                  </div>
+                  <div className="flex items-center gap-2 pt-1">
+                    <Link href={`/producao/${id}/editar`} className="flex-1">
+                      <Button size="sm" variant="secondary" block icon={<Pencil size={13} />}>
+                        Editar OP
+                      </Button>
+                    </Link>
+                    <DeleteOPButton opId={order.id} />
+                  </div>
                 </div>
               )}
             </Card>
