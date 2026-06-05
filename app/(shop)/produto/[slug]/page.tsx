@@ -13,7 +13,6 @@ import {
 } from '@/lib/shop/catalog';
 import { Gallery } from '@/components/shop/Gallery';
 import { AddToCartButton } from './AddToCartButton';
-import { WhatsAppNegotiateButton } from './WhatsAppNegotiateButton';
 import { DeliveryMessage } from './DeliveryMessage';
 import { brl } from '@/lib/utils';
 import { getPlatformConfig } from '@/lib/platform-config';
@@ -45,17 +44,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ProdutoPage({ params }: PageProps) {
   const { slug } = await params;
-  const [{ product }, cartFlag, waFlag, waNumber] = await Promise.all([
+  const [{ product }, cartFlag] = await Promise.all([
     getShopProductBySlug(slug),
     getPlatformConfig('shop_enable_cart'),
-    getPlatformConfig('shop_enable_whatsapp_button'),
-    getPlatformConfig('shop_whatsapp'),
   ]);
   const showCart = cartFlag === 'true';
-  const showWa   = waFlag === 'true' && !!waNumber;
-  const waHref   = waNumber
-    ? `https://wa.me/55${waNumber.replace(/\D/g, '')}`
-    : null;
 
   if (!product) notFound();
 
@@ -174,16 +167,6 @@ export default async function ProdutoPage({ params }: PageProps) {
             {/* AddToCartButton gerencia seleção de tamanho e CTA */}
             <AddToCartButton product={product} showCart={showCart} />
           </div>
-
-          {/* Botão de negociação WhatsApp */}
-          {showWa && waHref && (
-            <WhatsAppNegotiateButton
-              href={`${waHref}?text=${encodeURIComponent(`Olá! Tenho interesse na peça *${product.name}*. Podem me ajudar?`)}`}
-              produtoSlug={product.slug}
-              produtoNome={product.name}
-              url={`/produto/${product.slug}`}
-            />
-          )}
 
           {/* Descrição */}
           {product.description && (

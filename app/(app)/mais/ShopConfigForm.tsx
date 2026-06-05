@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { MoneyInput, PhoneInput } from '@/components/ui/MaskedInput';
 import { Select, Textarea } from '@/components/ui/Field';
 import { parseShopVisualConfig } from '@/lib/shop/visual-config';
-import { saveHeroConfig, saveStoreSettings, saveVisualSettings, type ShopConfigState } from './shop-config-actions';
+import { saveHeroConfig, saveStoreSettings, saveVisualSettings, saveCanaisSettings, type ShopConfigState } from './shop-config-actions';
 
 type UploadState = 'idle' | 'uploading' | 'enhancing' | 'done' | 'error';
 type HeroFit = { zoom: number; offsetX: number; offsetY: number };
@@ -469,22 +469,50 @@ export function VisualEffectsForm({ config }: { config: Record<string, string> }
         />
       </fieldset>
 
+      {state?.error && <p className="text-[12px] text-danger">{state.error}</p>}
+      {state?.success && (
+        <p className="flex items-center gap-1.5 text-[12px] text-success">
+          <Check size={13} /> {state.success}
+        </p>
+      )}
+
+      <Button type="submit" size="sm" disabled={pending} block>
+        {pending ? 'Salvando…' : 'Salvar efeitos visuais'}
+      </Button>
+    </form>
+  );
+}
+
+export function CanaisForm({ config }: { config: Record<string, string> }) {
+  const [state, action, pending] = useActionState(saveCanaisSettings, {} as ShopConfigState);
+
+  return (
+    <form action={action} className="space-y-6">
       <fieldset className="space-y-3">
         <legend className="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft">
-          Funcionalidades da loja
+          Sacola de compras
         </legend>
         <VisualToggle
           name="shop_enable_cart"
           checked={config['shop_enable_cart'] === 'true'}
           label="Habilitar sacola / carrinho de compras"
         />
+        <p className="text-[11px] leading-relaxed text-ink-soft">
+          Quando ativada, a cliente pode adicionar peças e finalizar o pedido online com pagamento por cartão, PIX ou boleto.
+        </p>
+      </fieldset>
+
+      <fieldset className="space-y-3">
+        <legend className="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft">
+          Negociação pelo WhatsApp
+        </legend>
         <VisualToggle
           name="shop_enable_whatsapp_button"
           checked={config['shop_enable_whatsapp_button'] === 'true'}
-          label="Exibir botão 'Negociar pelo WhatsApp' nos produtos"
+          label="Habilitar negociação pelo WhatsApp no checkout"
         />
         <p className="text-[11px] leading-relaxed text-ink-soft">
-          O botão de WhatsApp usa o número configurado em Comunicação. Certifique-se de que o número esteja preenchido antes de ativar.
+          Quando ativado, a etapa de pagamento exibe um botão que abre o WhatsApp da loja com a sacola completa — itens, tamanhos e total — para a cliente negociar diretamente com a vendedora. O número configurado em <strong>Comunicação</strong> é usado como destino.
         </p>
       </fieldset>
 
@@ -496,7 +524,7 @@ export function VisualEffectsForm({ config }: { config: Record<string, string> }
       )}
 
       <Button type="submit" size="sm" disabled={pending} block>
-        {pending ? 'Salvando…' : 'Salvar efeitos visuais'}
+        {pending ? 'Salvando…' : 'Salvar canais'}
       </Button>
     </form>
   );

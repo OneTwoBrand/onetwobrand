@@ -133,6 +133,30 @@ export async function saveVisualSettings(
     shop_visual_collection_card_motion: formData.get('shop_visual_collection_card_motion') ? 'true' : 'false',
     shop_visual_product_card_motion: formData.get('shop_visual_product_card_motion') ? 'true' : 'false',
     shop_visual_section_reveal: formData.get('shop_visual_section_reveal') ? 'true' : 'false',
+  };
+
+  try {
+    await Promise.all(
+      Object.entries(fields).map(([k, v]) => setPlatformConfig(k, v, user.id))
+    );
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Erro ao salvar.' };
+  }
+
+  revalidatePath('/loja');
+  revalidatePath('/mais/loja');
+  return { success: 'Efeitos visuais atualizados.' };
+}
+
+// ─── Save canais settings ─────────────────────────────────────────────────────
+export async function saveCanaisSettings(
+  _prev: ShopConfigState,
+  formData: FormData
+): Promise<ShopConfigState> {
+  const { user, error: authError } = await requireAdmin();
+  if (authError || !user) return { error: authError ?? 'Não autenticado.' };
+
+  const fields: Record<string, string> = {
     shop_enable_cart: formData.get('shop_enable_cart') ? 'true' : 'false',
     shop_enable_whatsapp_button: formData.get('shop_enable_whatsapp_button') ? 'true' : 'false',
   };
@@ -147,7 +171,8 @@ export async function saveVisualSettings(
 
   revalidatePath('/loja');
   revalidatePath('/mais/loja');
-  return { success: 'Efeitos visuais atualizados.' };
+  revalidatePath('/checkout/pagamento');
+  return { success: 'Configurações de canais salvas.' };
 }
 
 // ─── Read all shop config keys ────────────────────────────────────────────────
