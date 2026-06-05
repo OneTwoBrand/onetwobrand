@@ -11,6 +11,7 @@ import { ChevronLeft } from 'lucide-react';
 import { useCartStore } from '@/lib/shop/cart-store';
 import { lookupCep, formatCep, getShippingOptions, type ShippingOption } from '@/lib/shop/shipping';
 import { getShippingConfig } from '@/lib/shop/checkout-actions';
+import { formatPhoneBR } from '@/lib/input-masks';
 import { brl } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { CheckoutStepper } from './CheckoutStepper';
@@ -25,7 +26,7 @@ type AddressInfo  = {
 
 export default function CheckoutPage() {
   const router   = useRouter();
-  const { subtotal, items, itemCount } = useCartStore();
+  const { subtotal, itemCount } = useCartStore();
   const sub      = subtotal();
   const count    = itemCount();
   const [step, setStep]       = useState<1 | 2>(1);
@@ -37,7 +38,6 @@ export default function CheckoutPage() {
   const [shipping, setShipping]     = useState<string>('sedex');
   const [errors, setErrors]         = useState<Record<string, string>>({});
   const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>(() => getShippingOptions(sub));
-  const [freeThreshold, setFreeThreshold]     = useState<number>(800);
 
   const options = shippingOptions;
   const selectedOption = options.find((o) => o.id === shipping) ?? options[0];
@@ -45,7 +45,6 @@ export default function CheckoutPage() {
   async function loadShippingConfig() {
     const cfg = await getShippingConfig(sub);
     setShippingOptions(cfg.options);
-    setFreeThreshold(cfg.freeThreshold);
   }
 
   if (count === 0) {
@@ -145,8 +144,8 @@ export default function CheckoutPage() {
             <input
               type="tel"
               value={customer.phone}
-              onChange={(e) => setCustomer((c) => ({ ...c, phone: e.target.value }))}
-              placeholder="(21) 99999-0000"
+              onChange={(e) => setCustomer((c) => ({ ...c, phone: formatPhoneBR(e.target.value) }))}
+              placeholder="(67) 9 0000-0000"
               className={inputCls()}
               style={{ fontSize: 16 }}
             />

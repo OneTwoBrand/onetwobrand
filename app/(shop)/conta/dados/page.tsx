@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { CheckCircle2, User } from 'lucide-react';
 import { createClient } from '@/lib/supabase/browser';
+import { formatPhoneBR } from '@/lib/input-masks';
 
 export default function DadosPage() {
   const [name,      setName]      = useState('');
@@ -21,33 +22,42 @@ export default function DadosPage() {
   const [error,     setError]     = useState<string | null>(null);
 
   useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem('ot_checkout');
-      if (!raw) { setLoading(false); return; }
-      const data = JSON.parse(raw) as { customer?: { name?: string; email?: string; phone?: string } };
-      const em = data.customer?.email ?? '';
-      setEmail(em);
-      setName(data.customer?.name ?? '');
-      setPhone(data.customer?.phone ?? '');
-      if (!em) { setLoading(false); return; }
+    let active = true;
 
-      const supabase = createClient();
-      supabase
-        .from('customers')
-        .select('id, name, phone')
-        .eq('email', em)
-        .maybeSingle()
-        .then(({ data: cust }) => {
-          if (cust?.id) {
-            setCustId(cust.id);
-            setName(cust.name ?? '');
-            setPhone(cust.phone ?? '');
-          }
-          setLoading(false);
-        });
-    } catch {
-      setLoading(false);
-    }
+    queueMicrotask(() => {
+      if (!active) return;
+
+      try {
+        const raw = sessionStorage.getItem('ot_checkout');
+        if (!raw) { setLoading(false); return; }
+        const data = JSON.parse(raw) as { customer?: { name?: string; email?: string; phone?: string } };
+        const em = data.customer?.email ?? '';
+        setEmail(em);
+        setName(data.customer?.name ?? '');
+        setPhone(formatPhoneBR(data.customer?.phone ?? ''));
+        if (!em) { setLoading(false); return; }
+
+        const supabase = createClient();
+        supabase
+          .from('customers')
+          .select('id, name, phone')
+          .eq('email', em)
+          .maybeSingle()
+          .then(({ data: cust }) => {
+            if (!active) return;
+            if (cust?.id) {
+              setCustId(cust.id);
+              setName(cust.name ?? '');
+              setPhone(formatPhoneBR(cust.phone ?? ''));
+            }
+            setLoading(false);
+          });
+      } catch {
+        setLoading(false);
+      }
+    });
+
+    return () => { active = false; };
   }, []);
 
   async function handleSave(e: React.FormEvent) {
@@ -153,9 +163,9 @@ export default function DadosPage() {
             <input
               type="tel"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => setPhone(formatPhoneBR(e.target.value))}
               className="w-full h-[52px] px-4 rounded-[14px] border border-line bg-paper text-[14px] text-ink placeholder:text-ink-mute outline-none focus:border-primary transition-colors"
-              placeholder="(11) 9 0000-0000"
+              placeholder="(67) 9 0000-0000"
               style={{ fontSize: 16 }}
             />
           </div>

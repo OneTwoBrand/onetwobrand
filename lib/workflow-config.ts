@@ -57,6 +57,29 @@ export const DEFAULT_PRODUCT_COLORS = [
   'Cru', 'Off-white', 'Terracota', 'Rosé', 'Preto', 'Marfim', 'Azul', 'Verde', 'Vinho', 'Caramelo',
 ];
 
+export const DEFAULT_FINANCE_SUPPLIERS = [
+  'Bordadeira',
+  'Fornecedor de tecido',
+  'Aluguel do atelier',
+  'Correios',
+  'Marketing',
+  'Impostos',
+  'Serviços',
+  'Outros',
+];
+
+export const DEFAULT_FINANCE_CATEGORIES = [
+  'Fornecedor',
+  'Bordagem',
+  'Aluguel',
+  'Material',
+  'Transporte',
+  'Marketing',
+  'Impostos',
+  'Serviços',
+  'Outros',
+];
+
 export type WorkflowConfigKey =
   | 'op_statuses'
   | 'production_steps'
@@ -66,7 +89,9 @@ export type WorkflowConfigKey =
   | 'product_sizes'
   | 'product_fabrics'
   | 'product_categories'
-  | 'product_colors';
+  | 'product_colors'
+  | 'finance_suppliers'
+  | 'finance_categories';
 
 export type PaymentMethod = { value: string; label: string };
 
@@ -80,6 +105,8 @@ export type WorkflowConfig = {
   product_fabrics: string[];
   product_categories: string[];
   product_colors: string[];
+  finance_suppliers: string[];
+  finance_categories: string[];
 };
 
 // ── Read all config keys at once ──────────────────────────────────
@@ -104,6 +131,8 @@ export async function getWorkflowConfig(): Promise<WorkflowConfig> {
       product_fabrics:    (map.get('product_fabrics') as string[])        ?? DEFAULT_PRODUCT_FABRICS,
       product_categories: (map.get('product_categories') as string[])     ?? DEFAULT_PRODUCT_CATEGORIES,
       product_colors:     (map.get('product_colors') as string[])         ?? DEFAULT_PRODUCT_COLORS,
+      finance_suppliers:  (map.get('finance_suppliers') as string[])      ?? DEFAULT_FINANCE_SUPPLIERS,
+      finance_categories: (map.get('finance_categories') as string[])     ?? DEFAULT_FINANCE_CATEGORIES,
     };
   } catch {
     return getDefaults();
@@ -121,6 +150,8 @@ function getDefaults(): WorkflowConfig {
     product_fabrics:    DEFAULT_PRODUCT_FABRICS,
     product_categories: DEFAULT_PRODUCT_CATEGORIES,
     product_colors:     DEFAULT_PRODUCT_COLORS,
+    finance_suppliers:  DEFAULT_FINANCE_SUPPLIERS,
+    finance_categories: DEFAULT_FINANCE_CATEGORIES,
   };
 }
 

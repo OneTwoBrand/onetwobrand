@@ -8,13 +8,14 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { buildShippingOptions, DEFAULT_FREE_THRESHOLD, type ShippingOption } from './shipping';
 import { getPlatformConfig } from '@/lib/platform-config';
+import { parseMoneyBR } from '@/lib/input-masks';
 import type { CartItem } from './cart-store';
 
 async function getFreeShippingThreshold(): Promise<number> {
   try {
     const raw = await getPlatformConfig('shop_free_shipping_above');
     if (!raw) return DEFAULT_FREE_THRESHOLD;
-    const parsed = parseFloat(raw);
+    const parsed = parseMoneyBR(raw);
     return Number.isFinite(parsed) && parsed >= 0 ? parsed : DEFAULT_FREE_THRESHOLD;
   } catch {
     return DEFAULT_FREE_THRESHOLD;

@@ -7,6 +7,7 @@ import { AppBar, Topbar } from '@/components/layout/Navigation';
 import { Button } from '@/components/ui/Button';
 import { Select, Textarea } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
+import { PhoneInput } from '@/components/ui/MaskedInput';
 import { Card } from '@/components/ui/Primitives';
 import { createSeamstress } from '../actions';
 
@@ -30,7 +31,7 @@ export default function NovaCostureiraPage() {
                 <option>Bordadeira</option>
                 <option>Atelier · QA</option>
               </Select>
-              <Input name="phone" label="Telefone" placeholder="+55..." />
+              <PhoneInput name="phone" label="Telefone" placeholder="(67) 9 0000-0000" />
               <Input name="pix" label="PIX" placeholder="chave pix" />
               <Input name="specialty" label="Especialidade" placeholder="Bordado floral, costura fina..." />
               <Textarea name="address" label="Endereço" />

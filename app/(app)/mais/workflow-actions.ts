@@ -165,3 +165,33 @@ export async function saveProductColors(_prev: State, formData: FormData): Promi
     return { error: e instanceof Error ? e.message : 'Erro ao salvar.' };
   }
 }
+
+export async function saveFinanceSuppliers(_prev: State, formData: FormData): Promise<State> {
+  try {
+    const userId = await getAdminUserId();
+    const list = parseLines(String(formData.get('finance_suppliers') ?? ''));
+    if (list.length < 1) return { error: 'Informe ao menos 1 fornecedor ou destino.' };
+    await setWorkflowConfig('finance_suppliers', list, userId);
+    revalidatePath('/mais');
+    revalidatePath('/mais/financeiro');
+    revalidatePath('/financeiro');
+    return { success: 'Fornecedores salvos.' };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Erro ao salvar.' };
+  }
+}
+
+export async function saveFinanceCategories(_prev: State, formData: FormData): Promise<State> {
+  try {
+    const userId = await getAdminUserId();
+    const list = parseLines(String(formData.get('finance_categories') ?? ''));
+    if (list.length < 1) return { error: 'Informe ao menos 1 categoria financeira.' };
+    await setWorkflowConfig('finance_categories', list, userId);
+    revalidatePath('/mais');
+    revalidatePath('/mais/financeiro');
+    revalidatePath('/financeiro');
+    return { success: 'Categorias financeiras salvas.' };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Erro ao salvar.' };
+  }
+}

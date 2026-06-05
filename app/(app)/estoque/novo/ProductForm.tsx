@@ -8,6 +8,7 @@ import { AppBar, Topbar } from '@/components/layout/Navigation';
 import { Button } from '@/components/ui/Button';
 import { Select, Textarea } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
+import { MoneyInput } from '@/components/ui/MaskedInput';
 import { Card } from '@/components/ui/Primitives';
 import type { CatalogStockItem, CollectionOption } from '@/lib/catalog-data';
 import type { WorkflowConfig } from '@/lib/workflow-config';
@@ -252,8 +253,8 @@ export function ProductForm({ collections, workflowConfig, product, mode = 'crea
             <Card pad={20}>
               <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft">Preço e estoque</p>
               <div className="grid gap-3 md:grid-cols-4">
-                <Input name="cost_price" label="Custo" type="number" step="0.01" placeholder="0,00" defaultValue={product?.costPrice ?? ''} />
-                <Input name="sale_price" label="Preço venda" type="number" step="0.01" placeholder="0,00" defaultValue={product?.price ?? ''} />
+                <MoneyInput name="cost_price" label="Custo" placeholder="R$ 0,00" defaultValue={product?.costPrice ?? ''} />
+                <MoneyInput name="sale_price" label="Preço venda" placeholder="R$ 0,00" defaultValue={product?.price ?? ''} />
                 <Input name="quantity" label="Estoque *" type="number" min="0" placeholder="0" required defaultValue={product?.quantity ?? ''} />
                 <Input name="low_threshold" label="Mínimo" type="number" min="0" defaultValue={product?.lowThreshold ?? 3} />
               </div>

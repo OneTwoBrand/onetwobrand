@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { setPlatformConfig, getPlatformConfig } from '@/lib/platform-config';
+import { normalizeMoneyValue } from '@/lib/input-masks';
 
 export type ShopConfigState = { error?: string; success?: string };
 
@@ -80,7 +81,7 @@ export async function saveStoreSettings(
   if (authError || !user) return { error: authError ?? 'Não autenticado.' };
 
   const fields: Record<string, string> = {
-    shop_free_shipping_above:    String(formData.get('shop_free_shipping_above') ?? '').trim(),
+    shop_free_shipping_above:    normalizeMoneyValue(String(formData.get('shop_free_shipping_above') ?? '')),
     shop_production_lead_time:   String(formData.get('shop_production_lead_time') ?? '').trim(),
     shop_delivery_message:       String(formData.get('shop_delivery_message') ?? '').trim(),
     shop_show_out_of_stock:      String(formData.get('shop_show_out_of_stock') ?? '').trim(),
@@ -136,4 +137,3 @@ export async function getShopConfig(): Promise<Record<string, string>> {
 
   return Object.fromEntries(entries);
 }
-

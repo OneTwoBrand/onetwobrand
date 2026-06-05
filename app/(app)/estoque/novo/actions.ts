@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { hasSupabasePublicEnv } from '@/lib/env';
+import { parseMoneyBR } from '@/lib/input-masks';
 
 export type ProductActionState = { error?: string };
 
@@ -67,8 +68,8 @@ export async function createProduct(
   const description = String(formData.get('description') ?? '').trim() || null;
   const color = String(formData.get('color') ?? '').trim() || null;
   const fabric = String(formData.get('fabric') ?? '').trim() || color;
-  const cost_price = parseFloat(String(formData.get('cost_price') ?? '0')) || 0;
-  const sale_price = parseFloat(String(formData.get('sale_price') ?? '0')) || 0;
+  const cost_price = parseMoneyBR(formData.get('cost_price'));
+  const sale_price = parseMoneyBR(formData.get('sale_price'));
   const quantity = parseInt(String(formData.get('quantity') ?? '0'), 10) || 0;
   const low_threshold = parseInt(String(formData.get('low_threshold') ?? '3'), 10) || 3;
   const photo_url = String(formData.get('photo_url') ?? '').trim() || null;
@@ -151,8 +152,8 @@ export async function updateProduct(
   const description = String(formData.get('description') ?? '').trim() || null;
   const color = String(formData.get('color') ?? '').trim() || null;
   const fabric = String(formData.get('fabric') ?? '').trim() || color;
-  const cost_price = parseFloat(String(formData.get('cost_price') ?? '0')) || 0;
-  const sale_price = parseFloat(String(formData.get('sale_price') ?? '0')) || 0;
+  const cost_price = parseMoneyBR(formData.get('cost_price'));
+  const sale_price = parseMoneyBR(formData.get('sale_price'));
   const quantity = parseInt(String(formData.get('quantity') ?? '0'), 10) || 0;
   const low_threshold = parseInt(String(formData.get('low_threshold') ?? '3'), 10) || 3;
   const photo_url = String(formData.get('photo_url') ?? '').trim() || null;

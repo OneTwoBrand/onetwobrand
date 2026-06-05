@@ -5,6 +5,7 @@ import { Check, Upload, X } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { MoneyInput, PhoneInput } from '@/components/ui/MaskedInput';
 import { Textarea } from '@/components/ui/Field';
 import { saveHeroConfig, saveStoreSettings, type ShopConfigState } from './shop-config-actions';
 
@@ -199,13 +200,11 @@ export function StoreSettingsForm({
 
       {show('frete') && <fieldset className="space-y-4">
         <legend className="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft">Frete e entrega</legend>
-        <Input
+        <MoneyInput
           name="shop_free_shipping_above"
           label="Frete grátis acima de (R$)"
           defaultValue={config.shop_free_shipping_above}
-          placeholder="399"
-          type="number"
-          step="0.01"
+          placeholder="R$ 399,00"
         />
         <Input
           name="shop_production_lead_time"
@@ -240,12 +239,11 @@ export function StoreSettingsForm({
 
       {show('comunicacao') && <fieldset className="space-y-4">
         <legend className="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft">Comunicação</legend>
-        <Input
+        <PhoneInput
           name="shop_whatsapp"
           label="WhatsApp de atendimento"
           defaultValue={config.shop_whatsapp}
-          placeholder="(11) 99999-9999"
-          type="tel"
+          placeholder="(67) 9 0000-0000"
         />
         <Input
           name="shop_instagram"

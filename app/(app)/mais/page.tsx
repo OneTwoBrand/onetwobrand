@@ -86,6 +86,7 @@ export default async function MaisPage() {
   const operacionalItems: NavItem[] = [
     { href: '/mais/atelier',    icon: <Scissors size={18} strokeWidth={1.5} />, label: 'Atelier',    desc: 'Status de OP, etapas de produção e funções' },
     { href: '/mais/catalogo',   icon: <Package  size={18} strokeWidth={1.5} />, label: 'Catálogo',   desc: 'Tamanhos, tecidos, categorias e cores' },
+    { href: '/mais/financeiro', icon: <CircleDollarSign size={18} strokeWidth={1.5} />, label: 'Financeiro', desc: 'Fornecedores, categorias e lançamentos' },
     { href: '/mais/pagamentos', icon: <CreditCard size={18} strokeWidth={1.5} />, label: 'Pagamentos', desc: 'Métodos de pagamento aceitos' },
   ];
 

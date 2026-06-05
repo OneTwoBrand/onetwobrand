@@ -7,6 +7,7 @@ import { AppBar, Topbar } from '@/components/layout/Navigation';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
+import { MoneyInput } from '@/components/ui/MaskedInput';
 import { Card } from '@/components/ui/Primitives';
 import type { ProductionOrderListItem } from '@/lib/production/orders';
 import type { SeamstressListItem } from '@/lib/app-data';
@@ -79,7 +80,7 @@ export function ShipmentForm({
               <div className="space-y-3">
                 <Input name="sent_at" label="Data de envio *" type="date" required />
                 <Input name="expected_return_at" label="Previsão de retorno *" type="date" required />
-                <Input name="value" label="Valor combinado (R$)" type="number" step="0.01" placeholder="0,00" />
+                <MoneyInput name="value" label="Valor combinado" placeholder="R$ 0,00" />
               </div>
             </Card>
             {state?.error && <p className="text-[12px] font-medium text-danger">{state.error}</p>}

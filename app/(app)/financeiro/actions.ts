@@ -3,6 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { hasSupabasePublicEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
+import { parseMoneyBR } from '@/lib/input-masks';
+import { getWorkflowConfig } from '@/lib/workflow-config';
 
 export type FinanceActionState = { error?: string };
 
@@ -22,13 +24,18 @@ export async function createPayable(_prev: FinanceActionState, formData: FormDat
   try {
     const supplier = String(formData.get('supplier') ?? '').trim();
     const category = String(formData.get('category') ?? '').trim() || null;
-    const amount = Number.parseFloat(String(formData.get('amount') ?? '0')) || 0;
+    const amount = parseMoneyBR(formData.get('amount'));
     const dueDate = String(formData.get('due_date') ?? '').trim();
     const notes = String(formData.get('notes') ?? '').trim() || null;
 
     if (!supplier) return { error: 'Informe o fornecedor ou destino.' };
+    if (!category) return { error: 'Selecione uma categoria.' };
     if (amount <= 0) return { error: 'Informe um valor válido.' };
     if (!dueDate) return { error: 'Informe o vencimento.' };
+
+    const config = await getWorkflowConfig();
+    if (!config.finance_suppliers.includes(supplier)) return { error: 'Selecione um fornecedor válido.' };
+    if (!config.finance_categories.includes(category)) return { error: 'Selecione uma categoria válida.' };
 
     const supabase = await getAuthedSupabase();
     const { error } = await supabase.from('payables').insert({
@@ -52,7 +59,7 @@ export async function createPayable(_prev: FinanceActionState, formData: FormDat
 export async function createReceivable(_prev: FinanceActionState, formData: FormData): Promise<FinanceActionState> {
   try {
     const clientId = String(formData.get('client_id') ?? '').trim();
-    const amount = Number.parseFloat(String(formData.get('amount') ?? '0')) || 0;
+    const amount = parseMoneyBR(formData.get('amount'));
     const dueDate = String(formData.get('due_date') ?? '').trim();
 
     if (!clientId) return { error: 'Selecione uma cliente.' };

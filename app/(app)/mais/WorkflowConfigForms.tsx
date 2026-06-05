@@ -14,6 +14,8 @@ import {
   saveProductFabrics,
   saveProductCategories,
   saveProductColors,
+  saveFinanceSuppliers,
+  saveFinanceCategories,
 } from './workflow-actions';
 import type { WorkflowConfig } from '@/lib/workflow-config';
 
@@ -225,6 +227,44 @@ export function ProductColorsForm({ config }: { config: WorkflowConfig }) {
       <FormFeedback state={state} />
       <Button type="submit" size="sm" disabled={pending} block>
         {pending ? 'Salvando…' : 'Salvar cores'}
+      </Button>
+    </form>
+  );
+}
+
+export function FinanceSuppliersForm({ config }: { config: WorkflowConfig }) {
+  const [state, action, pending] = useActionState<State, FormData>(saveFinanceSuppliers, {});
+  return (
+    <form action={action} className="space-y-4">
+      <SectionHead eyebrow="Financeiro" title="Fornecedores e destinos" />
+      <ConfigField
+        name="finance_suppliers"
+        label="Um fornecedor por linha"
+        hint="Opções exibidas no campo Fornecedor/destino ao lançar uma conta a pagar."
+        defaultValue={config.finance_suppliers.join('\n')}
+      />
+      <FormFeedback state={state} />
+      <Button type="submit" size="sm" disabled={pending} block>
+        {pending ? 'Salvando…' : 'Salvar fornecedores'}
+      </Button>
+    </form>
+  );
+}
+
+export function FinanceCategoriesForm({ config }: { config: WorkflowConfig }) {
+  const [state, action, pending] = useActionState<State, FormData>(saveFinanceCategories, {});
+  return (
+    <form action={action} className="space-y-4">
+      <SectionHead eyebrow="Financeiro" title="Categorias de despesa" />
+      <ConfigField
+        name="finance_categories"
+        label="Uma categoria por linha"
+        hint="Opções exibidas no campo Categoria ao lançar uma conta a pagar."
+        defaultValue={config.finance_categories.join('\n')}
+      />
+      <FormFeedback state={state} />
+      <Button type="submit" size="sm" disabled={pending} block>
+        {pending ? 'Salvando…' : 'Salvar categorias'}
       </Button>
     </form>
   );

@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { hasSupabasePublicEnv } from '@/lib/env';
 import { getNextEmbroideryShipmentCode } from '@/lib/app-data';
 import { getWorkflowConfig } from '@/lib/workflow-config';
+import { parseMoneyBR } from '@/lib/input-masks';
 
 export type ShipmentActionState = { error?: string };
 
@@ -18,7 +19,7 @@ export async function createShipment(
   const qty = parseInt(String(formData.get('qty') ?? '0'), 10) || 0;
   const sent_at = String(formData.get('sent_at') ?? '').trim();
   const expected_return_at = String(formData.get('expected_return_at') ?? '').trim();
-  const value = Number.parseFloat(String(formData.get('value') ?? '0')) || 0;
+  const value = parseMoneyBR(formData.get('value'));
   const op_id = String(formData.get('op_id') ?? '').trim() || null;
 
   if (!seamstress_id) return { error: 'Selecione uma costureira cadastrada.' };

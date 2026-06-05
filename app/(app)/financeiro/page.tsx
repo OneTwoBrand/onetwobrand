@@ -5,14 +5,16 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card, SectionHead } from '@/components/ui/Primitives';
 import { getClients, getFinancialSummary } from '@/lib/app-data';
+import { getWorkflowConfig } from '@/lib/workflow-config';
 import { brl, daysUntil } from '@/lib/utils';
 import { FinanceForms } from './FinanceForms';
 import { markPayablePaid, markReceivableReceived } from './actions';
 
 export default async function FinanceiroPage() {
-  const [financial, clientsResult] = await Promise.all([
+  const [financial, clientsResult, workflowConfig] = await Promise.all([
     getFinancialSummary(),
     getClients(),
+    getWorkflowConfig(),
   ]);
   const { summary, source, error } = financial;
 
@@ -43,7 +45,11 @@ export default async function FinanceiroPage() {
 
           <section className="mb-5">
             <SectionHead eyebrow="Lançamentos" title="Novo movimento" />
-            <FinanceForms clients={clientsResult.clients} />
+            <FinanceForms
+              clients={clientsResult.clients}
+              financeSuppliers={workflowConfig.finance_suppliers}
+              financeCategories={workflowConfig.finance_categories}
+            />
           </section>
 
           <div className="grid gap-5 lg:grid-cols-2">

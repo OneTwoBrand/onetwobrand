@@ -6,6 +6,7 @@ import { ChevronLeft } from 'lucide-react';
 import { AppBar, Topbar } from '@/components/layout/Navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { PhoneInput } from '@/components/ui/MaskedInput';
 import { Card } from '@/components/ui/Primitives';
 import { saveClient } from './actions';
 
@@ -24,7 +25,7 @@ export default function NovaClientePage() {
               <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft">Dados pessoais</p>
               <div className="space-y-3">
                 <Input name="name" label="Nome completo *" placeholder="Ex: Clara Bianchi" required />
-                <Input name="phone" label="Telefone / WhatsApp" placeholder="+55 (11) 9 0000-0000" />
+                <PhoneInput name="phone" label="Telefone / WhatsApp" placeholder="(67) 9 0000-0000" />
                 <Input name="email" label="E-mail" type="email" placeholder="nome@email.com" />
               </div>
             </Card>
