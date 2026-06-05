@@ -15,6 +15,7 @@ import Image from 'next/image';
 import { ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { HeroSlide } from '@/app/(app)/mais/shop-config-actions';
+import type { ShopCollection } from '@/lib/shop/catalog';
 
 interface ShopHeroProps {
   slides: HeroSlide[];
@@ -22,6 +23,7 @@ interface ShopHeroProps {
   fallbackCollectionName?: string;
   fallbackCollectionSubtitle?: string;
   fallbackCollectionSlug?: string;
+  fallbackCollections?: ShopCollection[];
 }
 
 export function ShopHero({
@@ -30,31 +32,29 @@ export function ShopHero({
   fallbackCollectionName,
   fallbackCollectionSubtitle,
   fallbackCollectionSlug,
+  fallbackCollections,
 }: ShopHeroProps) {
 
   // ── Fallback: card colorido quando não há slides configurados ─────────────
   if (slides.length === 0) {
-    if (!fallbackCollectionName) return null;
-    return (
-      <Link
-        href={fallbackCollectionSlug ? `/loja/colecoes/${fallbackCollectionSlug}` : '/loja'}
-        className="block rounded-[22px] bg-primary px-6 py-8 relative overflow-hidden"
-      >
-        <svg aria-hidden className="absolute bottom-[-20%] right-[-8%] w-[55%] opacity-[0.14] pointer-events-none" viewBox="0 0 200 200" fill="none">
-          <rect x="100" y="4" width="136" height="136" rx="4" transform="rotate(45 100 4)" stroke="#FBF6E4" strokeWidth="1.5" />
-        </svg>
-        <div className="relative z-10 flex flex-col gap-2 max-w-[280px]">
-          <span className="text-[9px] font-medium tracking-[0.24em] uppercase text-paper/70">Coleção em destaque</span>
-          <h1 className="font-serif text-[32px] leading-[1.05] font-light text-paper">{fallbackCollectionName}</h1>
-          {fallbackCollectionSubtitle && (
-            <p className="text-[12px] text-paper/75 leading-[1.55]">{fallbackCollectionSubtitle}</p>
-          )}
-          <span className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-medium tracking-[0.16em] uppercase text-paper underline underline-offset-4">
-            Ver coleção <ArrowRight size={13} />
-          </span>
-        </div>
-      </Link>
-    );
+    const collections = fallbackCollections?.length
+      ? fallbackCollections
+      : fallbackCollectionName
+        ? [{
+            id: fallbackCollectionSlug ?? fallbackCollectionName,
+            slug: fallbackCollectionSlug ?? '',
+            name: fallbackCollectionName,
+            subtitle: fallbackCollectionSubtitle ?? null,
+            heroUrl: null,
+            sortOrder: 0,
+            featured: true,
+            featuredOrder: 0,
+            pieceCount: 0,
+          }]
+        : [];
+
+    if (collections.length === 0) return null;
+    return <FeaturedCollectionSpotlight collections={collections} interval={interval} />;
   }
 
   return (
@@ -62,6 +62,79 @@ export function ShopHero({
       slides={slides}
       interval={interval}
     />
+  );
+}
+
+function FeaturedCollectionSpotlight({
+  collections,
+  interval,
+}: {
+  collections: ShopCollection[];
+  interval: number;
+}) {
+  const [active, setActive] = useState(0);
+  const ms = Math.max(3, Math.min(30, interval)) * 1000;
+  const current = collections[active] ?? collections[0];
+
+  useEffect(() => {
+    if (collections.length <= 1) return;
+    const timer = setInterval(() => {
+      setActive((prev) => (prev + 1) % collections.length);
+    }, ms);
+    return () => clearInterval(timer);
+  }, [collections.length, ms]);
+
+  return (
+    <section className="relative overflow-hidden rounded-[22px] bg-primary px-6 py-8 md:px-9 md:py-9">
+      <svg aria-hidden className="absolute bottom-[-20%] right-[-8%] w-[55%] opacity-[0.14] pointer-events-none" viewBox="0 0 200 200" fill="none">
+        <rect x="100" y="4" width="136" height="136" rx="4" transform="rotate(45 100 4)" stroke="#FBF6E4" strokeWidth="1.5" />
+      </svg>
+      {current.heroUrl && (
+        <Image
+          src={current.heroUrl}
+          alt=""
+          fill
+          className="object-cover object-center opacity-20 mix-blend-screen"
+          sizes="100vw"
+        />
+      )}
+      <Link
+        href={current.slug ? `/loja/colecoes/${current.slug}` : '/loja/colecoes'}
+        className="relative z-10 block max-w-[320px]"
+      >
+        <span className="text-[9px] font-medium tracking-[0.24em] uppercase text-paper/70">
+          {collections.length > 1 ? 'Coleções em destaque' : 'Coleção em destaque'}
+        </span>
+        <h1 className="mt-2 font-serif text-[32px] leading-[1.05] font-light text-paper">{current.name}</h1>
+        {current.subtitle && (
+          <p className="mt-2 text-[12px] text-paper/75 leading-[1.55]">{current.subtitle}</p>
+        )}
+        <span className="mt-4 inline-flex items-center gap-1.5 text-[11px] font-medium tracking-[0.16em] uppercase text-paper underline underline-offset-4">
+          Ver coleção <ArrowRight size={13} />
+        </span>
+      </Link>
+
+      {collections.length > 1 && (
+        <div className="absolute bottom-5 right-6 z-20 flex items-center gap-2" role="tablist" aria-label="Coleções em destaque">
+          {collections.map((collection, idx) => (
+            <button
+              key={collection.id}
+              type="button"
+              role="tab"
+              aria-selected={idx === active}
+              aria-label={`Ver ${collection.name}`}
+              onClick={() => setActive(idx)}
+              className={cn(
+                'rounded-full transition-all duration-300',
+                idx === active
+                  ? 'h-1.5 w-5 bg-paper'
+                  : 'h-1.5 w-1.5 bg-paper/40 hover:bg-paper/70'
+              )}
+            />
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 

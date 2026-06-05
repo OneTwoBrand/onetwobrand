@@ -104,6 +104,17 @@ export default function NovaColecaoPage() {
             </div>
           </Card>
 
+          <Card pad={20}>
+            <p className="mb-4 text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft">Loja</p>
+            <div className="grid gap-3 md:grid-cols-[1fr_140px]">
+              <label className="flex min-h-12 items-center gap-3 rounded-[12px] border border-line bg-paper px-4 text-[13px] text-ink">
+                <input name="featured" type="checkbox" className="h-4 w-4 accent-primary" />
+                Destacar na home da loja
+              </label>
+              <Input name="featured_order" label="Ordem" type="number" min="0" defaultValue="0" />
+            </div>
+          </Card>
+
           {state?.error && <p className="text-[12px] font-medium text-danger">{state.error}</p>}
 
           <div className="flex gap-3">

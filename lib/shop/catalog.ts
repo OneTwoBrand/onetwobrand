@@ -15,6 +15,8 @@ export type ShopCollection = {
   subtitle: string | null;
   heroUrl: string | null;
   sortOrder: number;
+  featured: boolean;
+  featuredOrder: number;
   pieceCount: number;
 };
 
@@ -45,9 +47,9 @@ export type ShopProductDetail = ShopProductCard & {
 // ── Fallbacks ────────────────────────────────────────────────────
 
 const fallbackCollections: ShopCollection[] = [
-  { id: '1', slug: 'verao-2026',  name: 'Verão 2026',  subtitle: 'Linhos e crepes para o calor',            heroUrl: null, sortOrder: 1, pieceCount: 4 },
-  { id: '2', slug: 'premium',     name: 'Premium',      subtitle: 'Peças exclusivas bordadas à mão',         heroUrl: null, sortOrder: 2, pieceCount: 3 },
-  { id: '3', slug: 'bordados',    name: 'Bordados',     subtitle: 'Bordados artesanais em pequenas tiragens', heroUrl: null, sortOrder: 3, pieceCount: 2 },
+  { id: '1', slug: 'verao-2026',  name: 'Verão 2026',  subtitle: 'Linhos e crepes para o calor',            heroUrl: null, sortOrder: 1, featured: true,  featuredOrder: 1, pieceCount: 4 },
+  { id: '2', slug: 'premium',     name: 'Premium',      subtitle: 'Peças exclusivas bordadas à mão',         heroUrl: null, sortOrder: 2, featured: true,  featuredOrder: 2, pieceCount: 3 },
+  { id: '3', slug: 'bordados',    name: 'Bordados',     subtitle: 'Bordados artesanais em pequenas tiragens', heroUrl: null, sortOrder: 3, featured: false, featuredOrder: 3, pieceCount: 2 },
 ];
 
 const fallbackDetails: ShopProductDetail[] = [
@@ -141,14 +143,32 @@ export async function getShopCollections(): Promise<{
     const supabase = await createClient();
     const { data, error } = await supabase
       .from('collections')
-      .select('id, slug, name, subtitle, hero_url, sort_order')
+      .select('id, slug, name, subtitle, hero_url, sort_order, featured, featured_order')
       .not('published_at', 'is', null)
+      .order('featured_order', { ascending: true })
       .order('sort_order', { ascending: true });
 
-    if (error) return { collections: fallbackCollections, source: 'fallback', error: error.message };
+    let collectionRows = data ?? [];
+    const queryError = error?.message;
+
+    if (error) {
+      const legacy = await supabase
+        .from('collections')
+        .select('id, slug, name, subtitle, hero_url, sort_order')
+        .not('published_at', 'is', null)
+        .order('sort_order', { ascending: true });
+
+      if (legacy.error) return { collections: fallbackCollections, source: 'fallback', error: error.message };
+
+      collectionRows = (legacy.data ?? []).map((collection) => ({
+        ...collection,
+        featured: false,
+        featured_order: collection.sort_order ?? 0,
+      }));
+    }
 
     // contar peças publicadas por coleção
-    const ids = (data ?? []).map((c) => c.id);
+    const ids = collectionRows.map((c) => c.id);
     const { data: piecesData } = await supabase
       .from('pieces')
       .select('collection_id')
@@ -163,13 +183,16 @@ export async function getShopCollections(): Promise<{
 
     return {
       source: 'supabase',
-      collections: (data ?? []).map((c) => ({
+      error: queryError,
+      collections: collectionRows.map((c) => ({
         id:         c.id,
         slug:       c.slug ?? '',
         name:       c.name,
         subtitle:   c.subtitle ?? null,
         heroUrl:    c.hero_url ?? null,
         sortOrder:  c.sort_order ?? 0,
+        featured:   Boolean(c.featured),
+        featuredOrder: Number(c.featured_order ?? 0),
         pieceCount: countMap[c.id] ?? 0,
       })),
     };
@@ -320,30 +343,53 @@ export async function getShopCollectionBySlug(slug: string): Promise<{
     const supabase = await createClient();
     const { data, error } = await supabase
       .from('collections')
-      .select('id, slug, name, subtitle, hero_url, sort_order')
+      .select('id, slug, name, subtitle, hero_url, sort_order, featured, featured_order')
       .eq('slug', slug)
       .not('published_at', 'is', null)
       .maybeSingle();
 
-    if (error) return { collection: null, source: 'fallback', error: error.message };
-    if (!data) return { collection: null, source: 'supabase' };
+    let collectionRow = data;
+    const queryError = error?.message;
+
+    if (error) {
+      const legacy = await supabase
+        .from('collections')
+        .select('id, slug, name, subtitle, hero_url, sort_order')
+        .eq('slug', slug)
+        .not('published_at', 'is', null)
+        .maybeSingle();
+
+      if (legacy.error) return { collection: null, source: 'fallback', error: error.message };
+      collectionRow = legacy.data
+        ? {
+            ...legacy.data,
+            featured: false,
+            featured_order: legacy.data.sort_order ?? 0,
+          }
+        : null;
+    }
+
+    if (!collectionRow) return { collection: null, source: 'supabase', error: queryError };
 
     const { data: piecesData } = await supabase
       .from('pieces')
       .select('id')
       .eq('active', true)
       .eq('published', true)
-      .eq('collection_id', data.id);
+      .eq('collection_id', collectionRow.id);
 
     return {
       source: 'supabase',
+      error: queryError,
       collection: {
-        id:         data.id,
-        slug:       data.slug ?? slug,
-        name:       data.name,
-        subtitle:   data.subtitle ?? null,
-        heroUrl:    data.hero_url ?? null,
-        sortOrder:  data.sort_order ?? 0,
+        id:         collectionRow.id,
+        slug:       collectionRow.slug ?? slug,
+        name:       collectionRow.name,
+        subtitle:   collectionRow.subtitle ?? null,
+        heroUrl:    collectionRow.hero_url ?? null,
+        sortOrder:  collectionRow.sort_order ?? 0,
+        featured:   Boolean(collectionRow.featured),
+        featuredOrder: Number(collectionRow.featured_order ?? 0),
         pieceCount: piecesData?.length ?? 0,
       },
     };

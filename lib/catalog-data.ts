@@ -5,6 +5,10 @@ export type CollectionOption = {
   id: string;
   name: string;
   category?: string | null;
+  featured?: boolean;
+  featuredOrder?: number;
+  slug?: string | null;
+  publishedAt?: string | null;
 };
 
 export type CatalogStockItem = {
@@ -31,9 +35,9 @@ export type CatalogStockItem = {
 };
 
 const fallbackCollections: CollectionOption[] = [
-  { id: 'premium', name: 'Premium', category: 'Bordados' },
-  { id: 'verao', name: 'Verão 2026', category: 'Casual' },
-  { id: 'bordados', name: 'Bordados', category: 'Artesanal' },
+  { id: 'premium', name: 'Premium', category: 'Bordados', featured: true, featuredOrder: 1, slug: 'premium', publishedAt: new Date().toISOString() },
+  { id: 'verao', name: 'Verão 2026', category: 'Casual', featured: false, featuredOrder: 2, slug: 'verao-2026', publishedAt: new Date().toISOString() },
+  { id: 'bordados', name: 'Bordados', category: 'Artesanal', featured: false, featuredOrder: 3, slug: 'bordados', publishedAt: new Date().toISOString() },
 ];
 
 const fallbackProducts: CatalogStockItem[] = [
@@ -112,13 +116,47 @@ export async function getCollections(): Promise<{ collections: CollectionOption[
     const supabase = await createClient();
     const { data, error } = await supabase
       .from('collections')
-      .select('id, name, category')
+      .select('id, name, category, slug, published_at, featured, featured_order')
       .eq('active', true)
+      .order('featured_order', { ascending: true })
       .order('name', { ascending: true });
 
-    if (error) return { collections: fallbackCollections, source: 'fallback', error: error.message };
+    if (error) {
+      const legacy = await supabase
+        .from('collections')
+        .select('id, name, category, slug, published_at')
+        .eq('active', true)
+        .order('name', { ascending: true });
 
-    return { source: 'supabase', collections: data ?? [] };
+      if (legacy.error) return { collections: fallbackCollections, source: 'fallback', error: error.message };
+
+      return {
+        source: 'supabase',
+        error: error.message,
+        collections: (legacy.data ?? []).map((collection) => ({
+          id: collection.id,
+          name: collection.name,
+          category: collection.category,
+          slug: collection.slug,
+          publishedAt: collection.published_at,
+          featured: false,
+          featuredOrder: 0,
+        })),
+      };
+    }
+
+    return {
+      source: 'supabase',
+      collections: (data ?? []).map((collection) => ({
+        id: collection.id,
+        name: collection.name,
+        category: collection.category,
+        slug: collection.slug,
+        publishedAt: collection.published_at,
+        featured: Boolean(collection.featured),
+        featuredOrder: Number(collection.featured_order ?? 0),
+      })),
+    };
   } catch (error) {
     return { collections: fallbackCollections, source: 'fallback', error: error instanceof Error ? error.message : 'Erro ao buscar coleções.' };
   }

@@ -50,7 +50,12 @@ export default async function LojaPage({ searchParams }: PageProps) {
 
   const slides   = parseHeroSlides(shopConfig);
   const interval = parseInt(shopConfig['shop_hero_interval'] || '7', 10);
-  const featured = collections[0] ?? null;
+  const featuredCollections = collections.filter((collection) => collection.featured);
+  const fallbackCollections = featuredCollections.length > 0
+    ? featuredCollections
+    : collections[0]
+      ? [collections[0]]
+      : [];
 
   // Sem busca: prioriza produtos novos; com busca: mostra todos os resultados
   const displayProducts = query
@@ -63,13 +68,11 @@ export default async function LojaPage({ searchParams }: PageProps) {
   return (
     <div className="flex flex-col gap-8">
       {/* ── Hero (oculto durante busca) ───────────────────── */}
-      {!query && (slides.length > 0 || featured) && (
+      {!query && (slides.length > 0 || fallbackCollections.length > 0) && (
         <ShopHero
           slides={slides}
           interval={interval}
-          fallbackCollectionName={featured?.name}
-          fallbackCollectionSubtitle={featured?.subtitle ?? undefined}
-          fallbackCollectionSlug={featured?.slug}
+          fallbackCollections={fallbackCollections}
         />
       )}
 
