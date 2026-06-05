@@ -26,7 +26,7 @@ export async function inviteUser(
 
     const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
       data: { full_name: fullName },
-      redirectTo: `${siteUrl}/login`,
+      redirectTo: `${siteUrl}/auth/callback?next=/nova-senha`,
     });
 
     if (error) return { error: error.message };
@@ -38,12 +38,12 @@ export async function inviteUser(
       role,
     }, { onConflict: 'id' });
 
-    // Send branded invite email via Resend
-    // The Supabase invite generates a token; we build the confirmation URL
-    const inviteLink = `${siteUrl}/login`;
-    await sendInviteEmail({ to: email, fullName, role, inviteLink }).catch(() => {
-      // Non-fatal: Supabase also sends its own invite, log silently
-    });
+    // Build the invite link from the Supabase action link so Resend sends
+    // the real token (not just /login). action_link is the full URL with token.
+    const inviteLink = (data.user as { action_link?: string }).action_link
+      ?? `${siteUrl}/auth/callback?next=/nova-senha`;
+
+    await sendInviteEmail({ to: email, fullName, role, inviteLink }).catch(() => {});
 
     revalidatePath('/usuarios');
     return { success: `Convite enviado para ${email}.` };

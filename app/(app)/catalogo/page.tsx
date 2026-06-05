@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Layers3, Plus } from 'lucide-react';
+import { Layers3, Plus, Pencil } from 'lucide-react';
 import { AppBar, Topbar } from '@/components/layout/Navigation';
 import { DataNotice } from '@/components/app/DataNotice';
 import { Button } from '@/components/ui/Button';
@@ -27,7 +27,14 @@ export default async function ColecoesPage() {
                   <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-primary-soft text-primary">
                     <Layers3 size={18} />
                   </div>
-                  <DeleteCollectionButton id={collection.id} name={collection.name} />
+                  <div className="flex items-center gap-1">
+                    <Link href={`/catalogo/${collection.id}/editar`} aria-label="Editar coleção">
+                      <button type="button" className="flex h-8 w-8 items-center justify-center rounded-full text-ink-soft hover:bg-primary-soft hover:text-primary transition-colors" aria-label="Editar">
+                        <Pencil size={15} />
+                      </button>
+                    </Link>
+                    <DeleteCollectionButton id={collection.id} name={collection.name} />
+                  </div>
                 </div>
                 <h2 className="m-0 font-serif text-[22px] font-normal text-ink">{collection.name}</h2>
                 <p className="mt-2 text-[11px] uppercase tracking-[0.14em] text-ink-soft">{collection.category ?? 'Sem categoria'}</p>
@@ -42,16 +49,18 @@ export default async function ColecoesPage() {
                     />
                     Destacar na home
                   </label>
-                  <div className="flex items-end gap-2">
+                  <div className="flex items-end gap-2 mt-2">
                     <Input
                       name="featured_order"
                       label="Ordem"
                       type="number"
                       min="0"
                       defaultValue={collection.featuredOrder ?? 0}
-                      className="flex-1"
+                      className="flex-1 min-w-0"
                     />
-                    <Button type="submit" size="sm" variant="soft">Salvar</Button>
+                    <Button type="submit" size="sm" variant="soft" className="shrink-0">
+                      Salvar
+                    </Button>
                   </div>
                   {!collection.publishedAt && (
                     <p className="mt-2 text-[10px] text-ink-mute">Publique a coleção para aparecer na loja.</p>

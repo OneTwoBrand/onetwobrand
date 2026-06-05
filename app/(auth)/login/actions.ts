@@ -48,7 +48,7 @@ export async function sendPasswordReset(
   const supabase = await createClient();
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${siteUrl}/nova-senha`,
+    redirectTo: `${siteUrl}/auth/callback?next=/nova-senha`,
   });
 
   if (error) return { error: 'Não foi possível enviar o e-mail. Verifique o endereço.' };
@@ -56,7 +56,7 @@ export async function sendPasswordReset(
   // Send branded email via Resend (non-fatal — Supabase also sends its own)
   try {
     const { sendPasswordResetEmail } = await import('@/lib/email');
-    await sendPasswordResetEmail({ to: email, resetLink: `${siteUrl}/nova-senha` });
+    await sendPasswordResetEmail({ to: email, resetLink: `${siteUrl}/auth/callback?next=/nova-senha` });
   } catch {
     // silently ignore — Supabase fallback still works
   }

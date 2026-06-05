@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 const desktopNav = [
   { href: '/loja',             label: 'Loja' },
   { href: '/loja/colecoes',    label: 'Coleções' },
+  { href: '/loja/produtos',    label: 'Produtos' },
 ];
 
 export function ShopHeader({ cartCount = 0 }: { cartCount?: number }) {
@@ -87,12 +88,12 @@ export function ShopHeader({ cartCount = 0 }: { cartCount?: number }) {
           <Link
             href="/carrinho"
             aria-label={`Sacola${cartCount > 0 ? `, ${cartCount} item` : ''}`}
-            className="relative flex items-center gap-2 h-10 px-4 rounded-full bg-ink text-paper text-[12px] font-medium tracking-[0.14em] uppercase hover:bg-ink/80 transition-colors"
+            className="relative flex items-center gap-2 h-10 px-4 rounded-full bg-primary text-paper text-[12px] font-medium tracking-[0.14em] uppercase hover:bg-primary-hover transition-colors shadow-sm"
           >
             <ShoppingBag size={15} />
             <span>Sacola</span>
             {cartCount > 0 && (
-              <span className="w-5 h-5 rounded-full bg-primary text-paper text-[10px] font-medium flex items-center justify-center leading-none">
+              <span className="w-5 h-5 rounded-full bg-paper text-primary text-[10px] font-medium flex items-center justify-center leading-none">
                 {cartCount > 9 ? '9+' : cartCount}
               </span>
             )}

@@ -162,6 +162,46 @@ export async function getCollections(): Promise<{ collections: CollectionOption[
   }
 }
 
+export type CollectionDetail = {
+  id: string;
+  name: string;
+  category?: string | null;
+  description?: string | null;
+  heroUrl?: string | null;
+  slug?: string | null;
+  publishedAt?: string | null;
+  featured?: boolean;
+  featuredOrder?: number;
+};
+
+export async function getCollectionById(id: string): Promise<{ collection: CollectionDetail | null }> {
+  if (!hasSupabasePublicEnv()) return { collection: null };
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from('collections')
+      .select('id, name, category, description, hero_url, slug, published_at, featured, featured_order')
+      .eq('id', id)
+      .maybeSingle();
+    if (!data) return { collection: null };
+    return {
+      collection: {
+        id: data.id,
+        name: data.name,
+        category: data.category,
+        description: data.description,
+        heroUrl: data.hero_url,
+        slug: data.slug,
+        publishedAt: data.published_at,
+        featured: Boolean(data.featured),
+        featuredOrder: Number(data.featured_order ?? 0),
+      },
+    };
+  } catch {
+    return { collection: null };
+  }
+}
+
 export async function getCatalogStock(): Promise<{ products: CatalogStockItem[]; source: 'supabase' | 'fallback'; error?: string }> {
   if (!hasSupabasePublicEnv()) return { products: fallbackProducts, source: 'fallback' };
 
