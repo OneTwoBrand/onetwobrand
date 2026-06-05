@@ -11,15 +11,16 @@ import { usePathname } from 'next/navigation';
 import { Home, Layers3, ShoppingBag, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const navItems = [
-  { href: '/loja',      label: 'Loja',     Icon: Home },
-  { href: '/loja/colecoes',  label: 'Coleções', Icon: Layers3 },
-  { href: '/carrinho',  label: 'Sacola',   Icon: ShoppingBag },
-  { href: '/conta',     label: 'Conta',    Icon: User },
+const baseNavItems = [
+  { href: '/loja',           label: 'Loja',     Icon: Home,         isCart: false },
+  { href: '/loja/colecoes',  label: 'Coleções', Icon: Layers3,      isCart: false },
+  { href: '/carrinho',       label: 'Sacola',   Icon: ShoppingBag,  isCart: true  },
+  { href: '/conta',          label: 'Conta',    Icon: User,         isCart: false },
 ];
 
-export function ShopNav({ cartCount = 0 }: { cartCount?: number }) {
+export function ShopNav({ cartCount = 0, showCart = false }: { cartCount?: number; showCart?: boolean }) {
   const pathname = usePathname();
+  const navItems = baseNavItems.filter((item) => !item.isCart || showCart);
 
   return (
     <nav
@@ -27,9 +28,8 @@ export function ShopNav({ cartCount = 0 }: { cartCount?: number }) {
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="flex items-stretch h-16">
-        {navItems.map(({ href, label, Icon }) => {
+        {navItems.map(({ href, label, Icon, isCart }) => {
           const active = pathname === href || (href !== '/loja' && pathname.startsWith(href));
-          const isCart = href === '/carrinho';
           return (
             <Link
               key={href}

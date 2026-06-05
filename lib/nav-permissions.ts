@@ -8,6 +8,7 @@ export const ALL_NAV_HREFS = [
   '/estoque',
   '/catalogo',
   '/clientes',
+  '/negociacoes',
   '/vendas',
   '/financeiro',
   '/relatorios',
@@ -18,18 +19,19 @@ export const ALL_NAV_HREFS = [
 export type NavHref = (typeof ALL_NAV_HREFS)[number];
 
 export const NAV_LABELS: Record<NavHref, string> = {
-  '/':            'Início',
-  '/producao':    'Produção',
-  '/bordagem':    'Bordagem',
-  '/costureiras': 'Costureiras',
-  '/estoque':     'Estoque',
-  '/catalogo':    'Coleções',
-  '/clientes':    'Clientes',
-  '/vendas':      'Vendas',
-  '/financeiro':  'Financeiro',
-  '/relatorios':  'Relatórios',
-  '/assistant':   'OneTwo Assistente',
-  '/mais':        'Configurações',
+  '/':             'Início',
+  '/producao':     'Produção',
+  '/bordagem':     'Bordagem',
+  '/costureiras':  'Costureiras',
+  '/estoque':      'Estoque',
+  '/catalogo':     'Coleções',
+  '/clientes':     'Clientes',
+  '/negociacoes':  'Negociações',
+  '/vendas':       'Vendas',
+  '/financeiro':   'Financeiro',
+  '/relatorios':   'Relatórios',
+  '/assistant':    'OneTwo Assistente',
+  '/mais':         'Configurações',
 };
 
 export function parseNavPermissions(raw: unknown): NavHref[] {

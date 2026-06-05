@@ -11,7 +11,7 @@ import { type ReactNode, useState, useEffect } from 'react';
 import {
   Home, Scissors, ShoppingCart, Package, MoreHorizontal,
   Gem, User, CircleDollarSign, BarChart3, ChevronLeft, ChevronRight,
-  Bot, LogOut, Layers3, Users, X, Settings,
+  Bot, LogOut, Layers3, Users, X, Settings, MessageCircle,
 } from 'lucide-react';
 import { signOut } from '@/app/(auth)/logout/actions';
 import { cn } from '@/lib/utils';
@@ -46,9 +46,10 @@ const sheetGroups: SheetGroup[] = [
   {
     label: 'Comercial',
     items: [
-      { href: '/vendas'     as NavHref, label: 'Vendas',      Icon: ShoppingCart },
-      { href: '/financeiro' as NavHref, label: 'Financeiro',  Icon: CircleDollarSign },
-      { href: '/relatorios' as NavHref, label: 'Relatórios',  Icon: BarChart3 },
+      { href: '/negociacoes' as NavHref, label: 'Negociações', Icon: MessageCircle },
+      { href: '/vendas'      as NavHref, label: 'Vendas',      Icon: ShoppingCart },
+      { href: '/financeiro'  as NavHref, label: 'Financeiro',  Icon: CircleDollarSign },
+      { href: '/relatorios'  as NavHref, label: 'Relatórios',  Icon: BarChart3 },
     ],
   },
   {
@@ -251,6 +252,7 @@ const sidebarGroups: SidebarGroup[] = [
   {
     label: 'Comercial',
     items: [
+      { href: '/negociacoes' as NavHref, label: 'Negociações', Icon: MessageCircle,    adminOnly: false },
       { href: '/clientes'   as NavHref, label: 'Clientes',   Icon: User,             adminOnly: false },
       { href: '/vendas'     as NavHref, label: 'Vendas',     Icon: ShoppingCart,     adminOnly: false },
       { href: '/financeiro' as NavHref, label: 'Financeiro', Icon: CircleDollarSign, adminOnly: false },

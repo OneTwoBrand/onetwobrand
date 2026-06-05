@@ -9,18 +9,22 @@ import { AnnouncementBar } from '@/components/shop/AnnouncementBar';
 import { ShopHeader } from '@/components/shop/ShopHeader';
 import { ShopFooter } from '@/components/shop/ShopFooter';
 import { ShopNav } from '@/components/shop/ShopNav';
+import { getPlatformConfig } from '@/lib/platform-config';
 
-export default function ShopLayout({ children }: { children: ReactNode }) {
+export default async function ShopLayout({ children }: { children: ReactNode }) {
+  const cartFlag = await getPlatformConfig('shop_enable_cart');
+  const showCart = cartFlag === 'true';
+
   return (
     <ToastProvider>
       <div className="min-h-screen bg-bg flex flex-col">
         <AnnouncementBar />
-        <ShopHeader />
+        <ShopHeader showCart={showCart} />
         <main className="flex-1 w-full max-w-[1400px] mx-auto px-5 lg:px-14 pt-6 pb-6">
           {children}
         </main>
         <ShopFooter />
-        <ShopNav />
+        <ShopNav showCart={showCart} />
       </div>
     </ToastProvider>
   );

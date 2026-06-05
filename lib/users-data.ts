@@ -5,7 +5,7 @@ export type PlatformUser = {
   id: string;
   fullName: string;
   email: string;
-  role: 'admin' | 'atelier' | 'viewer';
+  role: 'admin' | 'atelier' | 'viewer' | 'vendedora';
   active: boolean;
   lastSignIn: string | null;
   createdAt: string;
@@ -13,15 +13,17 @@ export type PlatformUser = {
 };
 
 export const ROLE_LABEL: Record<string, string> = {
-  admin: 'Admin',
-  atelier: 'Atelier',
-  viewer: 'Visualizador',
+  admin:     'Admin',
+  atelier:   'Atelier',
+  viewer:    'Visualizador',
+  vendedora: 'Vendedora',
 };
 
 export const ROLE_TONE: Record<string, 'primary' | 'secondary' | 'neutral'> = {
-  admin: 'primary',
-  atelier: 'secondary',
-  viewer: 'neutral',
+  admin:     'primary',
+  atelier:   'secondary',
+  viewer:    'neutral',
+  vendedora: 'secondary',
 };
 
 function formatDate(iso: string | null) {

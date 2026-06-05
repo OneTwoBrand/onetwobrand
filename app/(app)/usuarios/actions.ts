@@ -13,7 +13,7 @@ export async function inviteUser(
 ): Promise<UserActionState> {
   const email = String(formData.get('email') ?? '').trim().toLowerCase();
   const fullName = String(formData.get('full_name') ?? '').trim();
-  const role = String(formData.get('role') ?? 'atelier') as 'admin' | 'atelier' | 'viewer';
+  const role = String(formData.get('role') ?? 'atelier') as 'admin' | 'atelier' | 'viewer' | 'vendedora';
 
   if (!email || !fullName) return { error: 'Nome e e-mail são obrigatórios.' };
   if (!email.includes('@')) return { error: 'E-mail inválido.' };
@@ -63,7 +63,7 @@ export async function inviteUser(
   }
 }
 
-export async function updateUserRole(userId: string, role: 'admin' | 'atelier' | 'viewer') {
+export async function updateUserRole(userId: string, role: 'admin' | 'atelier' | 'viewer' | 'vendedora') {
   await assertAdmin();
   const admin = createAdminClient();
   const { error } = await admin.from('profiles').update({ role }).eq('id', userId);

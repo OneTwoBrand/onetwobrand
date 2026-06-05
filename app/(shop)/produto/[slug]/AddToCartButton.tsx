@@ -15,9 +15,10 @@ import type { ShopProductDetail } from '@/lib/shop/catalog';
 
 interface AddToCartButtonProps {
   product: ShopProductDetail;
+  showCart?: boolean;
 }
 
-export function AddToCartButton({ product }: AddToCartButtonProps) {
+export function AddToCartButton({ product, showCart = false }: AddToCartButtonProps) {
   const [selected, setSelected] = useState<string | null>(null);
   const [added, setAdded]       = useState(false);
   const router   = useRouter();
@@ -70,56 +71,58 @@ export function AddToCartButton({ product }: AddToCartButtonProps) {
         })}
       </div>
 
-      {/* Sticky dock */}
-      <div className="sticky bottom-0 mt-6 -mx-5 px-5 py-3 bg-bg/95 backdrop-blur-sm border-t border-line lg:static lg:mx-0 lg:px-0 lg:border-0 lg:bg-transparent lg:backdrop-blur-none"
-           style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
-        <div className="flex gap-2.5 items-stretch">
-          <button
-            type="button"
-            aria-label={favorited ? 'Remover dos favoritos' : 'Salvar nos favoritos'}
-            onClick={() => toggleFavorite({
-              pieceId:        product.pieceId,
-              slug:           product.slug,
-              name:           product.name,
-              photoUrl:       product.photoUrl,
-              price:          product.price,
-              collectionName: product.collectionName,
-            })}
-            className={cn(
-              'w-[52px] h-[52px] shrink-0 rounded-full border flex items-center justify-center transition-colors',
-              favorited
-                ? 'bg-primary border-primary text-paper'
-                : 'border-line text-ink hover:bg-ink/5'
-            )}
-          >
-            <Heart size={20} strokeWidth={1.5} fill={favorited ? 'currentColor' : 'none'} />
-          </button>
+      {/* Sticky dock — apenas quando sacola habilitada */}
+      {showCart && (
+        <div className="sticky bottom-0 mt-6 -mx-5 px-5 py-3 bg-bg/95 backdrop-blur-sm border-t border-line lg:static lg:mx-0 lg:px-0 lg:border-0 lg:bg-transparent lg:backdrop-blur-none"
+             style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
+          <div className="flex gap-2.5 items-stretch">
+            <button
+              type="button"
+              aria-label={favorited ? 'Remover dos favoritos' : 'Salvar nos favoritos'}
+              onClick={() => toggleFavorite({
+                pieceId:        product.pieceId,
+                slug:           product.slug,
+                name:           product.name,
+                photoUrl:       product.photoUrl,
+                price:          product.price,
+                collectionName: product.collectionName,
+              })}
+              className={cn(
+                'w-[52px] h-[52px] shrink-0 rounded-full border flex items-center justify-center transition-colors',
+                favorited
+                  ? 'bg-primary border-primary text-paper'
+                  : 'border-line text-ink hover:bg-ink/5'
+              )}
+            >
+              <Heart size={20} strokeWidth={1.5} fill={favorited ? 'currentColor' : 'none'} />
+            </button>
 
-          <button
-            type="button"
-            disabled={isSoldOut || !selected}
-            onClick={added ? () => router.push('/carrinho') : handleAdd}
-            className={cn(
-              'flex-1 h-[52px] rounded-full flex items-center justify-center gap-2.5 text-[12px] font-medium tracking-[0.20em] uppercase transition-colors',
-              isSoldOut
-                ? 'bg-surface text-ink-mute cursor-not-allowed'
-                : added
-                ? 'bg-success text-paper'
-                : selected
-                ? 'bg-primary text-paper hover:bg-primary-hover'
-                : 'bg-ink/10 text-ink cursor-not-allowed'
-            )}
-          >
-            {added ? <Check size={16} /> : <ShoppingBag size={16} />}
-            <span>
-              {isSoldOut ? 'Esgotada'
-                : added   ? 'Adicionado — ver sacola'
-                : selected ? 'Adicionar à sacola'
-                : 'Selecione um tamanho'}
-            </span>
-          </button>
+            <button
+              type="button"
+              disabled={isSoldOut || !selected}
+              onClick={added ? () => router.push('/carrinho') : handleAdd}
+              className={cn(
+                'flex-1 h-[52px] rounded-full flex items-center justify-center gap-2.5 text-[12px] font-medium tracking-[0.20em] uppercase transition-colors',
+                isSoldOut
+                  ? 'bg-surface text-ink-mute cursor-not-allowed'
+                  : added
+                  ? 'bg-success text-paper'
+                  : selected
+                  ? 'bg-primary text-paper hover:bg-primary-hover'
+                  : 'bg-ink/10 text-ink cursor-not-allowed'
+              )}
+            >
+              {added ? <Check size={16} /> : <ShoppingBag size={16} />}
+              <span>
+                {isSoldOut ? 'Esgotada'
+                  : added   ? 'Adicionado — ver sacola'
+                  : selected ? 'Adicionar à sacola'
+                  : 'Selecione um tamanho'}
+              </span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 }

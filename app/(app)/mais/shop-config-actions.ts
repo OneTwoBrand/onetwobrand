@@ -133,6 +133,8 @@ export async function saveVisualSettings(
     shop_visual_collection_card_motion: formData.get('shop_visual_collection_card_motion') ? 'true' : 'false',
     shop_visual_product_card_motion: formData.get('shop_visual_product_card_motion') ? 'true' : 'false',
     shop_visual_section_reveal: formData.get('shop_visual_section_reveal') ? 'true' : 'false',
+    shop_enable_cart: formData.get('shop_enable_cart') ? 'true' : 'false',
+    shop_enable_whatsapp_button: formData.get('shop_enable_whatsapp_button') ? 'true' : 'false',
   };
 
   try {
@@ -173,6 +175,8 @@ export async function getShopConfig(): Promise<Record<string, string>> {
     'shop_visual_collection_card_motion',
     'shop_visual_product_card_motion',
     'shop_visual_section_reveal',
+    'shop_enable_cart',
+    'shop_enable_whatsapp_button',
   ];
 
   const entries = await Promise.all(

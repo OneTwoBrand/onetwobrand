@@ -469,6 +469,25 @@ export function VisualEffectsForm({ config }: { config: Record<string, string> }
         />
       </fieldset>
 
+      <fieldset className="space-y-3">
+        <legend className="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft">
+          Funcionalidades da loja
+        </legend>
+        <VisualToggle
+          name="shop_enable_cart"
+          checked={config['shop_enable_cart'] === 'true'}
+          label="Habilitar sacola / carrinho de compras"
+        />
+        <VisualToggle
+          name="shop_enable_whatsapp_button"
+          checked={config['shop_enable_whatsapp_button'] === 'true'}
+          label="Exibir botão 'Negociar pelo WhatsApp' nos produtos"
+        />
+        <p className="text-[11px] leading-relaxed text-ink-soft">
+          O botão de WhatsApp usa o número configurado em Comunicação. Certifique-se de que o número esteja preenchido antes de ativar.
+        </p>
+      </fieldset>
+
       {state?.error && <p className="text-[12px] text-danger">{state.error}</p>}
       {state?.success && (
         <p className="flex items-center gap-1.5 text-[12px] text-success">

@@ -18,7 +18,7 @@ const desktopNav = [
   { href: '/loja/produtos',    label: 'Produtos' },
 ];
 
-export function ShopHeader({ cartCount = 0 }: { cartCount?: number }) {
+export function ShopHeader({ cartCount = 0, showCart = false }: { cartCount?: number; showCart?: boolean }) {
   const pathname = usePathname();
 
   return (
@@ -40,14 +40,18 @@ export function ShopHeader({ cartCount = 0 }: { cartCount?: number }) {
           />
         </Link>
 
-        <Link href="/carrinho" aria-label={`Sacola${cartCount > 0 ? `, ${cartCount} item` : ''}`} className="relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-ink/5 transition-colors">
-          <ShoppingBag size={20} className="text-ink" />
-          {cartCount > 0 && (
-            <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-primary text-paper text-[9px] font-medium flex items-center justify-center leading-none">
-              {cartCount > 9 ? '9+' : cartCount}
-            </span>
-          )}
-        </Link>
+        {showCart ? (
+          <Link href="/carrinho" aria-label={`Sacola${cartCount > 0 ? `, ${cartCount} item` : ''}`} className="relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-ink/5 transition-colors">
+            <ShoppingBag size={20} className="text-ink" />
+            {cartCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-primary text-paper text-[9px] font-medium flex items-center justify-center leading-none">
+                {cartCount > 9 ? '9+' : cartCount}
+              </span>
+            )}
+          </Link>
+        ) : (
+          <div className="w-10 h-10" />
+        )}
       </div>
 
       {/* ── Desktop (lg+) ──────────────────────────────────── */}
@@ -85,19 +89,21 @@ export function ShopHeader({ cartCount = 0 }: { cartCount?: number }) {
           <Link href="/conta" aria-label="Minha conta" className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-ink/5 transition-colors">
             <User size={18} className="text-ink" />
           </Link>
-          <Link
-            href="/carrinho"
-            aria-label={`Sacola${cartCount > 0 ? `, ${cartCount} item` : ''}`}
-            className="relative flex items-center gap-2 h-10 px-4 rounded-full bg-primary text-paper text-[12px] font-medium tracking-[0.14em] uppercase hover:bg-primary-hover transition-colors shadow-sm"
-          >
-            <ShoppingBag size={15} />
-            <span>Sacola</span>
-            {cartCount > 0 && (
-              <span className="w-5 h-5 rounded-full bg-paper text-primary text-[10px] font-medium flex items-center justify-center leading-none">
-                {cartCount > 9 ? '9+' : cartCount}
-              </span>
-            )}
-          </Link>
+          {showCart && (
+            <Link
+              href="/carrinho"
+              aria-label={`Sacola${cartCount > 0 ? `, ${cartCount} item` : ''}`}
+              className="relative flex items-center gap-2 h-10 px-4 rounded-full bg-primary text-paper text-[12px] font-medium tracking-[0.14em] uppercase hover:bg-primary-hover transition-colors shadow-sm"
+            >
+              <ShoppingBag size={15} />
+              <span>Sacola</span>
+              {cartCount > 0 && (
+                <span className="w-5 h-5 rounded-full bg-paper text-primary text-[10px] font-medium flex items-center justify-center leading-none">
+                  {cartCount > 9 ? '9+' : cartCount}
+                </span>
+              )}
+            </Link>
+          )}
         </div>
       </div>
     </header>

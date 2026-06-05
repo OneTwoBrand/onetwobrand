@@ -7,7 +7,7 @@ import { updateUserRole, toggleUserActive, removeUser, saveNavPermissions } from
 import { ROLE_LABEL, ROLE_TONE } from '@/lib/users-data';
 import { ALL_NAV_HREFS, NAV_LABELS, parseNavPermissions, type NavHref } from '@/lib/nav-permissions';
 
-type Role = 'admin' | 'atelier' | 'viewer';
+type Role = 'admin' | 'atelier' | 'viewer' | 'vendedora';
 
 export function RoleSelector({ userId, currentRole }: { userId: string; currentRole: Role }) {
   const [isPending, startTransition] = useTransition();
@@ -39,6 +39,7 @@ export function RoleSelector({ userId, currentRole }: { userId: string; currentR
       >
         <option value="admin">Admin</option>
         <option value="atelier">Atelier</option>
+        <option value="vendedora">Vendedora</option>
         <option value="viewer">Visualizador</option>
       </select>
       {error && <p className="mt-1 text-[10px] text-danger">{error}</p>}

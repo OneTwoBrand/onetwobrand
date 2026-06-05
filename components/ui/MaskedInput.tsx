@@ -3,6 +3,7 @@
 import { useState, type InputHTMLAttributes, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import {
+  formatCnpj,
   formatCpf,
   formatDocumentBR,
   formatMoneyBR,
@@ -149,5 +150,115 @@ export function MoneyInput({ label, hint, error, className, defaultValue, onChan
         className="flex-1 bg-transparent text-[14px] font-normal text-ink placeholder:text-ink-mute outline-none"
       />
     </FieldShell>
+  );
+}
+
+// ─── PIX key types ────────────────────────────────────────────────────────────
+type PixKeyType = 'cpf' | 'cnpj' | 'phone' | 'email' | 'random' | 'other';
+
+const PIX_KEY_OPTIONS: { value: PixKeyType; label: string }[] = [
+  { value: 'cpf',    label: 'CPF' },
+  { value: 'cnpj',   label: 'CNPJ' },
+  { value: 'phone',  label: 'Telefone' },
+  { value: 'email',  label: 'E-mail' },
+  { value: 'random', label: 'Chave aleatória' },
+  { value: 'other',  label: 'Outro' },
+];
+
+function applyPixMask(type: PixKeyType, raw: string): string {
+  switch (type) {
+    case 'cpf':   return formatCpf(raw);
+    case 'cnpj':  return formatCnpj(raw);
+    case 'phone': return formatPhoneBR(raw);
+    default:      return raw;
+  }
+}
+
+function pixInputMode(type: PixKeyType): InputHTMLAttributes<HTMLInputElement>['inputMode'] {
+  if (type === 'cpf' || type === 'cnpj') return 'numeric';
+  if (type === 'phone') return 'tel';
+  if (type === 'email') return 'email';
+  return 'text';
+}
+
+export function PixKeyInput({
+  label = 'Chave PIX',
+  hint,
+  error,
+  className,
+  defaultValue,
+  name,
+}: {
+  label?: string;
+  hint?: string;
+  error?: string;
+  className?: string;
+  defaultValue?: string | null;
+  name?: string;
+}) {
+  const [keyType, setKeyType] = useState<PixKeyType>('cpf');
+  const [value, setValue] = useState(String(defaultValue ?? ''));
+
+  function handleTypeChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    setKeyType(e.target.value as PixKeyType);
+    setValue('');
+  }
+
+  function handleValueChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.value;
+    setValue(applyPixMask(keyType, raw));
+  }
+
+  const placeholder: Record<PixKeyType, string> = {
+    cpf:    '000.000.000-00',
+    cnpj:   '00.000.000/0000-00',
+    phone:  '(67) 9 0000-0000',
+    email:  'exemplo@email.com',
+    random: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
+    other:  'Informe a chave',
+  };
+
+  return (
+    <label className={cn('flex flex-col gap-2 font-sans', className)}>
+      {label && (
+        <span className="text-[10px] font-medium tracking-[0.18em] uppercase text-ink-soft">
+          {label}
+        </span>
+      )}
+      <div
+        className={cn(
+          'flex items-center rounded-[12px] border bg-paper transition-all duration-200 overflow-hidden',
+          error
+            ? 'border-danger shadow-[0_0_0_4px_var(--ot-danger-soft)]'
+            : 'border-line focus-within:border-primary focus-within:shadow-[0_0_0_4px_var(--ot-primary-soft)]'
+        )}
+      >
+        <select
+          value={keyType}
+          onChange={handleTypeChange}
+          className="h-12 shrink-0 border-r border-line bg-surface px-2 text-[12px] text-ink-soft focus:outline-none"
+          aria-label="Tipo de chave PIX"
+        >
+          {PIX_KEY_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+        {name && <input type="hidden" name={name} value={value} />}
+        <input
+          type={keyType === 'email' ? 'email' : 'text'}
+          inputMode={pixInputMode(keyType)}
+          autoComplete="off"
+          value={value}
+          onChange={handleValueChange}
+          placeholder={placeholder[keyType]}
+          className="flex-1 h-12 bg-transparent px-3 text-[14px] font-normal text-ink placeholder:text-ink-mute outline-none min-w-0"
+        />
+      </div>
+      {error ? (
+        <span className="text-[11px] font-medium text-danger">{error}</span>
+      ) : hint ? (
+        <span className="text-[11px] text-ink-soft">{hint}</span>
+      ) : null}
+    </label>
   );
 }

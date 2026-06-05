@@ -36,9 +36,10 @@ export default function NovoUsuarioPage() {
               </p>
               <div className="space-y-2">
                 {[
-                  { value: 'atelier', label: 'Atelier', desc: 'Acesso completo aos módulos operacionais. Pode criar, editar e excluir registros.' },
-                  { value: 'viewer', label: 'Visualizador', desc: 'Somente leitura. Não pode criar nem alterar registros.' },
-                  { value: 'admin', label: 'Admin', desc: 'Acesso total incluindo gestão de usuários e configurações de TI.' },
+                  { value: 'atelier',   label: 'Atelier',      desc: 'Acesso completo aos módulos operacionais. Pode criar, editar e excluir registros.' },
+                  { value: 'vendedora', label: 'Vendedora',    desc: 'Acesso ao módulo de negociações WhatsApp. Ideal para quem atende clientes direto.' },
+                  { value: 'viewer',    label: 'Visualizador', desc: 'Somente leitura. Não pode criar nem alterar registros.' },
+                  { value: 'admin',     label: 'Admin',        desc: 'Acesso total incluindo gestão de usuários e configurações de TI.' },
                 ].map((opt) => (
                   <label key={opt.value} className="flex cursor-pointer items-start gap-3 rounded-[12px] border border-line p-3 hover:border-primary has-[:checked]:border-primary has-[:checked]:bg-primary-soft/30 transition-colors">
                     <input type="radio" name="role" value={opt.value} defaultChecked={opt.value === 'atelier'} className="mt-0.5 accent-primary" />

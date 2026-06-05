@@ -7,7 +7,7 @@ import { AppBar, Topbar } from '@/components/layout/Navigation';
 import { Button } from '@/components/ui/Button';
 import { Select, Textarea } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
-import { PhoneInput } from '@/components/ui/MaskedInput';
+import { PhoneInput, PixKeyInput } from '@/components/ui/MaskedInput';
 import { Card } from '@/components/ui/Primitives';
 import { updateSeamstress } from '../../actions';
 
@@ -34,7 +34,7 @@ export default function EditarCostureiraPage({ params }: { params: Promise<{ id:
                 <option>Atelier · QA</option>
               </Select>
               <PhoneInput name="phone" label="Telefone" placeholder="(67) 9 0000-0000" />
-              <Input name="pix" label="Chave PIX" placeholder="CPF, e-mail, telefone ou chave aleatória" />
+              <PixKeyInput name="pix" label="Chave PIX" />
               <Input name="specialty" label="Especialidade" placeholder="Bordado floral, costura fina..." />
               <Textarea name="address" label="Endereço" />
               <Textarea name="notes" label="Observações" />
