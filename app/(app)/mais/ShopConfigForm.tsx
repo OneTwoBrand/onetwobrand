@@ -6,8 +6,9 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { MoneyInput, PhoneInput } from '@/components/ui/MaskedInput';
-import { Textarea } from '@/components/ui/Field';
-import { saveHeroConfig, saveStoreSettings, type ShopConfigState } from './shop-config-actions';
+import { Select, Textarea } from '@/components/ui/Field';
+import { parseShopVisualConfig } from '@/lib/shop/visual-config';
+import { saveHeroConfig, saveStoreSettings, saveVisualSettings, type ShopConfigState } from './shop-config-actions';
 
 // ─── Single slide uploader + fields ──────────────────────────────────────────
 function SlotUploader({
@@ -299,5 +300,87 @@ export function StoreSettingsForm({
         {pending ? 'Salvando…' : 'Salvar configurações'}
       </Button>
     </form>
+  );
+}
+
+export function VisualEffectsForm({ config }: { config: Record<string, string> }) {
+  const [state, action, pending] = useActionState(saveVisualSettings, {} as ShopConfigState);
+  const visual = parseShopVisualConfig(config);
+
+  return (
+    <form action={action} className="space-y-6">
+      <fieldset className="space-y-4">
+        <legend className="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft">
+          Movimento editorial
+        </legend>
+        <Select name="shop_visual_hero_motion" label="Efeito do hero" defaultValue={visual.heroMotion}>
+          <option value="soft">Zoom suave</option>
+          <option value="editorial">Editorial amplo</option>
+          <option value="none">Sem movimento</option>
+        </Select>
+        <p className="text-[11px] leading-relaxed text-ink-soft">
+          O efeito é desativado automaticamente para visitantes que preferem reduzir animações no sistema.
+        </p>
+      </fieldset>
+
+      <fieldset className="space-y-3">
+        <legend className="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft">
+          Home da loja
+        </legend>
+        <VisualToggle
+          name="shop_visual_spotlight_autoplay"
+          checked={visual.spotlightAutoplay}
+          label="Alternar coleções em destaque automaticamente"
+        />
+        <VisualToggle
+          name="shop_visual_collection_card_motion"
+          checked={visual.collectionCardMotion}
+          label="Aplicar zoom sutil nos cards de coleção"
+        />
+        <VisualToggle
+          name="shop_visual_product_card_motion"
+          checked={visual.productCardMotion}
+          label="Aplicar zoom sutil nas fotos de produto"
+        />
+        <VisualToggle
+          name="shop_visual_section_reveal"
+          checked={visual.sectionReveal}
+          label="Revelar seções com fade suave"
+        />
+      </fieldset>
+
+      {state?.error && <p className="text-[12px] text-danger">{state.error}</p>}
+      {state?.success && (
+        <p className="flex items-center gap-1.5 text-[12px] text-success">
+          <Check size={13} /> {state.success}
+        </p>
+      )}
+
+      <Button type="submit" size="sm" disabled={pending} block>
+        {pending ? 'Salvando…' : 'Salvar efeitos visuais'}
+      </Button>
+    </form>
+  );
+}
+
+function VisualToggle({
+  name,
+  checked,
+  label,
+}: {
+  name: string;
+  checked: boolean;
+  label: string;
+}) {
+  return (
+    <label className="flex min-h-12 items-center gap-3 rounded-[12px] border border-line bg-paper px-4 text-[13px] text-ink">
+      <input
+        name={name}
+        type="checkbox"
+        defaultChecked={checked}
+        className="h-4 w-4 shrink-0 accent-primary"
+      />
+      <span>{label}</span>
+    </label>
   );
 }

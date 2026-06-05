@@ -16,23 +16,27 @@ interface ProductCardProps {
   product: ShopProductCard;
   isFavorited?: boolean;
   onToggleFavorite?: (pieceId: string) => void;
+  cardMotion?: boolean;
 }
 
-export function ProductCard({ product, isFavorited = false, onToggleFavorite }: ProductCardProps) {
+export function ProductCard({ product, isFavorited = false, onToggleFavorite, cardMotion = false }: ProductCardProps) {
   const { slug, name, collectionName, photoUrl, price, availableSizes, allSizes, isNew, isSoldOut } = product;
 
   return (
     <div className="flex flex-col">
       {/* Foto 4:5 */}
       <div className="relative w-full aspect-[4/5] rounded-[14px] overflow-hidden bg-surface">
-        <Link href={`/produto/${slug}`} className={cn('block w-full h-full', isSoldOut && 'opacity-55')}>
+        <Link href={`/produto/${slug}`} className={cn('group block w-full h-full', isSoldOut && 'opacity-55')}>
           {photoUrl ? (
             <Image
               src={photoUrl}
               alt={name}
               fill
               sizes="(max-width: 1024px) 50vw, 25vw"
-              className="object-cover"
+              className={cn(
+                'object-cover',
+                cardMotion && 'motion-safe:transition-transform motion-safe:duration-700 motion-safe:ease-out group-hover:scale-[1.035] group-focus-visible:scale-[1.035]'
+              )}
             />
           ) : (
             <div className="w-full h-full bg-surface-warm flex items-center justify-center">

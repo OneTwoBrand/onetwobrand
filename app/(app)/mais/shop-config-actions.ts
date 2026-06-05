@@ -15,6 +15,14 @@ export type HeroSlide = {
   ctaHref:   string;
 };
 
+export type VisualSettings = {
+  heroMotion: string;
+  spotlightAutoplay: string;
+  collectionCardMotion: string;
+  productCardMotion: string;
+  sectionReveal: string;
+};
+
 // ─── Auth guard helper ────────────────────────────────────────────────────────
 async function requireAdmin() {
   const supabase = await createClient();
@@ -109,6 +117,37 @@ export async function saveStoreSettings(
   return { success: 'Configurações da loja atualizadas.' };
 }
 
+// ─── Save visual effects settings ────────────────────────────────────────────
+export async function saveVisualSettings(
+  _prev: ShopConfigState,
+  formData: FormData
+): Promise<ShopConfigState> {
+  const { user, error: authError } = await requireAdmin();
+  if (authError || !user) return { error: authError ?? 'Não autenticado.' };
+
+  const heroMotion = String(formData.get('shop_visual_hero_motion') ?? 'soft');
+  const allowedMotions = new Set(['none', 'soft', 'editorial']);
+  const fields: Record<string, string> = {
+    shop_visual_hero_motion: allowedMotions.has(heroMotion) ? heroMotion : 'soft',
+    shop_visual_spotlight_autoplay: formData.get('shop_visual_spotlight_autoplay') ? 'true' : 'false',
+    shop_visual_collection_card_motion: formData.get('shop_visual_collection_card_motion') ? 'true' : 'false',
+    shop_visual_product_card_motion: formData.get('shop_visual_product_card_motion') ? 'true' : 'false',
+    shop_visual_section_reveal: formData.get('shop_visual_section_reveal') ? 'true' : 'false',
+  };
+
+  try {
+    await Promise.all(
+      Object.entries(fields).map(([k, v]) => setPlatformConfig(k, v, user.id))
+    );
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Erro ao salvar.' };
+  }
+
+  revalidatePath('/loja');
+  revalidatePath('/mais/loja');
+  return { success: 'Efeitos visuais atualizados.' };
+}
+
 // ─── Read all shop config keys ────────────────────────────────────────────────
 export async function getShopConfig(): Promise<Record<string, string>> {
   const keys = [
@@ -129,6 +168,11 @@ export async function getShopConfig(): Promise<Record<string, string>> {
     'shop_announcement_bar',
     'shop_meta_title',
     'shop_meta_description',
+    'shop_visual_hero_motion',
+    'shop_visual_spotlight_autoplay',
+    'shop_visual_collection_card_motion',
+    'shop_visual_product_card_motion',
+    'shop_visual_section_reveal',
   ];
 
   const entries = await Promise.all(

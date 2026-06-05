@@ -64,22 +64,76 @@
 }
 
 /* ── Ken Burns + hero crossfade ─────────────────────────────────────────── */
-@keyframes ken-burns {
+@keyframes ken-burns-soft {
   0%   { transform: scale(1)     translate(0, 0); }
-  100% { transform: scale(1.08)  translate(-1%, -1%); }
+  100% { transform: scale(1.055) translate(-0.75%, -0.75%); }
+}
+
+@keyframes ken-burns-editorial {
+  0%   { transform: scale(1)     translate(0, 0); }
+  100% { transform: scale(1.11)  translate(-1.2%, -1.2%); }
+}
+
+@keyframes spotlight-drift-soft {
+  0%   { transform: scale(1) translate3d(0, 0, 0); }
+  100% { transform: scale(1.045) translate3d(-0.6%, -0.4%, 0); }
+}
+
+@keyframes spotlight-drift-editorial {
+  0%   { transform: scale(1) translate3d(0, 0, 0); }
+  100% { transform: scale(1.09) translate3d(-1%, -0.8%, 0); }
+}
+
+@keyframes shop-reveal {
+  0%   { opacity: 0; transform: translateY(14px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
 @theme inline {
-  --animate-ken-burns: ken-burns 12s ease-in-out forwards;
+  --animate-ken-burns-soft: ken-burns-soft 12s ease-in-out forwards;
+  --animate-ken-burns-editorial: ken-burns-editorial 13s ease-in-out forwards;
+  --animate-spotlight-drift-soft: spotlight-drift-soft 12s ease-in-out forwards;
+  --animate-spotlight-drift-editorial: spotlight-drift-editorial 13s ease-in-out forwards;
   --duration-900: 900ms;
 }
 
-.animate-ken-burns {
-  animation: var(--animate-ken-burns);
+.animate-ken-burns-soft {
+  animation: var(--animate-ken-burns-soft);
+}
+
+.animate-ken-burns-editorial {
+  animation: var(--animate-ken-burns-editorial);
+}
+
+.animate-spotlight-drift-soft {
+  animation: var(--animate-spotlight-drift-soft);
+}
+
+.animate-spotlight-drift-editorial {
+  animation: var(--animate-spotlight-drift-editorial);
+}
+
+.shop-reveal {
+  animation: shop-reveal 520ms ease-out both;
+}
+
+.shop-reveal-delay {
+  animation-delay: 90ms;
 }
 
 .duration-900 {
   transition-duration: var(--duration-900);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-ken-burns-soft,
+  .animate-ken-burns-editorial,
+  .animate-spotlight-drift-soft,
+  .animate-spotlight-drift-editorial,
+  .shop-reveal,
+  .shop-reveal-delay {
+    animation: none !important;
+  }
 }
 
 html,

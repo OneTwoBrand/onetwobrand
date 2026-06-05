@@ -8,7 +8,13 @@ import { useFavoritesStore, type FavoriteItem } from '@/lib/shop/favorites-store
 import { ProductCard } from './ProductCard';
 import type { ShopProductCard } from '@/lib/shop/catalog';
 
-export function FavoriteProductGrid({ products }: { products: ShopProductCard[] }) {
+export function FavoriteProductGrid({
+  products,
+  cardMotion = false,
+}: {
+  products: ShopProductCard[];
+  cardMotion?: boolean;
+}) {
   const { isFavorited, toggleFavorite } = useFavoritesStore();
 
   function toFavoriteItem(p: ShopProductCard): FavoriteItem {
@@ -30,6 +36,7 @@ export function FavoriteProductGrid({ products }: { products: ShopProductCard[] 
           product={product}
           isFavorited={isFavorited(product.pieceId)}
           onToggleFavorite={() => toggleFavorite(toFavoriteItem(product))}
+          cardMotion={cardMotion}
         />
       ))}
     </div>

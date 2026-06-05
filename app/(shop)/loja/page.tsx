@@ -10,6 +10,7 @@ import { getShopCollections, getShopProducts } from '@/lib/shop/catalog';
 import { getPlatformConfig } from '@/lib/platform-config';
 import { getShopConfig } from '@/app/(app)/mais/shop-config-actions';
 import { parseHeroSlides } from '@/lib/shop/hero-utils';
+import { parseShopVisualConfig } from '@/lib/shop/visual-config';
 import { CollectionCarousel } from '@/components/shop/CollectionCarousel';
 import { FavoriteProductGrid } from '@/components/shop/FavoriteProductGrid';
 import { ShopHero } from '@/components/shop/ShopHero';
@@ -50,6 +51,7 @@ export default async function LojaPage({ searchParams }: PageProps) {
 
   const slides   = parseHeroSlides(shopConfig);
   const interval = parseInt(shopConfig['shop_hero_interval'] || '7', 10);
+  const visual   = parseShopVisualConfig(shopConfig);
   const featuredCollections = collections.filter((collection) => collection.featured);
   const fallbackCollections = featuredCollections.length > 0
     ? featuredCollections
@@ -73,14 +75,15 @@ export default async function LojaPage({ searchParams }: PageProps) {
           slides={slides}
           interval={interval}
           fallbackCollections={fallbackCollections}
+          visual={visual}
         />
       )}
 
       {/* ── Carrossel de coleções (oculto durante busca) ─── */}
       {!query && collections.length > 0 && (
-        <section>
+        <section className={visual.sectionReveal ? 'shop-reveal' : undefined}>
           <SectionHead eyebrow="Navegue por" title="Coleções" className="mb-3" />
-          <CollectionCarousel collections={collections} />
+          <CollectionCarousel collections={collections} cardMotion={visual.collectionCardMotion} />
         </section>
       )}
 
@@ -90,7 +93,7 @@ export default async function LojaPage({ searchParams }: PageProps) {
       </Suspense>
 
       {/* ── Grid de produtos ──────────────────────────────── */}
-      <section>
+      <section className={visual.sectionReveal ? 'shop-reveal shop-reveal-delay' : undefined}>
         <SectionHead
           eyebrow={sectionEyebrow}
           title={sectionTitle}
@@ -147,7 +150,7 @@ export default async function LojaPage({ searchParams }: PageProps) {
             )}
           </div>
         ) : (
-          <FavoriteProductGrid products={displayProducts} />
+          <FavoriteProductGrid products={displayProducts} cardMotion={visual.productCardMotion} />
         )}
       </section>
     </div>

@@ -11,9 +11,10 @@ import type { ShopCollection } from '@/lib/shop/catalog';
 interface CollectionCarouselProps {
   collections: ShopCollection[];
   activeSlug?: string;
+  cardMotion?: boolean;
 }
 
-export function CollectionCarousel({ collections, activeSlug }: CollectionCarouselProps) {
+export function CollectionCarousel({ collections, activeSlug, cardMotion = false }: CollectionCarouselProps) {
   return (
     <div
       className="flex gap-2.5 overflow-x-auto pb-1"
@@ -28,7 +29,7 @@ export function CollectionCarousel({ collections, activeSlug }: CollectionCarous
             href={`/loja/colecoes/${col.slug}`}
             style={{ scrollSnapAlign: 'start', minWidth: 110 }}
             className={cn(
-              'flex flex-col items-start justify-end shrink-0 rounded-[14px] overflow-hidden h-[110px] w-[110px] p-3 relative transition-colors',
+              'group flex flex-col items-start justify-end shrink-0 rounded-[14px] overflow-hidden h-[110px] w-[110px] p-3 relative transition-colors',
               isActive ? 'bg-primary' : isFirst ? 'bg-primary' : 'bg-surface'
             )}
           >
@@ -37,7 +38,10 @@ export function CollectionCarousel({ collections, activeSlug }: CollectionCarous
                 src={col.heroUrl}
                 alt={col.name}
                 fill
-                className="object-cover opacity-40"
+                className={cn(
+                  'object-cover opacity-40',
+                  cardMotion && 'motion-safe:transition-transform motion-safe:duration-700 motion-safe:ease-out group-hover:scale-[1.04] group-focus-visible:scale-[1.04]'
+                )}
                 sizes="110px"
               />
             )}

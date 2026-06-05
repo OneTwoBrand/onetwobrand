@@ -16,6 +16,7 @@ import { ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { HeroSlide } from '@/app/(app)/mais/shop-config-actions';
 import type { ShopCollection } from '@/lib/shop/catalog';
+import type { ShopVisualConfig } from '@/lib/shop/visual-config';
 
 interface ShopHeroProps {
   slides: HeroSlide[];
@@ -24,6 +25,7 @@ interface ShopHeroProps {
   fallbackCollectionSubtitle?: string;
   fallbackCollectionSlug?: string;
   fallbackCollections?: ShopCollection[];
+  visual?: ShopVisualConfig;
 }
 
 export function ShopHero({
@@ -33,6 +35,7 @@ export function ShopHero({
   fallbackCollectionSubtitle,
   fallbackCollectionSlug,
   fallbackCollections,
+  visual,
 }: ShopHeroProps) {
 
   // ── Fallback: card colorido quando não há slides configurados ─────────────
@@ -54,13 +57,14 @@ export function ShopHero({
         : [];
 
     if (collections.length === 0) return null;
-    return <FeaturedCollectionSpotlight collections={collections} interval={interval} />;
+    return <FeaturedCollectionSpotlight collections={collections} interval={interval} visual={visual} />;
   }
 
   return (
     <HeroSlideshow
       slides={slides}
       interval={interval}
+      visual={visual}
     />
   );
 }
@@ -68,21 +72,29 @@ export function ShopHero({
 function FeaturedCollectionSpotlight({
   collections,
   interval,
+  visual,
 }: {
   collections: ShopCollection[];
   interval: number;
+  visual?: ShopVisualConfig;
 }) {
   const [active, setActive] = useState(0);
   const ms = Math.max(3, Math.min(30, interval)) * 1000;
   const current = collections[active] ?? collections[0];
+  const shouldAutoplay = visual?.spotlightAutoplay ?? true;
+  const imageMotionClass = visual?.heroMotion === 'editorial'
+    ? 'animate-spotlight-drift-editorial'
+    : visual?.heroMotion === 'none'
+      ? ''
+      : 'animate-spotlight-drift-soft';
 
   useEffect(() => {
-    if (collections.length <= 1) return;
+    if (!shouldAutoplay || collections.length <= 1) return;
     const timer = setInterval(() => {
       setActive((prev) => (prev + 1) % collections.length);
     }, ms);
     return () => clearInterval(timer);
-  }, [collections.length, ms]);
+  }, [collections.length, ms, shouldAutoplay]);
 
   return (
     <section className="relative overflow-hidden rounded-[22px] bg-primary px-6 py-8 md:px-9 md:py-9">
@@ -94,7 +106,7 @@ function FeaturedCollectionSpotlight({
           src={current.heroUrl}
           alt=""
           fill
-          className="object-cover object-center opacity-20 mix-blend-screen"
+          className={cn('object-cover object-center opacity-20 mix-blend-screen', imageMotionClass)}
           sizes="100vw"
         />
       )}
@@ -139,12 +151,25 @@ function FeaturedCollectionSpotlight({
 }
 
 // ── Slideshow interno (separado para isolar os hooks) ─────────────────────────
-function HeroSlideshow({ slides, interval }: { slides: HeroSlide[]; interval: number }) {
+function HeroSlideshow({
+  slides,
+  interval,
+  visual,
+}: {
+  slides: HeroSlide[];
+  interval: number;
+  visual?: ShopVisualConfig;
+}) {
   const [active, setActive]   = useState(0);
   const [leaving, setLeaving] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const ms = Math.max(3, Math.min(30, interval)) * 1000;
+  const heroMotionClass = visual?.heroMotion === 'editorial'
+    ? 'animate-ken-burns-editorial'
+    : visual?.heroMotion === 'none'
+      ? ''
+      : 'animate-ken-burns-soft';
 
   function advance() {
     setActive((prev) => {
@@ -196,7 +221,7 @@ function HeroSlideshow({ slides, interval }: { slides: HeroSlide[]; interval: nu
             <div
               className={cn(
                 'absolute inset-0 will-change-transform',
-                isActive ? 'animate-ken-burns' : '',
+                isActive ? heroMotionClass : '',
               )}
             >
               {slide.imageUrl && (
