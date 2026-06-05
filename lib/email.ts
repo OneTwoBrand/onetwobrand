@@ -2,7 +2,7 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const FROM = 'ONE TWO Brand <onboarding@resend.dev>';
+const FROM = process.env.RESEND_FROM ?? 'ONE TWO Brand <onboarding@resend.dev>';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://one2brand.com.br';
 
 // ── shared HTML shell ──────────────────────────────────────────
