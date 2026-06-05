@@ -20,8 +20,8 @@ export default async function EstoquePage() {
   const stockValue = products.reduce((sum, product) => sum + product.quantity * product.price, 0);
   const action = (
     <div className="flex gap-2">
-      <Link href="/estoque/movimentar"><Button size="sm" variant="soft" icon={<SlidersHorizontal size={14} />}>Mov.</Button></Link>
-      <Link href="/estoque/novo"><Button size="sm" icon={<Plus size={14} />}>Novo</Button></Link>
+      <Link href="/estoque/movimentar"><Button size="sm" variant="soft" icon={<SlidersHorizontal size={14} />}>Movimentações</Button></Link>
+      <Link href="/estoque/novo"><Button size="sm" icon={<Plus size={14} />}>Novo produto</Button></Link>
     </div>
   );
 
@@ -30,12 +30,12 @@ export default async function EstoquePage() {
       <AppBar
         large
         eyebrow="Estoque"
-        title={`${totalQty} peças · ${products.length} SKUs`}
+        title={`${totalQty} peças · ${products.length} produtos`}
         action={action}
       />
       <Topbar
         eyebrow="Estoque"
-        title={`${totalQty} peças · ${products.length} SKUs`}
+        title={`${totalQty} peças · ${products.length} produtos`}
         action={action}
       />
       <main className="flex-1 px-5 pb-28 pt-3 md:px-9 md:py-8">
@@ -48,7 +48,7 @@ export default async function EstoquePage() {
           )}
           <div className="mb-4 grid gap-3 md:grid-cols-4">
             <StockMetric label="Peças" value={totalQty.toString()} />
-            <StockMetric label="SKUs baixos" value={lowStock.toString()} tone={lowStock > 0 ? 'warning' : 'success'} />
+            <StockMetric label="Estoque baixo" value={lowStock.toString()} tone={lowStock > 0 ? 'warning' : 'success'} />
             <StockMetric label="Custo em estoque" value={brl(stockCost)} />
             <StockMetric label="Valor potencial" value={brl(stockValue)} />
           </div>

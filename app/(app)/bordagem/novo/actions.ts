@@ -84,6 +84,40 @@ export async function createShipment(
   redirect('/bordagem');
 }
 
+export async function updateShipment(
+  _prev: ShipmentActionState,
+  formData: FormData
+): Promise<ShipmentActionState> {
+  const id = String(formData.get('id') ?? '').trim();
+  const seamstress_id = String(formData.get('seamstress_id') ?? '').trim();
+  const embroidery_type = String(formData.get('embroidery_type') ?? '').trim() || null;
+  const qty = parseInt(String(formData.get('qty') ?? '0'), 10) || 0;
+  const sent_at = String(formData.get('sent_at') ?? '').trim();
+  const expected_return_at = String(formData.get('expected_return_at') ?? '').trim();
+  const value = parseMoneyBR(formData.get('value'));
+
+  if (!id) return { error: 'Identificador inválido.' };
+  if (!seamstress_id) return { error: 'Selecione uma costureira cadastrada.' };
+  if (!qty || qty < 1) return { error: 'Quantidade deve ser ao menos 1.' };
+  if (!sent_at) return { error: 'Data de envio é obrigatória.' };
+  if (!expected_return_at) return { error: 'Previsão de retorno é obrigatória.' };
+  if (!hasSupabasePublicEnv()) return { error: 'Supabase não configurado.' };
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Faça login para editar remessas.' };
+
+  const { error } = await supabase
+    .from('embroidery_shipments')
+    .update({ seamstress_id, embroidery_type, qty, sent_at, expected_return_at, value })
+    .eq('id', id);
+
+  if (error) return { error: error.message };
+
+  revalidatePath('/bordagem');
+  redirect('/bordagem');
+}
+
 export async function deleteShipment(id: string): Promise<ShipmentActionState> {
   if (!hasSupabasePublicEnv()) return { error: 'Supabase não configurado.' };
   const supabase = await createClient();

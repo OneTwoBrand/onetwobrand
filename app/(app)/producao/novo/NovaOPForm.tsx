@@ -194,9 +194,9 @@ export function NovaOPForm({ seamstresses, embroideryTypes, sizes, collections }
             <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary">
               <Sparkles size={18} strokeWidth={1.5} />
             </div>
-            <h2 className="m-0 font-serif text-[22px] font-normal text-ink">Preparado para IA</h2>
+            <h2 className="m-0 font-serif text-[22px] font-normal text-ink">Pronto para o Assistente</h2>
             <p className="mt-2 text-[12px] leading-relaxed text-ink-soft">
-              Este formulário já separa os campos para futuro preenchimento assistido pelo OneTwo Assistente.
+              Este formulário já separa os campos para preenchimento assistido pela inteligência artificial do OneTwo Assistente.
             </p>
           </Card>
 

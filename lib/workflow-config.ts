@@ -46,7 +46,7 @@ export const DEFAULT_EMBROIDERY_TYPES = [
 export const DEFAULT_PRODUCT_SIZES = ['PP', 'P', 'M', 'G', 'GG', 'Único'];
 
 export const DEFAULT_PRODUCT_FABRICS = [
-  'Linho', 'Crepe', 'Algodão Pima', 'Algodão', 'Seda', 'Musseline', 'Viscose', 'Tricoline',
+  'Linho', 'Crepe', 'Algodão Pima', 'Algodão', 'Ribana', 'Seda', 'Musseline', 'Viscose', 'Tricoline',
 ];
 
 export const DEFAULT_PRODUCT_CATEGORIES = [
@@ -54,7 +54,7 @@ export const DEFAULT_PRODUCT_CATEGORIES = [
 ];
 
 export const DEFAULT_PRODUCT_COLORS = [
-  'Cru', 'Off-white', 'Terracota', 'Rosé', 'Preto', 'Marfim', 'Azul', 'Verde', 'Vinho', 'Caramelo',
+  'Branco', 'Cru', 'Off-white', 'Terracota', 'Rosé', 'Preto', 'Marfim', 'Azul', 'Verde', 'Vinho', 'Caramelo',
 ];
 
 export const DEFAULT_FINANCE_SUPPLIERS = [

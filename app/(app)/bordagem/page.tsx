@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Calendar, Gem, PackageCheck, Plus, UserRound } from 'lucide-react';
+import { Calendar, Gem, PackageCheck, Pencil, Plus, UserRound } from 'lucide-react';
 import Link from 'next/link';
 import { AppBar, Topbar } from '@/components/layout/Navigation';
 import { Button } from '@/components/ui/Button';
@@ -18,13 +18,13 @@ export default async function BordagemPage() {
 
   return (
     <>
-      <AppBar large eyebrow="Bordagem" title={`${totalQty} peças em trânsito`} action={<Link href="/bordagem/novo"><Button size="sm" icon={<Plus size={14} />}>Nova</Button></Link>} />
+      <AppBar large eyebrow="Bordagem" title={`${totalQty} peças em trânsito`} action={<Link href="/bordagem/novo"><Button size="sm" icon={<Plus size={14} />}>Nova remessa</Button></Link>} />
       <Topbar eyebrow="Bordagem" title={`${totalQty} peças em trânsito`} action={<Link href="/bordagem/novo"><Button size="sm" icon={<Plus size={14} />}>Nova remessa</Button></Link>} />
       <main className="flex-1 px-5 pb-28 pt-3 md:px-9 md:py-8">
         <section className="mx-auto max-w-5xl">
           <DataNotice source={source} error={error} />
           <div className="mb-5 grid grid-cols-3 gap-3">
-            <Card pad={14}><Metric icon={<UserRound size={16} />} label="Cost." value={new Set(active.map((item) => item.seamstressName)).size} /></Card>
+            <Card pad={14}><Metric icon={<UserRound size={16} />} label="Costureiras" value={new Set(active.map((item) => item.seamstressName)).size} /></Card>
             <Card pad={14}><Metric icon={<Gem size={16} />} label="Peças" value={totalQty} /></Card>
             <Card pad={14}><Metric icon={<PackageCheck size={16} />} label="Remessas" value={active.length} /></Card>
           </div>
@@ -38,6 +38,14 @@ export default async function BordagemPage() {
                     <span className="font-mono text-[11px] text-ink-soft">{shipment.code}</span>
                     <div className="flex items-center gap-2">
                       <Badge tone={shipment.status === 'Finalizada' ? 'success' : 'secondary'} size="sm">{shipment.status}</Badge>
+                      <Link
+                        href={`/bordagem/${shipment.id}/editar`}
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-ink-soft hover:bg-primary-soft hover:text-primary transition-colors"
+                        aria-label={`Editar remessa ${shipment.code}`}
+                        title={`Editar remessa ${shipment.code}`}
+                      >
+                        <Pencil size={15} strokeWidth={1.7} />
+                      </Link>
                       <DeleteShipmentButton id={shipment.id} code={shipment.code} />
                     </div>
                   </div>
@@ -46,7 +54,7 @@ export default async function BordagemPage() {
                   <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] text-ink-soft">
                     <span>{shipment.embroideryType ?? 'Bordagem'}</span>
                     <span className="text-right">{brl(shipment.value)}</span>
-                    <span>{shipment.linkedOps} OP vinculada{shipment.linkedOps === 1 ? '' : 's'}</span>
+                    <span>{shipment.linkedOps} ordem vinculada{shipment.linkedOps === 1 ? '' : 's'}</span>
                     <span className="text-right">{shipment.returnedAt ? `Retorno ${shipment.returnedAt}` : 'Sem retorno'}</span>
                   </div>
                   <div className="mt-4 flex items-center justify-between gap-3 text-[11px] text-ink-soft">

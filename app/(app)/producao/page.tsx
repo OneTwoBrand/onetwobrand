@@ -23,13 +23,13 @@ export default async function ProducaoPage() {
 
   const newButton = (
     <Link href="/producao/novo">
-      <Button size="sm" icon={<Plus size={14} />}>Nova OP</Button>
+      <Button size="sm" icon={<Plus size={14} />}>Nova ordem de produção</Button>
     </Link>
   );
 
   return (
     <>
-      <AppBar large eyebrow="Produção" title={title} action={<Link href="/producao/novo"><Button size="sm" icon={<Plus size={14} />}>Nova</Button></Link>} />
+      <AppBar large eyebrow="Produção" title={title} action={<Link href="/producao/novo"><Button size="sm" icon={<Plus size={14} />}>Nova ordem</Button></Link>} />
       <Topbar eyebrow="Produção" title={title} action={newButton} />
 
       <main className="flex-1 px-5 pb-28 pt-3 md:px-9 md:py-8">
@@ -51,7 +51,7 @@ export default async function ProducaoPage() {
           <div className="hidden md:block">
             <div className="mb-4 flex items-center justify-between">
               <p className="text-[11px] uppercase tracking-[0.18em] text-ink-soft">
-                Arraste os cards entre colunas para atualizar o status
+                Arraste os cartões entre colunas para atualizar o status
               </p>
             </div>
             <KanbanBoard

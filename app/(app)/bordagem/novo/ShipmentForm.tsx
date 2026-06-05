@@ -65,11 +65,11 @@ export function ShipmentForm({
                   ))}
                 </Select>
                 <Input name="qty" label="Quantidade de peças *" type="number" min="1" placeholder="0" required />
-                <Select name="op_id" label="Vincular OP">
+                <Select name="op_id" label="Vincular ordem de produção">
                   <option value="">Sem vínculo</option>
                   {orders.map((order) => (
                     <option key={order.id ?? order.opNumber} value={order.id ?? ''}>
-                      OP {order.opNumber} · {order.productName} · {order.clientName}
+                      Ordem {order.opNumber} · {order.productName} · {order.clientName}
                     </option>
                   ))}
                 </Select>

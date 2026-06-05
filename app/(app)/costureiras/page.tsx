@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Gem, Phone, Plus, WalletCards } from 'lucide-react';
+import { Gem, Pencil, Phone, Plus, WalletCards } from 'lucide-react';
 import { AppBar, Topbar } from '@/components/layout/Navigation';
 import { DataNotice } from '@/components/app/DataNotice';
 import { Button } from '@/components/ui/Button';
@@ -16,7 +16,7 @@ export default async function CostureirasPage() {
 
   return (
     <>
-      <AppBar large eyebrow="Costureiras" title={`${active.length} ativas`} action={<Link href="/costureiras/novo"><Button size="sm" icon={<Plus size={14} />}>Nova</Button></Link>} />
+      <AppBar large eyebrow="Costureiras" title={`${active.length} ativas`} action={<Link href="/costureiras/novo"><Button size="sm" icon={<Plus size={14} />}>Nova costureira</Button></Link>} />
       <Topbar eyebrow="Costureiras" title={`${active.length} ativas`} action={<Link href="/costureiras/novo"><Button size="sm" icon={<Plus size={14} />}>Nova costureira</Button></Link>} />
       <main className="flex-1 px-5 pb-28 pt-3 md:px-9 md:py-8">
         <section className="mx-auto max-w-5xl">
@@ -46,7 +46,17 @@ export default async function CostureirasPage() {
                         <h2 className="m-0 font-serif text-[19px] font-normal text-ink">{item.name}</h2>
                         <Badge tone={item.active ? 'success' : 'neutral'} size="sm">{item.active ? 'ativa' : 'inativa'}</Badge>
                       </div>
-                      <DeleteSeamstressButton id={item.id} name={item.name} />
+                      <div className="flex items-center gap-1">
+                        <Link
+                          href={`/costureiras/${item.id}/editar`}
+                          className="flex h-8 w-8 items-center justify-center rounded-full text-ink-soft hover:bg-primary-soft hover:text-primary transition-colors"
+                          aria-label={`Editar ${item.name}`}
+                          title={`Editar ${item.name}`}
+                        >
+                          <Pencil size={15} strokeWidth={1.7} />
+                        </Link>
+                        <DeleteSeamstressButton id={item.id} name={item.name} />
+                      </div>
                     </div>
                     <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-ink-soft">{item.role}</p>
                     {item.specialty && <p className="mt-2 text-[12px] text-ink-soft">{item.specialty}</p>}

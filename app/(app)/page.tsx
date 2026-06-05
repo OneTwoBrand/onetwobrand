@@ -16,7 +16,7 @@ export default async function DashboardPage() {
   ]);
   const { summary } = dashboard;
   const dashboardKpis = [
-    { label: 'Em prod.', value: summary.inProduction, delta: `${summary.overdueOps} atrasos`, icon: <Scissors size={16} strokeWidth={1.5} />, tone: 'primary' as const },
+    { label: 'Em produção', value: summary.inProduction, delta: `${summary.overdueOps} atrasos`, icon: <Scissors size={16} strokeWidth={1.5} />, tone: 'primary' as const },
     { label: 'Bordagem', value: summary.inEmbroidery, delta: 'em trânsito', icon: <Sparkles size={16} strokeWidth={1.5} />, tone: 'secondary' as const },
     { label: 'Estoque', value: summary.stockTotal, delta: `${summary.lowStockSkus} baixos`, icon: <Package size={16} strokeWidth={1.5} />, tone: 'neutral' as const },
     { label: 'Pedidos', value: String(summary.pendingOrders).padStart(2, '0'), delta: 'pendentes', icon: <ShoppingCart size={16} strokeWidth={1.5} />, tone: 'warning' as const },
@@ -42,7 +42,7 @@ export default async function DashboardPage() {
       <Topbar
         eyebrow="Hoje no atelier"
         title={user.greeting}
-        action={<Link href="/producao/novo"><Button size="sm" icon={<Scissors size={14} strokeWidth={1.5} />}>Nova OP</Button></Link>}
+        action={<Link href="/producao/novo"><Button size="sm" icon={<Scissors size={14} strokeWidth={1.5} />}>Nova ordem de produção</Button></Link>}
       />
 
       <main className="flex-1 px-5 pb-28 pt-3 md:px-9 md:py-8">
