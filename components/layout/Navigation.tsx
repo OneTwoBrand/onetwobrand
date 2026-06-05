@@ -29,17 +29,40 @@ const primaryNav = [
   { href: '/clientes' as NavHref, label: 'Clientes', Icon: User },
 ];
 
-const sheetNav = [
-  { href: '/vendas'      as NavHref, label: 'Vendas',         Icon: ShoppingCart },
-  { href: '/bordagem'    as NavHref, label: 'Bordagem',        Icon: Gem },
-  { href: '/costureiras' as NavHref, label: 'Costureiras',     Icon: User },
-  { href: '/catalogo'    as NavHref, label: 'Coleções',        Icon: Layers3 },
-  { href: '/financeiro'  as NavHref, label: 'Financeiro',      Icon: CircleDollarSign },
-  { href: '/relatorios'  as NavHref, label: 'Relatórios',      Icon: BarChart3 },
-  { href: '/assistant'   as NavHref, label: 'Assistente',      Icon: Bot },
-  { href: '/mais'        as NavHref, label: 'Configurações',   Icon: Settings },
-  { href: '/usuarios',               label: 'Usuários',        Icon: Users, adminOnly: true },
+type SheetGroup = {
+  label: string;
+  items: { href: string; label: string; Icon: React.ComponentType<{ size?: number; strokeWidth?: number }>; adminOnly?: boolean }[];
+};
+
+const sheetGroups: SheetGroup[] = [
+  {
+    label: 'Operacional',
+    items: [
+      { href: '/bordagem'    as NavHref, label: 'Bordagem',    Icon: Gem },
+      { href: '/costureiras' as NavHref, label: 'Costureiras', Icon: User },
+      { href: '/catalogo'    as NavHref, label: 'Coleções',    Icon: Layers3 },
+    ],
+  },
+  {
+    label: 'Comercial',
+    items: [
+      { href: '/vendas'     as NavHref, label: 'Vendas',      Icon: ShoppingCart },
+      { href: '/financeiro' as NavHref, label: 'Financeiro',  Icon: CircleDollarSign },
+      { href: '/relatorios' as NavHref, label: 'Relatórios',  Icon: BarChart3 },
+    ],
+  },
+  {
+    label: 'Administração',
+    items: [
+      { href: '/assistant' as NavHref, label: 'Assistente',   Icon: Bot },
+      { href: '/mais'      as NavHref, label: 'Configurações', Icon: Settings },
+      { href: '/usuarios',             label: 'Usuários',     Icon: Users, adminOnly: true },
+    ],
+  },
 ];
+
+// Flat list for permission checking (legacy compat)
+const sheetNav = sheetGroups.flatMap((g) => g.items);
 
 export function BottomNav({
   userRole,
@@ -151,27 +174,40 @@ export function BottomNav({
             </button>
           </div>
 
-          {/* Grid */}
-          <div className="grid grid-cols-3 gap-3">
-            {visibleSheet.map(({ href, label, Icon }) => {
-              const active = href === '/mais' ? pathname === href : pathname.startsWith(href);
+          {/* Groups */}
+          <div className="space-y-4">
+            {sheetGroups.map((group) => {
+              const visibleItems = group.items.filter(isVisible);
+              if (visibleItems.length === 0) return null;
               return (
-                <button
-                  key={href}
-                  type="button"
-                  onClick={() => handleSheetNav(href)}
-                  className={cn(
-                    'flex flex-col items-center gap-2 rounded-[16px] py-4 px-2 transition-colors',
-                    active
-                      ? 'bg-primary text-paper [&_*]:text-paper'
-                      : 'bg-ink/[0.04] text-ink-soft hover:bg-ink/[0.08]'
-                  )}
-                >
-                  <Icon size={22} strokeWidth={1.5} />
-                  <span className="text-[10px] font-medium tracking-[0.08em] uppercase leading-tight text-center">
-                    {label}
-                  </span>
-                </button>
+                <div key={group.label}>
+                  <p className="mb-2 px-0.5 text-[9px] font-medium tracking-[0.22em] uppercase text-ink-mute">
+                    {group.label}
+                  </p>
+                  <div className="grid grid-cols-3 gap-2.5">
+                    {visibleItems.map(({ href, label, Icon }) => {
+                      const active = href === '/mais' ? pathname === href : pathname.startsWith(href);
+                      return (
+                        <button
+                          key={href}
+                          type="button"
+                          onClick={() => handleSheetNav(href)}
+                          className={cn(
+                            'flex flex-col items-center gap-2 rounded-[16px] py-4 px-2 transition-colors',
+                            active
+                              ? 'bg-primary text-paper [&_*]:text-paper'
+                              : 'bg-ink/[0.04] text-ink-soft hover:bg-ink/[0.08]'
+                          )}
+                        >
+                          <Icon size={22} strokeWidth={1.5} />
+                          <span className="text-[10px] font-medium tracking-[0.08em] uppercase leading-tight text-center">
+                            {label}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               );
             })}
           </div>
@@ -197,20 +233,38 @@ export function BottomNav({
 // ────────────────────────────────────────────────────────────
 // Sidebar — desktop collapsible
 // ────────────────────────────────────────────────────────────
-const sidebarItems = [
-  { href: '/'            as NavHref, label: 'Início',            Icon: Home,             adminOnly: false },
-  { href: '/producao'    as NavHref, label: 'Produção',          Icon: Scissors,         adminOnly: false },
-  { href: '/bordagem'    as NavHref, label: 'Bordagem',          Icon: Gem,              adminOnly: false },
-  { href: '/costureiras' as NavHref, label: 'Costureiras',       Icon: User,             adminOnly: false },
-  { href: '/estoque'     as NavHref, label: 'Estoque',           Icon: Package,          adminOnly: false },
-  { href: '/catalogo'    as NavHref, label: 'Coleções',          Icon: Layers3,          adminOnly: false },
-  { href: '/clientes'    as NavHref, label: 'Clientes',          Icon: User,             adminOnly: false },
-  { href: '/vendas'      as NavHref, label: 'Vendas',            Icon: ShoppingCart,     adminOnly: false },
-  { href: '/financeiro'  as NavHref, label: 'Financeiro',        Icon: CircleDollarSign, adminOnly: false },
-  { href: '/relatorios'  as NavHref, label: 'Relatórios',        Icon: BarChart3,        adminOnly: false },
-  { href: '/assistant'   as NavHref, label: 'OneTwo Assistente', Icon: Bot,              adminOnly: false },
-  { href: '/mais'        as NavHref, label: 'Configurações',     Icon: Settings,         adminOnly: false },
-  { href: '/usuarios',               label: 'Usuários',          Icon: Users,            adminOnly: true  },
+type SidebarItem = { href: string; label: string; Icon: React.ComponentType<{ size?: number; strokeWidth?: number }>; adminOnly: boolean };
+type SidebarGroup = { label: string; items: SidebarItem[] };
+
+const sidebarGroups: SidebarGroup[] = [
+  {
+    label: 'Operacional',
+    items: [
+      { href: '/'            as NavHref, label: 'Início',      Icon: Home,     adminOnly: false },
+      { href: '/producao'    as NavHref, label: 'Produção',    Icon: Scissors, adminOnly: false },
+      { href: '/bordagem'    as NavHref, label: 'Bordagem',    Icon: Gem,      adminOnly: false },
+      { href: '/costureiras' as NavHref, label: 'Costureiras', Icon: User,     adminOnly: false },
+      { href: '/estoque'     as NavHref, label: 'Estoque',     Icon: Package,  adminOnly: false },
+      { href: '/catalogo'    as NavHref, label: 'Coleções',    Icon: Layers3,  adminOnly: false },
+    ],
+  },
+  {
+    label: 'Comercial',
+    items: [
+      { href: '/clientes'   as NavHref, label: 'Clientes',   Icon: User,             adminOnly: false },
+      { href: '/vendas'     as NavHref, label: 'Vendas',     Icon: ShoppingCart,     adminOnly: false },
+      { href: '/financeiro' as NavHref, label: 'Financeiro', Icon: CircleDollarSign, adminOnly: false },
+      { href: '/relatorios' as NavHref, label: 'Relatórios', Icon: BarChart3,        adminOnly: false },
+    ],
+  },
+  {
+    label: 'Administração',
+    items: [
+      { href: '/assistant' as NavHref, label: 'Assistente',   Icon: Bot,     adminOnly: false },
+      { href: '/mais'      as NavHref, label: 'Configurações', Icon: Settings, adminOnly: false },
+      { href: '/usuarios',             label: 'Usuários',     Icon: Users,   adminOnly: true  },
+    ],
+  },
 ];
 
 export function Sidebar({
@@ -254,28 +308,47 @@ export function Sidebar({
         )}
       </div>
 
-      {/* Items */}
-      <div className="flex flex-col gap-1">
-        {sidebarItems.filter(isVisible).map(({ href, label, Icon }) => {
-          const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
+      {/* Items grouped */}
+      <div className="flex flex-col gap-4 flex-1 min-h-0 overflow-y-auto">
+        {sidebarGroups.map((group, gi) => {
+          const visibleItems = group.items.filter(isVisible);
+          if (visibleItems.length === 0) return null;
           return (
-            <Link
-              key={href}
-              href={href}
-              title={!expanded ? label : undefined}
-              className={cn(
-                'flex items-center gap-3 rounded-xl transition-colors',
-                expanded ? 'px-3 py-2.5' : 'p-2.5 justify-center',
-                active ? 'bg-primary text-paper [&_*]:text-paper' : 'text-ink-soft hover:bg-ink/[0.04]'
-              )}
-            >
-              <Icon size={18} strokeWidth={1.5} />
+            <div key={group.label}>
               {expanded && (
-                <span className={cn('text-[13px]', active ? 'font-medium' : 'font-normal')}>
-                  {label}
-                </span>
+                <p className={cn(
+                  'mb-1 text-[9px] font-medium tracking-[0.22em] uppercase text-ink-mute',
+                  gi === 0 ? 'px-3' : 'px-3 pt-1 border-t border-line'
+                )}>
+                  {group.label}
+                </p>
               )}
-            </Link>
+              {!expanded && gi > 0 && <div className="h-px bg-line mx-1 mb-1" />}
+              <div className="flex flex-col gap-0.5">
+                {visibleItems.map(({ href, label, Icon }) => {
+                  const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      title={!expanded ? label : undefined}
+                      className={cn(
+                        'flex items-center gap-3 rounded-xl transition-colors',
+                        expanded ? 'px-3 py-2.5' : 'p-2.5 justify-center',
+                        active ? 'bg-primary text-paper **:text-paper' : 'text-ink-soft hover:bg-ink/4'
+                      )}
+                    >
+                      <Icon size={18} strokeWidth={1.5} />
+                      {expanded && (
+                        <span className={cn('text-[13px]', active ? 'font-medium' : 'font-normal')}>
+                          {label}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
           );
         })}
       </div>
