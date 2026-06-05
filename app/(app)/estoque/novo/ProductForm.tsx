@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useActionState, useRef, useState, type ReactNode } from 'react';
-import { ChevronLeft, Maximize2, MoveHorizontal, MoveVertical, RotateCcw, Sparkles, Upload, X } from 'lucide-react';
+import { Check, ChevronLeft, Maximize2, MoveHorizontal, MoveVertical, RotateCcw, Sparkles, Upload, X } from 'lucide-react';
 import Image from 'next/image';
 import { AppBar, Topbar } from '@/components/layout/Navigation';
 import { Button } from '@/components/ui/Button';
@@ -362,15 +362,27 @@ function PhotoUploader({
               onChange={(offsetX) => onFitChange({ ...fit, offsetX })}
             />
             <div className="grid grid-cols-2 gap-2">
-              <Button type="button" size="sm" variant="ghost" icon={<RotateCcw size={13} />} onClick={resetFit}>Centralizar</Button>
-              <Button type="button" size="sm" variant="soft" onClick={onApplyFit} disabled={!canApplyFit || isBusy}>
-                {state === 'uploading' ? '...' : 'Aplicar'}
-              </Button>
+              <PhotoActionButton icon={<RotateCcw size={13} />} label="Centro" title="Centralizar foto" onClick={resetFit} />
+              <PhotoActionButton
+                icon={<Check size={13} />}
+                label={state === 'uploading' ? '...' : 'Aplicar'}
+                title="Aplicar enquadramento"
+                tone="soft"
+                onClick={onApplyFit}
+                disabled={!canApplyFit || isBusy}
+              />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <Button type="button" size="sm" variant="ghost" onClick={onChoose}>Trocar</Button>
-            <Button type="button" size="sm" variant="soft" icon={<Sparkles size={13} />} onClick={onEnhance} disabled={isBusy}>{state === 'enhancing' ? '...' : 'Regenerar IA'}</Button>
+            <PhotoActionButton icon={<Upload size={13} />} label="Trocar" title="Trocar foto" onClick={onChoose} />
+            <PhotoActionButton
+              icon={<Sparkles size={13} />}
+              label={state === 'enhancing' ? '...' : 'IA'}
+              title="Regenerar imagem com IA"
+              tone="soft"
+              onClick={onEnhance}
+              disabled={isBusy}
+            />
           </div>
         </div>
       ) : (
@@ -380,6 +392,42 @@ function PhotoUploader({
         </button>
       )}
     </div>
+  );
+}
+
+function PhotoActionButton({
+  icon,
+  label,
+  title,
+  tone = 'ghost',
+  disabled,
+  onClick,
+}: {
+  icon: ReactNode;
+  label: string;
+  title: string;
+  tone?: 'ghost' | 'soft';
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      title={title}
+      aria-label={title}
+      disabled={disabled}
+      onClick={onClick}
+      className={[
+        'flex h-9 min-w-0 items-center justify-center gap-1.5 rounded-full border px-2.5 text-[10px] font-medium uppercase tracking-[0.08em] transition-colors',
+        'disabled:cursor-not-allowed disabled:opacity-40',
+        tone === 'soft'
+          ? 'border-transparent bg-primary-soft text-primary hover:bg-primary/15'
+          : 'border-line bg-transparent text-ink hover:bg-ink/[0.05]',
+      ].join(' ')}
+    >
+      <span className="shrink-0">{icon}</span>
+      <span className="min-w-0 truncate whitespace-nowrap">{label}</span>
+    </button>
   );
 }
 
