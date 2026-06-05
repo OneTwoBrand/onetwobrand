@@ -11,25 +11,31 @@ import { Select, Textarea } from '@/components/ui/Field';
 import { Card, Divider } from '@/components/ui/Primitives';
 import { productionOrderSchema, type ProductionOrderForm } from '@/lib/production/schema';
 
+type ProductOption = { id: string; name: string; color?: string | null; category?: string | null; collectionName?: string | null };
+
 type Props = {
   seamstresses: { id: string; name: string }[];
   embroideryTypes: string[];
   sizes: string[];
   collections: string[];
+  products: ProductOption[];
 };
 
-export function NovaOPForm({ seamstresses, embroideryTypes, sizes, collections }: Props) {
+export function NovaOPForm({ seamstresses, embroideryTypes, sizes, products }: Props) {
   const [createdOrder, setCreatedOrder] = useState<{ opNumber: string } | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
     control,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<ProductionOrderForm>({
     resolver: zodResolver(productionOrderSchema),
     defaultValues: {
       collection: '',
+      model: '',
+      color: '',
       size: '',
       embroideryType: '',
       quantity: 1,
@@ -42,6 +48,19 @@ export function NovaOPForm({ seamstresses, embroideryTypes, sizes, collections }
     const color = preview.color ? ` — ${preview.color}` : '';
     return `${name}${color}`;
   }, [preview.productName, preview.color]);
+
+  function handleProductSelect(e: React.ChangeEvent<HTMLSelectElement>) {
+    const selectedId = e.target.value;
+    const product = products.find((p) => p.id === selectedId);
+    if (product) {
+      setValue('pieceId', product.id);
+      setValue('productName', product.name);
+      if (product.color) setValue('color', product.color);
+      if (product.category) setValue('collection', product.category);
+    } else {
+      setValue('pieceId', '');
+    }
+  }
 
   async function onSubmit(data: ProductionOrderForm) {
     setSubmitError(null);
@@ -67,7 +86,7 @@ export function NovaOPForm({ seamstresses, embroideryTypes, sizes, collections }
       <form onSubmit={handleSubmit(onSubmit)} className="mx-auto grid max-w-6xl gap-5 lg:grid-cols-[1.4fr_0.9fr]">
         <Card pad={20}>
           <div className="mb-5">
-            <p className="m-0 text-[10px] font-medium uppercase tracking-[0.24em] text-ink-soft">
+            <p className="m-0 text-[10px] font-medium uppercase tracking-wide-2 text-ink-soft">
               Cadastro assistido
             </p>
             <h1 className="m-0 mt-2 font-serif text-[30px] font-normal leading-[1.05] text-ink">
@@ -82,32 +101,38 @@ export function NovaOPForm({ seamstresses, embroideryTypes, sizes, collections }
               error={errors.clientName?.message}
               {...register('clientName')}
             />
-            <Input
-              label="Produto"
-              placeholder="Ex: Vestido Lis"
-              error={errors.productName?.message}
-              {...register('productName')}
-            />
-            <Select label="Coleção / Categoria" error={errors.collection?.message} {...register('collection')}>
-              <option value="">Selecione</option>
-              {collections.map((item) => <option key={item}>{item}</option>)}
-            </Select>
-            <Input
-              label="Modelo"
-              placeholder="Oversized, midi, cropped..."
-              error={errors.model?.message}
-              {...register('model')}
-            />
-            <Input
-              label="Cor"
-              placeholder="Preta, linho cru..."
-              error={errors.color?.message}
-              {...register('color')}
-            />
+
+            {/* Produto — select dos cadastrados; fallback para texto livre */}
+            {products.length > 0 ? (
+              <div className="flex flex-col gap-1">
+                <Select label="Produto" onChange={handleProductSelect} defaultValue="">
+                  <option value="">Selecione o produto</option>
+                  {products.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}{p.color ? ` — ${p.color}` : ''}
+                    </option>
+                  ))}
+                </Select>
+                <input type="hidden" {...register('pieceId')} />
+                <input type="hidden" {...register('productName')} />
+                {errors.productName && (
+                  <p className="text-[11px] text-danger">{errors.productName.message}</p>
+                )}
+              </div>
+            ) : (
+              <Input
+                label="Produto"
+                placeholder="Ex: Vestido Lis"
+                error={errors.productName?.message}
+                {...register('productName')}
+              />
+            )}
+
             <Select label="Tamanho" error={errors.size?.message} {...register('size')}>
               <option value="">Selecione</option>
               {sizes.map((item) => <option key={item}>{item}</option>)}
             </Select>
+
             <Input
               label="Quantidade"
               type="number"
@@ -164,17 +189,13 @@ export function NovaOPForm({ seamstresses, embroideryTypes, sizes, collections }
 
         <aside className="space-y-5">
           <Card pad={18}>
-            <p className="m-0 text-[10px] font-medium uppercase tracking-[0.24em] text-ink-soft">Preview</p>
+            <p className="m-0 text-[10px] font-medium uppercase tracking-wide-2 text-ink-soft">Preview</p>
             <h2 className="m-0 mt-3 font-serif text-[26px] font-normal leading-[1.05] text-ink">{previewTitle}</h2>
             <p className="mt-2 text-[12px] leading-relaxed text-ink-soft">
               {preview.clientName || 'Cliente'} · {preview.quantity || 1} peça(s)
             </p>
             <Divider className="my-4" />
             <dl className="grid gap-3 text-[12px]">
-              <div className="flex justify-between gap-4">
-                <dt className="text-ink-soft">Coleção</dt>
-                <dd className="text-right text-ink">{preview.collection || '-'}</dd>
-              </div>
               <div className="flex justify-between gap-4">
                 <dt className="text-ink-soft">Tamanho</dt>
                 <dd className="text-right text-ink">{preview.size || '-'}</dd>
@@ -206,7 +227,7 @@ export function NovaOPForm({ seamstresses, embroideryTypes, sizes, collections }
               <p className="mt-1 text-[12px] text-ink-soft">
                 A ordem foi registrada no Supabase.
               </p>
-              <Link href="/producao" className="mt-3 inline-block text-[11px] font-medium uppercase tracking-[0.16em] text-success">
+              <Link href="/producao" className="mt-3 inline-block text-[11px] font-medium uppercase tracking-wide-2 text-success">
                 Ver produção →
               </Link>
             </Card>

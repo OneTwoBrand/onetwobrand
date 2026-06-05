@@ -11,7 +11,7 @@ import { type ReactNode, useState, useEffect } from 'react';
 import {
   Home, Scissors, ShoppingCart, Package, MoreHorizontal,
   Gem, User, CircleDollarSign, BarChart3, ChevronLeft, ChevronRight,
-  Bot, LogOut, Layers3, Users, X, Settings, MessageCircle,
+  Bot, LogOut, Layers3, Users, X, Settings, MessageCircle, Tag,
 } from 'lucide-react';
 import { signOut } from '@/app/(auth)/logout/actions';
 import { cn } from '@/lib/utils';
@@ -40,6 +40,7 @@ const sheetGroups: SheetGroup[] = [
     items: [
       { href: '/bordagem'    as NavHref, label: 'Bordagem',    Icon: Gem },
       { href: '/costureiras' as NavHref, label: 'Costureiras', Icon: User },
+      { href: '/produtos'    as NavHref, label: 'Produtos',    Icon: Tag },
       { href: '/catalogo'    as NavHref, label: 'Coleções',    Icon: Layers3 },
     ],
   },
@@ -245,6 +246,7 @@ const sidebarGroups: SidebarGroup[] = [
       { href: '/producao'    as NavHref, label: 'Produção',    Icon: Scissors, adminOnly: false },
       { href: '/bordagem'    as NavHref, label: 'Bordagem',    Icon: Gem,      adminOnly: false },
       { href: '/costureiras' as NavHref, label: 'Costureiras', Icon: User,     adminOnly: false },
+      { href: '/produtos'    as NavHref, label: 'Produtos',    Icon: Tag,      adminOnly: false },
       { href: '/estoque'     as NavHref, label: 'Estoque',     Icon: Package,  adminOnly: false },
       { href: '/catalogo'    as NavHref, label: 'Coleções',    Icon: Layers3,  adminOnly: false },
     ],

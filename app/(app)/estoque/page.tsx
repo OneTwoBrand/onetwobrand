@@ -21,7 +21,7 @@ export default async function EstoquePage() {
   const action = (
     <div className="flex gap-2">
       <Link href="/estoque/movimentar"><Button size="sm" variant="soft" icon={<SlidersHorizontal size={14} />}>Movimentações</Button></Link>
-      <Link href="/estoque/novo"><Button size="sm" icon={<Plus size={14} />}>Novo produto</Button></Link>
+      <Link href="/produtos"><Button size="sm" variant="secondary" icon={<Package size={14} />}>Produtos</Button></Link>
     </div>
   );
 

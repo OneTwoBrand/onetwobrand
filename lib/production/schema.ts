@@ -2,10 +2,11 @@ import { z } from 'zod';
 
 export const productionOrderSchema = z.object({
   clientName: z.string().min(2, 'Informe a cliente.'),
+  pieceId: z.string().optional(),
   productName: z.string().min(2, 'Informe o produto.'),
-  collection: z.string().min(1, 'Selecione a coleção.'),
-  model: z.string().min(2, 'Informe o modelo.'),
-  color: z.string().min(2, 'Informe a cor.'),
+  collection: z.string(),
+  model: z.string(),
+  color: z.string(),
   size: z.string().min(1, 'Selecione o tamanho.'),
   quantity: z.number().int().min(1, 'Quantidade mínima: 1.').max(99, 'Quantidade máxima: 99.'),
   embroideryType: z.string().min(1, 'Selecione a bordagem.'),

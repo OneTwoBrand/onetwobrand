@@ -248,6 +248,127 @@ export async function getCatalogStock(): Promise<{ products: CatalogStockItem[];
   }
 }
 
+export type PieceItem = {
+  id: string;
+  name: string;
+  slug?: string | null;
+  collectionId?: string | null;
+  collectionName?: string | null;
+  category?: string | null;
+  fabric?: string | null;
+  color?: string | null;
+  description?: string | null;
+  photoUrl?: string | null;
+  backPhotoUrl?: string | null;
+  detailPhotoUrl?: string | null;
+  costPrice: number;
+  price: number;
+  published: boolean;
+  featured: boolean;
+  active: boolean;
+  createdAt?: string | null;
+};
+
+const fallbackPieces: PieceItem[] = [
+  { id: 'vestido-lis', name: 'Vestido Lis', collectionName: 'Verão 2026', category: 'Vestido', fabric: 'Linho cru', color: 'Cru', costPrice: 320, price: 890, published: false, featured: false, active: true },
+  { id: 'blusa-iris', name: 'Blusa Íris', collectionName: 'Premium', category: 'Blusa', fabric: 'Crepe', color: 'Terracota', costPrice: 160, price: 420, published: false, featured: false, active: true },
+];
+
+export async function getPieces(): Promise<{ pieces: PieceItem[]; source: 'supabase' | 'fallback'; error?: string }> {
+  if (!hasSupabasePublicEnv()) return { pieces: fallbackPieces, source: 'fallback' };
+
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('pieces')
+      .select(`
+        id, name, slug, collection_id, category, fabric, color, description,
+        cost_price, price, photo_url, back_photo_url, detail_photo_url,
+        published, featured, active, created_at,
+        collections(id, name)
+      `)
+      .eq('active', true)
+      .order('created_at', { ascending: false });
+
+    if (error) return { pieces: fallbackPieces, source: 'fallback', error: error.message };
+
+    return {
+      source: 'supabase',
+      pieces: (data ?? []).map((row) => {
+        const collection = firstRelated(row.collections as { id: string; name: string } | { id: string; name: string }[] | null);
+        return {
+          id: row.id,
+          name: row.name,
+          slug: row.slug,
+          collectionId: row.collection_id,
+          collectionName: collection?.name,
+          category: row.category,
+          fabric: row.fabric,
+          color: row.color,
+          description: row.description,
+          photoUrl: row.photo_url,
+          backPhotoUrl: row.back_photo_url,
+          detailPhotoUrl: row.detail_photo_url,
+          costPrice: Number(row.cost_price ?? 0),
+          price: Number(row.price ?? 0),
+          published: Boolean(row.published),
+          featured: Boolean(row.featured),
+          active: Boolean(row.active),
+          createdAt: row.created_at,
+        };
+      }),
+    };
+  } catch (err) {
+    return { pieces: fallbackPieces, source: 'fallback', error: err instanceof Error ? err.message : 'Erro ao buscar produtos.' };
+  }
+}
+
+export async function getPieceById(pieceId: string): Promise<{ piece: PieceItem | null; source: 'supabase' | 'fallback' }> {
+  if (!hasSupabasePublicEnv()) return { piece: fallbackPieces.find((p) => p.id === pieceId) ?? null, source: 'fallback' };
+
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from('pieces')
+      .select(`
+        id, name, slug, collection_id, category, fabric, color, description,
+        cost_price, price, photo_url, back_photo_url, detail_photo_url,
+        published, featured, active, created_at,
+        collections(id, name)
+      `)
+      .eq('id', pieceId)
+      .maybeSingle();
+
+    if (!data) return { piece: null, source: 'supabase' };
+    const collection = firstRelated(data.collections as { id: string; name: string } | { id: string; name: string }[] | null);
+    return {
+      source: 'supabase',
+      piece: {
+        id: data.id,
+        name: data.name,
+        slug: data.slug,
+        collectionId: data.collection_id,
+        collectionName: collection?.name,
+        category: data.category,
+        fabric: data.fabric,
+        color: data.color,
+        description: data.description,
+        photoUrl: data.photo_url,
+        backPhotoUrl: data.back_photo_url,
+        detailPhotoUrl: data.detail_photo_url,
+        costPrice: Number(data.cost_price ?? 0),
+        price: Number(data.price ?? 0),
+        published: Boolean(data.published),
+        featured: Boolean(data.featured),
+        active: Boolean(data.active),
+        createdAt: data.created_at,
+      },
+    };
+  } catch {
+    return { piece: null, source: 'fallback' };
+  }
+}
+
 export async function getCatalogStockItem(stockItemId: string): Promise<{
   product: CatalogStockItem | null;
   source: 'supabase' | 'fallback';

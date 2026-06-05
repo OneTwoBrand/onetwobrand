@@ -413,7 +413,7 @@ export async function createProductionOrder(data: ProductionOrderForm) {
 
   const supabase = await createClient();
   const clientId = await findOrCreateClient(supabase, data.clientName);
-  const pieceId = await findOrCreatePiece(supabase, data);
+  const pieceId = data.pieceId ?? await findOrCreatePiece(supabase, data);
   const seamstressId = await findOrCreateSeamstress(supabase, data.seamstressName);
   const opNumberResult = await supabase.rpc('next_op_number');
 
