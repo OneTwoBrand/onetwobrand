@@ -150,9 +150,10 @@ export async function getProductionOrders(): Promise<{
       };
     });
 
+    // Array vazio é resultado válido — banco limpo não deve ativar fallback
     return {
-      orders: orders.length ? orders : fallbackProductionOrders,
-      source: orders.length ? 'supabase' : 'fallback',
+      orders,
+      source: 'supabase',
     };
   } catch (error) {
     return {
