@@ -485,36 +485,62 @@ export function VisualEffectsForm({ config }: { config: Record<string, string> }
 
 export function CanaisForm({ config }: { config: Record<string, string> }) {
   const [state, action, pending] = useActionState(saveCanaisSettings, {} as ShopConfigState);
+  const isWa = config['shop_enable_whatsapp_button'] === 'true';
+  const [canal, setCanal] = useState<'pagamento' | 'whatsapp'>(isWa ? 'whatsapp' : 'pagamento');
 
   return (
-    <form action={action} className="space-y-6">
-      <fieldset className="space-y-3">
-        <legend className="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft">
-          Sacola de compras
-        </legend>
-        <VisualToggle
-          name="shop_enable_cart"
-          checked={config['shop_enable_cart'] === 'true'}
-          label="Habilitar sacola / carrinho de compras"
-        />
-        <p className="text-[11px] leading-relaxed text-ink-soft">
-          Quando ativada, a cliente pode adicionar peças e finalizar o pedido online com pagamento por cartão, PIX ou boleto.
-        </p>
-      </fieldset>
+    <form action={action} className="space-y-5">
+      <p className="text-[11px] text-ink-soft leading-relaxed">
+        Escolha como as clientes finalizam a compra. A sacola está sempre disponível — o canal define o que acontece no checkout.
+      </p>
 
-      <fieldset className="space-y-3">
-        <legend className="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft">
-          Negociação pelo WhatsApp
-        </legend>
-        <VisualToggle
-          name="shop_enable_whatsapp_button"
-          checked={config['shop_enable_whatsapp_button'] === 'true'}
-          label="Habilitar negociação pelo WhatsApp no checkout"
+      {/* Opção: Pagamento online */}
+      <label className={`flex gap-3 items-start p-4 rounded-[14px] border cursor-pointer transition-colors ${canal === 'pagamento' ? 'border-primary bg-primary-soft' : 'border-line bg-paper hover:border-ink/30'}`}>
+        <input
+          type="radio"
+          name="canal_venda"
+          value="pagamento"
+          checked={canal === 'pagamento'}
+          onChange={() => setCanal('pagamento')}
+          className="mt-0.5 accent-primary shrink-0"
         />
-        <p className="text-[11px] leading-relaxed text-ink-soft">
-          Quando ativado, a etapa de pagamento exibe um botão que abre o WhatsApp da loja com a sacola completa — itens, tamanhos e total — para a cliente negociar diretamente com a vendedora. O número configurado em <strong>Comunicação</strong> é usado como destino.
-        </p>
-      </fieldset>
+        <div>
+          <p className="text-[13px] font-medium text-ink">Pagamento online</p>
+          <p className="text-[11px] text-ink-soft mt-0.5 leading-relaxed">
+            A cliente finaliza o pedido com cartão de crédito, PIX ou boleto — processado pela Stripe / MercadoPago.
+          </p>
+        </div>
+      </label>
+
+      {/* Opção: Negociação WhatsApp */}
+      <label className={`flex gap-3 items-start p-4 rounded-[14px] border cursor-pointer transition-colors ${canal === 'whatsapp' ? 'border-primary bg-primary-soft' : 'border-line bg-paper hover:border-ink/30'}`}>
+        <input
+          type="radio"
+          name="canal_venda"
+          value="whatsapp"
+          checked={canal === 'whatsapp'}
+          onChange={() => setCanal('whatsapp')}
+          className="mt-0.5 accent-primary shrink-0"
+        />
+        <div className="flex-1">
+          <p className="text-[13px] font-medium text-ink">Negociação pelo WhatsApp</p>
+          <p className="text-[11px] text-ink-soft mt-0.5 leading-relaxed">
+            O checkout envia a sacola completa (itens, tamanhos, total) direto para o WhatsApp da loja. Ideal para vendas consultivas.
+          </p>
+          {canal === 'whatsapp' && (
+            <div className="mt-3">
+              <label className="text-[10px] font-medium uppercase tracking-[0.16em] text-ink-soft block mb-1.5">
+                Número do WhatsApp
+              </label>
+              <PhoneInput
+                name="shop_whatsapp"
+                defaultValue={config['shop_whatsapp'] ?? ''}
+                placeholder="(67) 9 0000-0000"
+              />
+            </div>
+          )}
+        </div>
+      </label>
 
       {state?.error && <p className="text-[12px] text-danger">{state.error}</p>}
       {state?.success && (
@@ -524,7 +550,7 @@ export function CanaisForm({ config }: { config: Record<string, string> }) {
       )}
 
       <Button type="submit" size="sm" disabled={pending} block>
-        {pending ? 'Salvando…' : 'Salvar canais'}
+        {pending ? 'Salvando…' : 'Salvar canal'}
       </Button>
     </form>
   );

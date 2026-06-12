@@ -156,10 +156,22 @@ export async function saveCanaisSettings(
   const { user, error: authError } = await requireAdmin();
   if (authError || !user) return { error: authError ?? 'Não autenticado.' };
 
+  const canal = String(formData.get('canal_venda') ?? 'pagamento');
+  const isWa  = canal === 'whatsapp';
+
+  if (isWa) {
+    const numero = String(formData.get('shop_whatsapp') ?? '').trim();
+    if (!numero) return { error: 'Informe o número do WhatsApp para usar este canal.' };
+  }
+
   const fields: Record<string, string> = {
-    shop_enable_cart: formData.get('shop_enable_cart') ? 'true' : 'false',
-    shop_enable_whatsapp_button: formData.get('shop_enable_whatsapp_button') ? 'true' : 'false',
+    shop_enable_cart:             isWa ? 'false' : 'true',
+    shop_enable_whatsapp_button:  isWa ? 'true'  : 'false',
   };
+
+  if (isWa) {
+    fields['shop_whatsapp'] = String(formData.get('shop_whatsapp') ?? '').trim();
+  }
 
   try {
     await Promise.all(
@@ -172,7 +184,7 @@ export async function saveCanaisSettings(
   revalidatePath('/loja');
   revalidatePath('/mais/loja');
   revalidatePath('/checkout/pagamento');
-  return { success: 'Configurações de canais salvas.' };
+  return { success: 'Canal de vendas salvo.' };
 }
 
 // ─── Read all shop config keys ────────────────────────────────────────────────
