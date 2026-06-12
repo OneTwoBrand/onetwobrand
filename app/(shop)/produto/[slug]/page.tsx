@@ -15,7 +15,6 @@ import { Gallery } from '@/components/shop/Gallery';
 import { AddToCartButton } from './AddToCartButton';
 import { DeliveryMessage } from './DeliveryMessage';
 import { brl } from '@/lib/utils';
-import { getPlatformConfig } from '@/lib/platform-config';
 
 export const revalidate = 300;
 export const dynamic = 'force-dynamic';
@@ -44,14 +43,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ProdutoPage({ params }: PageProps) {
   const { slug } = await params;
-  const [{ product }, cartFlag, waFlag] = await Promise.all([
+  const [{ product }] = await Promise.all([
     getShopProductBySlug(slug),
-    getPlatformConfig('shop_enable_cart'),
-    getPlatformConfig('shop_enable_whatsapp_button'),
   ]);
-  // A sacola fica disponível quando qualquer canal de checkout está ativo:
-  // pagamento online (cart) e/ou negociação por WhatsApp.
-  const showCart = cartFlag === 'true' || waFlag === 'true';
+  // Sacola sempre disponível — o canal de checkout (pagamento ou WhatsApp)
+  // é decidido apenas na etapa de pagamento.
+  const showCart = true;
 
   if (!product) notFound();
 

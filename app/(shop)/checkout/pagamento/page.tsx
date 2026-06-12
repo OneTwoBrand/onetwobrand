@@ -4,16 +4,17 @@ import { PagamentoClient } from './PagamentoClient';
 export const dynamic = 'force-dynamic';
 
 export default async function PagamentoPage() {
-  const [cartFlag, waFlag, waNumber] = await Promise.all([
-    getPlatformConfig('shop_enable_cart'),
+  const [waFlag, waNumber] = await Promise.all([
     getPlatformConfig('shop_enable_whatsapp_button'),
     getPlatformConfig('shop_whatsapp'),
   ]);
 
+  // Quando WhatsApp está ligado, o checkout é exclusivamente por WhatsApp.
+  const waEnabled = waFlag === 'true' && !!waNumber;
+
   return (
     <PagamentoClient
-      cartEnabled={cartFlag === 'true'}
-      waEnabled={waFlag === 'true' && !!waNumber}
+      waEnabled={waEnabled}
       waNumber={waNumber ?? null}
     />
   );
