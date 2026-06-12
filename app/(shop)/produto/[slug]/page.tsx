@@ -44,11 +44,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ProdutoPage({ params }: PageProps) {
   const { slug } = await params;
-  const [{ product }, cartFlag] = await Promise.all([
+  const [{ product }, cartFlag, waFlag] = await Promise.all([
     getShopProductBySlug(slug),
     getPlatformConfig('shop_enable_cart'),
+    getPlatformConfig('shop_enable_whatsapp_button'),
   ]);
-  const showCart = cartFlag === 'true';
+  // A sacola fica disponível quando qualquer canal de checkout está ativo:
+  // pagamento online (cart) e/ou negociação por WhatsApp.
+  const showCart = cartFlag === 'true' || waFlag === 'true';
 
   if (!product) notFound();
 

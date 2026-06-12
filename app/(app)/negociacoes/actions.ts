@@ -3,12 +3,25 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 
+type SacolaItem = {
+  nome: string;
+  tamanho: string | null;
+  qty: number;
+  preco: number;
+};
+
 type Lead = {
   id: string;
-  produto_slug: string;
-  produto_nome: string;
+  tipo: 'produto' | 'sacola';
+  produto_slug: string | null;
+  produto_nome: string | null;
   tamanho: string | null;
   url: string | null;
+  cliente_nome: string | null;
+  cliente_email: string | null;
+  cliente_telefone: string | null;
+  itens: SacolaItem[] | null;
+  total: number | null;
   status: 'novo' | 'em_atendimento' | 'fechado' | 'perdido';
   notas: string | null;
   atendido_por: string | null;

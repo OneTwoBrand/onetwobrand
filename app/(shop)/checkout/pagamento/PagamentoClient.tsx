@@ -33,11 +33,12 @@ type CheckoutSession = {
 };
 
 type Props = {
+  cartEnabled: boolean;
   waEnabled: boolean;
   waNumber: string | null;
 };
 
-export function PagamentoClient({ waEnabled, waNumber }: Props) {
+export function PagamentoClient({ cartEnabled, waEnabled, waNumber }: Props) {
   const router   = useRouter();
   const cart     = useCartStore();
   const [session, setSession]           = useState<CheckoutSession | null>(null);
@@ -57,27 +58,8 @@ export function PagamentoClient({ waEnabled, waNumber }: Props) {
 
   const total = cart.total(session.shippingCost);
 
-  // WhatsApp substitui o pagamento quando habilitado
-  if (waEnabled && waNumber) {
-    const waHref = `https://wa.me/55${waNumber.replace(/\D/g, '')}`;
-    const itemLines = cart.items
-      .map((item) => `• ${item.name}${item.size ? ` (${item.size})` : ''} × ${item.qty} — ${brl(item.price * item.qty)}`)
-      .join('\n');
-    const msg = [
-      `Olá! Gostaria de negociar meu pedido pelo atelier ONE TWO. 🛍️`,
-      ``,
-      `*Meus dados:*`,
-      `Nome: ${session.customer.name}`,
-      `E-mail: ${session.customer.email}`,
-      `Telefone: ${session.customer.phone}`,
-      ``,
-      `*Itens da sacola:*`,
-      itemLines,
-      ``,
-      `*Frete:* ${session.shippingCarrier} — ${session.shippingCost === 0 ? 'Grátis' : brl(session.shippingCost)}`,
-      `*Total: ${brl(total)}*`,
-    ].join('\n');
-
+  // Só WhatsApp (sacola desligada): substitui inteiramente as etapas de pagamento.
+  if (waEnabled && waNumber && !cartEnabled) {
     return (
       <div className="max-w-[520px] mx-auto">
         <button
@@ -92,40 +74,7 @@ export function PagamentoClient({ waEnabled, waNumber }: Props) {
 
         <div className="mt-6 flex flex-col gap-5">
           <h1 className="font-serif text-[22px] font-light text-ink">Finalizar pedido</h1>
-
-          <div className="rounded-[16px] border border-line bg-paper p-5 flex flex-col gap-4">
-            <div className="flex flex-col gap-1">
-              <p className="text-[10px] font-medium tracking-[0.20em] uppercase text-ink-soft">Sua sacola</p>
-              <ul className="mt-1 space-y-1">
-                {cart.items.map((item) => (
-                  <li key={`${item.pieceId}-${item.size}`} className="flex justify-between text-[12px]">
-                    <span className="text-ink">{item.name}{item.size ? ` · ${item.size}` : ''} × {item.qty}</span>
-                    <span className="text-ink-soft">{brl(item.price * item.qty)}</span>
-                  </li>
-                ))}
-              </ul>
-              <div className="flex justify-between mt-2 pt-2 border-t border-line text-[13px] font-medium">
-                <span className="text-ink">Total</span>
-                <span className="font-serif text-[18px] text-ink">{brl(total)}</span>
-              </div>
-            </div>
-
-            <a
-              href={`${waHref}?text=${encodeURIComponent(msg)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-3 h-[52px] rounded-full bg-[#25D366] text-white text-[12px] font-medium tracking-[0.16em] uppercase hover:bg-[#1ebe5d] transition-colors"
-            >
-              <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-              </svg>
-              Negociar pelo WhatsApp
-            </a>
-
-            <p className="text-[11px] text-ink-soft text-center leading-relaxed">
-              Ao clicar, você será redirecionada para o WhatsApp da nossa vendedora com os dados do seu pedido já preenchidos.
-            </p>
-          </div>
+          <WhatsAppCheckout session={session} cart={cart} total={total} waNumber={waNumber} />
         </div>
       </div>
     );
@@ -272,7 +221,142 @@ export function PagamentoClient({ waEnabled, waNumber }: Props) {
         )}
 
         {error && <p className="text-[12px] text-danger rounded-[10px] bg-danger-soft px-4 py-3">{error}</p>}
+
+        {/* Alternativa: negociar pelo WhatsApp (sacola + WhatsApp habilitados) */}
+        {waEnabled && waNumber && (
+          <div className="border-t border-line pt-5">
+            <p className="text-[10px] font-medium tracking-[0.24em] uppercase text-ink-soft mb-2.5">Prefere negociar?</p>
+            <WhatsAppCheckout session={session} cart={cart} total={total} waNumber={waNumber} variant="alternative" />
+          </div>
+        )}
       </div>
+    </div>
+  );
+}
+
+// ── WhatsApp checkout ────────────────────────────────────────────
+// Registra a negociação no painel (aguardando confirmação) e só então
+// abre o wa.me com a sacola completa. Usado como etapa única (só WA) ou
+// como alternativa ao pagamento online (cart + WA).
+
+function WhatsAppCheckout({ session, cart, total, waNumber, variant = 'primary' }: {
+  session: CheckoutSession;
+  cart: { items: CartItem[]; clearCart: () => void };
+  total: number;
+  waNumber: string;
+  variant?: 'primary' | 'alternative';
+}) {
+  const router = useRouter();
+  const [sending, setSending] = useState(false);
+  const [waError, setWaError] = useState('');
+
+  const waHref = `https://wa.me/55${waNumber.replace(/\D/g, '')}`;
+  const itemLines = cart.items
+    .map((item) => `• ${item.name}${item.size ? ` (${item.size})` : ''} × ${item.qty} — ${brl(item.price * item.qty)}`)
+    .join('\n');
+  const msg = [
+    `Olá! Gostaria de negociar meu pedido pelo atelier ONE TWO. 🛍️`,
+    ``,
+    `*Meus dados:*`,
+    `Nome: ${session.customer.name}`,
+    `E-mail: ${session.customer.email}`,
+    `Telefone: ${session.customer.phone}`,
+    ``,
+    `*Itens da sacola:*`,
+    itemLines,
+    ``,
+    `*Frete:* ${session.shippingCarrier} — ${session.shippingCost === 0 ? 'Grátis' : brl(session.shippingCost)}`,
+    `*Total: ${brl(total)}*`,
+  ].join('\n');
+
+  async function handleNegotiate() {
+    setSending(true);
+    setWaError('');
+
+    // Registra a negociação no painel ANTES de abrir o WhatsApp.
+    // Abre uma aba imediatamente (gesto do usuário) para não ser bloqueada por popup;
+    // navega após a confirmação do registro.
+    const waWindow = window.open('', '_blank');
+    try {
+      const res = await fetch('/api/shop/whatsapp-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tipo:            'sacola',
+          clienteNome:     session.customer.name,
+          clienteEmail:    session.customer.email,
+          clienteTelefone: session.customer.phone,
+          total,
+          url:             typeof window !== 'undefined' ? window.location.origin + '/carrinho' : null,
+          itens: cart.items.map((item) => ({
+            nome:    item.name,
+            tamanho: item.size ?? null,
+            qty:     item.qty,
+            preco:   item.price,
+          })),
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        waWindow?.close();
+        setWaError(json.error ?? 'Não foi possível registrar a negociação. Tente novamente.');
+        setSending(false);
+        return;
+      }
+    } catch {
+      waWindow?.close();
+      setWaError('Erro de conexão. Tente novamente.');
+      setSending(false);
+      return;
+    }
+
+    const target = `${waHref}?text=${encodeURIComponent(msg)}`;
+    if (waWindow) {
+      waWindow.location.href = target;
+    } else {
+      window.open(target, '_blank', 'noopener,noreferrer');
+    }
+
+    cart.clearCart();
+    sessionStorage.removeItem('ot_checkout');
+    router.push('/loja');
+  }
+
+  return (
+    <div className="rounded-[16px] border border-line bg-paper p-5 flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <p className="text-[10px] font-medium tracking-[0.20em] uppercase text-ink-soft">Sua sacola</p>
+        <ul className="mt-1 space-y-1">
+          {cart.items.map((item) => (
+            <li key={`${item.pieceId}-${item.size}`} className="flex justify-between text-[12px]">
+              <span className="text-ink">{item.name}{item.size ? ` · ${item.size}` : ''} × {item.qty}</span>
+              <span className="text-ink-soft">{brl(item.price * item.qty)}</span>
+            </li>
+          ))}
+        </ul>
+        <div className="flex justify-between mt-2 pt-2 border-t border-line text-[13px] font-medium">
+          <span className="text-ink">Total</span>
+          <span className="font-serif text-[18px] text-ink">{brl(total)}</span>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={handleNegotiate}
+        disabled={sending}
+        className="flex items-center justify-center gap-3 h-[52px] rounded-full bg-[#25D366] text-white text-[12px] font-medium tracking-[0.16em] uppercase hover:bg-[#1ebe5d] disabled:opacity-50 transition-colors"
+      >
+        <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+        </svg>
+        {sending ? 'Abrindo WhatsApp…' : variant === 'alternative' ? 'Prefiro negociar pelo WhatsApp' : 'Negociar pelo WhatsApp'}
+      </button>
+
+      {waError && <p className="text-[12px] text-danger rounded-[10px] bg-danger-soft px-4 py-3">{waError}</p>}
+
+      <p className="text-[11px] text-ink-soft text-center leading-relaxed">
+        Ao confirmar, sua negociação é registrada para a vendedora e você é redirecionada ao WhatsApp com os dados do pedido já preenchidos.
+      </p>
     </div>
   );
 }
