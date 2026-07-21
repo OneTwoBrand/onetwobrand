@@ -209,6 +209,11 @@ GRANT EXECUTE ON FUNCTION public.check_api_rate_limit(text, integer, integer) TO
 DROP POLICY IF EXISTS "product images authenticated insert" ON storage.objects;
 DROP POLICY IF EXISTS "product images authenticated update" ON storage.objects;
 DROP POLICY IF EXISTS "product images authenticated delete" ON storage.objects;
+-- Drop the replacement policies too so this migration is safe to rerun after
+-- a previous partial/manual application.
+DROP POLICY IF EXISTS "product images role insert" ON storage.objects;
+DROP POLICY IF EXISTS "product images role update" ON storage.objects;
+DROP POLICY IF EXISTS "product images role delete" ON storage.objects;
 
 CREATE POLICY "product images role insert" ON storage.objects
   FOR INSERT TO authenticated

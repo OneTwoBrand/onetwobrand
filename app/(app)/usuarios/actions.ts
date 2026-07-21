@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { assertAdmin } from '@/lib/users-data';
 import { sendInviteEmail, sendAccountStatusEmail } from '@/lib/email';
+import { buildAuthCallbackUrl } from '@/lib/auth-flow';
 
 export type UserActionState = { error?: string; success?: string };
 
@@ -31,7 +32,7 @@ export async function inviteUser(
       email,
       options: {
         data: { full_name: fullName },
-        redirectTo: `${siteUrl}/auth/callback?next=/nova-senha`,
+        redirectTo: buildAuthCallbackUrl(siteUrl, 'invite'),
       },
     });
 

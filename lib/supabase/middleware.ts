@@ -1,22 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { getSupabasePublicEnv, hasSupabasePublicEnv } from '@/lib/env';
-
-const PUBLIC_PATHS = [
-  '/login', '/recuperar', '/nova-senha', '/manifest.webmanifest',
-  '/apresentacao',
-  // Loja pública — sem autenticação
-  '/loja', '/produto', '/carrinho',
-  '/checkout', '/conta',
-  '/api/shop',
-  '/sitemap.xml', '/robots.txt',
-  // /colecoes mantido temporariamente para compatibilidade com redirects
-  '/colecoes',
-];
-
-function isPublicPath(pathname: string) {
-  return PUBLIC_PATHS.some((p) => pathname.startsWith(p));
-}
+import { isPublicPath } from '@/lib/supabase/public-paths';
 
 export async function updateSession(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);

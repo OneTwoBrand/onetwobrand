@@ -5,6 +5,7 @@ import { hasSupabasePublicEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendPasswordResetEmail } from '@/lib/email';
+import { buildAuthCallbackUrl } from '@/lib/auth-flow';
 
 export type LoginActionState = {
   error?: string;
@@ -52,7 +53,7 @@ export async function sendPasswordReset(
     const { data, error } = await admin.auth.admin.generateLink({
       type: 'recovery',
       email,
-      options: { redirectTo: `${siteUrl}/auth/callback?next=/nova-senha` },
+      options: { redirectTo: buildAuthCallbackUrl(siteUrl, 'recovery') },
     });
     if (!error && data.properties?.action_link) {
       await sendPasswordResetEmail({ to: email, resetLink: data.properties.action_link });
@@ -73,12 +74,17 @@ export async function updatePasswordFromReset(
   const password = String(formData.get('password') ?? '');
   const confirm = String(formData.get('confirm') ?? '');
 
-  if (!password || password.length < 6) return { error: 'A senha deve ter ao menos 6 caracteres.' };
+  if (!password || password.length < 8) return { error: 'A senha deve ter ao menos 8 caracteres.' };
   if (password !== confirm) return { error: 'As senhas não coincidem.' };
 
   if (!hasSupabasePublicEnv()) return { error: 'Configuração indisponível.' };
 
   const supabase = await createClient();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { error: 'Sua sessão de criação de senha expirou. Solicite um novo link.' };
+  }
+
   const { error } = await supabase.auth.updateUser({ password });
 
   if (error) return { error: 'Não foi possível atualizar a senha. O link pode ter expirado.' };
