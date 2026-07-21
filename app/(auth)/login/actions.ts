@@ -5,7 +5,7 @@ import { hasSupabasePublicEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendPasswordResetEmail } from '@/lib/email';
-import { buildAuthCallbackUrl } from '@/lib/auth-flow';
+import { buildAuthConfirmationUrl } from '@/lib/auth-flow';
 
 export type LoginActionState = {
   error?: string;
@@ -53,10 +53,10 @@ export async function sendPasswordReset(
     const { data, error } = await admin.auth.admin.generateLink({
       type: 'recovery',
       email,
-      options: { redirectTo: buildAuthCallbackUrl(siteUrl, 'recovery') },
     });
-    if (!error && data.properties?.action_link) {
-      await sendPasswordResetEmail({ to: email, resetLink: data.properties.action_link });
+    if (!error && data.properties?.hashed_token) {
+      const resetLink = buildAuthConfirmationUrl(siteUrl, 'recovery', data.properties.hashed_token);
+      await sendPasswordResetEmail({ to: email, resetLink });
     }
   } catch (error) {
     console.error('[password-reset]', error instanceof Error ? error.message : error);

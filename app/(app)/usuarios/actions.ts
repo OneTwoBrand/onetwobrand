@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { assertAdmin } from '@/lib/users-data';
 import { sendInviteEmail, sendAccountStatusEmail } from '@/lib/email';
-import { buildAuthCallbackUrl } from '@/lib/auth-flow';
+import { buildAuthConfirmationUrl } from '@/lib/auth-flow';
 
 export type UserActionState = { error?: string; success?: string };
 
@@ -32,7 +32,6 @@ export async function inviteUser(
       email,
       options: {
         data: { full_name: fullName },
-        redirectTo: buildAuthCallbackUrl(siteUrl, 'invite'),
       },
     });
 
@@ -47,11 +46,12 @@ export async function inviteUser(
       return { error: error.message };
     }
 
-    const inviteLink = data.properties?.action_link;
-    if (!inviteLink) {
-      await admin.auth.admin.deleteUser(data.user.id);
+    const tokenHash = data.properties?.hashed_token;
+    if (!tokenHash || !data.user) {
+      if (data.user) await admin.auth.admin.deleteUser(data.user.id);
       return { error: 'Não foi possível gerar um link válido para o convite.' };
     }
+    const inviteLink = buildAuthConfirmationUrl(siteUrl, 'invite', tokenHash);
 
     // Set role in profiles after the invitation token is available.
     const { error: profileError } = await admin.from('profiles').upsert({

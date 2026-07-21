@@ -10,7 +10,9 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get('code');
   const tokenHash = searchParams.get('token_hash');
   const type = searchParams.get('type');
+  const otpType = parsePasswordFlow(type);
   const flow = parsePasswordFlow(searchParams.get('flow'))
+    ?? otpType
     ?? (searchParams.get('next') === '/nova-senha' ? 'invite' : null);
   const redirectTo = new URL(
     flow ? buildPasswordSetupPath(flow) : '/nova-senha?error=link_invalido',
@@ -44,8 +46,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(redirectTo);
   }
 
-  if (tokenHash && type) {
-    const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: type as 'invite' | 'recovery' | 'email' });
+  if (tokenHash && otpType) {
+    const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: otpType });
     if (error) {
       redirectTo.pathname = '/nova-senha';
       redirectTo.search = '';

@@ -6,6 +6,7 @@ import { hasSupabasePublicEnv } from '@/lib/env';
 import { parsePasswordFlow } from '@/lib/auth-flow';
 import { Button } from '@/components/ui/Button';
 import { NewPasswordForm } from './NewPasswordForm';
+import { ImplicitSessionBridge } from './ImplicitSessionBridge';
 
 type PageProps = {
   searchParams: Promise<{ error?: string; flow?: string }>;
@@ -26,6 +27,7 @@ export default async function NovaSenhaPage({ searchParams }: PageProps) {
 
   return (
     <main className="min-h-screen bg-bg flex flex-col px-7 py-8">
+      <ImplicitSessionBridge />
       <div className="flex-1 flex flex-col items-center justify-center text-center gap-3.5">
         <Image src="/one-two-logo.png" alt="ONE TWO" width={110} height={110} priority />
         <h1 className="font-serif text-[24px] leading-[1.25] text-ink mt-4 font-light tracking-tight-1 m-0">

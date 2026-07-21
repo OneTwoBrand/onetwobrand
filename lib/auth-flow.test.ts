@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildAuthConfirmationUrl,
   buildAuthCallbackUrl,
   buildPasswordSetupPath,
   parsePasswordFlow,
@@ -9,6 +10,12 @@ describe('auth flow URLs', () => {
   it('builds a canonical invite callback URL even when the site URL has a path', () => {
     expect(buildAuthCallbackUrl('https://one2brand.com.br/admin/', 'invite')).toBe(
       'https://one2brand.com.br/auth/callback?flow=invite'
+    );
+  });
+
+  it('builds a server-verifiable confirmation URL without exposing an access token', () => {
+    expect(buildAuthConfirmationUrl('https://one2brand.com.br', 'invite', 'hashed-token')).toBe(
+      'https://one2brand.com.br/auth/callback?token_hash=hashed-token&type=invite&flow=invite'
     );
   });
 

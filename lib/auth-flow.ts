@@ -12,6 +12,18 @@ export function buildAuthCallbackUrl(siteUrl: string, flow: PasswordFlow) {
   return callbackUrl.toString();
 }
 
+export function buildAuthConfirmationUrl(
+  siteUrl: string,
+  flow: PasswordFlow,
+  tokenHash: string
+) {
+  const callbackUrl = new URL(AUTH_CALLBACK_PATH, siteUrl);
+  callbackUrl.searchParams.set('token_hash', tokenHash);
+  callbackUrl.searchParams.set('type', flow);
+  callbackUrl.searchParams.set('flow', flow);
+  return callbackUrl.toString();
+}
+
 export function buildPasswordSetupPath(flow: PasswordFlow) {
   const searchParams = new URLSearchParams({ flow });
   return `/nova-senha?${searchParams.toString()}`;
