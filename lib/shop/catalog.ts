@@ -5,6 +5,7 @@
  */
 import { hasSupabasePublicEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
+import { demoRows } from '@/lib/demo-data';
 
 // ── Tipos ────────────────────────────────────────────────────────
 
@@ -46,18 +47,18 @@ export type ShopProductDetail = ShopProductCard & {
 
 // ── Fallbacks ────────────────────────────────────────────────────
 
-const fallbackCollections: ShopCollection[] = [
+const fallbackCollections: ShopCollection[] = demoRows([
   { id: '1', slug: 'verao-2026',  name: 'Verão 2026',  subtitle: 'Linhos e crepes para o calor',            heroUrl: null, sortOrder: 1, featured: true,  featuredOrder: 1, pieceCount: 4 },
   { id: '2', slug: 'premium',     name: 'Premium',      subtitle: 'Peças exclusivas bordadas à mão',         heroUrl: null, sortOrder: 2, featured: true,  featuredOrder: 2, pieceCount: 3 },
   { id: '3', slug: 'bordados',    name: 'Bordados',     subtitle: 'Bordados artesanais em pequenas tiragens', heroUrl: null, sortOrder: 3, featured: false, featuredOrder: 3, pieceCount: 2 },
-];
+]);
 
-const fallbackDetails: ShopProductDetail[] = [
+const fallbackDetails: ShopProductDetail[] = demoRows([
   { pieceId: '1', slug: 'vestido-lis',    name: 'Vestido Lis',    collectionName: 'Verão 2026', collectionSlug: 'verao-2026', category: 'Vestido',  photoUrl: null, price: 890,  availableSizes: ['P','M','G'], allSizes: ['P','M','G'], isNew: true,  isSoldOut: false, fabric: 'Linho cru', color: 'Cru',      description: null, backPhotoUrl: null, detailPhotoUrl: null, stockBySizeColor: [] },
   { pieceId: '2', slug: 'blusa-iris',     name: 'Blusa Íris',     collectionName: 'Premium',    collectionSlug: 'premium',    category: 'Blusa',    photoUrl: null, price: 420,  availableSizes: ['P'],        allSizes: ['P','M'],    isNew: false, isSoldOut: false, fabric: 'Crepe',     color: 'Terracota', description: null, backPhotoUrl: null, detailPhotoUrl: null, stockBySizeColor: [] },
   { pieceId: '3', slug: 'conjunto-hera',  name: 'Conjunto Hera',  collectionName: 'Bordados',   collectionSlug: 'bordados',   category: 'Conjunto', photoUrl: null, price: 1240, availableSizes: [],           allSizes: ['Único'],    isNew: false, isSoldOut: true,  fabric: null,        color: null,        description: null, backPhotoUrl: null, detailPhotoUrl: null, stockBySizeColor: [] },
   { pieceId: '4', slug: 'saia-margarida', name: 'Saia Margarida', collectionName: 'Verão 2026', collectionSlug: 'verao-2026', category: 'Saia',     photoUrl: null, price: 380,  availableSizes: ['G'],        allSizes: ['P','M','G'], isNew: true, isSoldOut: false, fabric: 'Linho',     color: 'Rosé',      description: null, backPhotoUrl: null, detailPhotoUrl: null, stockBySizeColor: [] },
-];
+]);
 
 // ── Helpers ──────────────────────────────────────────────────────
 

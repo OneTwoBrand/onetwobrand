@@ -3,79 +3,45 @@
 /**
  * ONE TWO · /conta/enderecos
  * Lista e gerencia endereços do cliente.
- * Identifica o cliente pelo e-mail em sessionStorage.
+ * O servidor identifica o cliente pela sessão HTTP assinada.
  */
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { MapPin, Plus, Trash2 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/browser';
-
-type Address = {
-  id:         string;
-  label:      string;
-  street:     string;
-  number:     string | null;
-  complement: string | null;
-  district:   string | null;
-  city:       string;
-  state:      string;
-  cep:        string;
-  is_default: boolean;
-};
+import {
+  deleteCustomerAddress,
+  getCustomerAddresses,
+  setDefaultCustomerAddress,
+  type CustomerAddress,
+} from '@/lib/shop/checkout-actions';
 
 export default function EnderecosPage() {
-  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [addresses, setAddresses] = useState<CustomerAddress[]>([]);
   const [loading,   setLoading]   = useState(true);
-  const [customerId, setCustomerId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async (custId: string) => {
-    const supabase = createClient();
-    const { data } = await supabase
-      .from('addresses')
-      .select('id, label, street, number, complement, district, city, state, cep, is_default')
-      .eq('customer_id', custId)
-      .order('is_default', { ascending: false });
-    setAddresses((data as Address[]) ?? []);
+  const load = useCallback(async () => {
+    const result = await getCustomerAddresses();
+    setAddresses(result.addresses);
+    setError(result.error ?? null);
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem('ot_checkout');
-      if (!raw) { setLoading(false); return; }
-      const data = JSON.parse(raw) as { customer?: { email?: string } };
-      const email = data.customer?.email;
-      if (!email) { setLoading(false); return; }
-
-      const supabase = createClient();
-      supabase
-        .from('customers')
-        .select('id')
-        .eq('email', email)
-        .maybeSingle()
-        .then(({ data: cust }) => {
-          if (!cust?.id) { setLoading(false); return; }
-          setCustomerId(cust.id);
-          load(cust.id);
-        });
-    } catch {
-      setLoading(false);
-    }
+    queueMicrotask(load);
   }, [load]);
 
   async function handleDelete(id: string) {
-    const supabase = createClient();
-    await supabase.from('addresses').delete().eq('id', id);
-    setAddresses((prev) => prev.filter((a) => a.id !== id));
+    const result = await deleteCustomerAddress(id);
+    if (!result.ok) { setError(result.error ?? 'Não foi possível remover.'); return; }
+    await load();
   }
 
   async function handleSetDefault(id: string) {
-    if (!customerId) return;
-    const supabase = createClient();
-    await supabase.from('addresses').update({ is_default: false }).eq('customer_id', customerId);
-    await supabase.from('addresses').update({ is_default: true }).eq('id', id);
-    if (customerId) load(customerId);
+    const result = await setDefaultCustomerAddress(id);
+    if (!result.ok) { setError(result.error ?? 'Não foi possível atualizar.'); return; }
+    await load();
   }
 
   return (
@@ -89,6 +55,8 @@ export default function EnderecosPage() {
       </div>
 
       <h1 className="font-serif text-[24px] font-normal text-ink mb-6">Endereços</h1>
+
+      {error && <p className="mb-4 text-[12px] text-danger">{error}</p>}
 
       {loading && (
         <div className="space-y-3">

@@ -3,6 +3,8 @@ import OpenAI from 'openai';
 import { createClient } from '@/lib/supabase/server';
 import { getOpenAIKey } from '@/lib/platform-config';
 import { buildOperationalContext } from '@/lib/ai/context';
+import { z } from 'zod';
+import { checkServerRateLimit } from '@/lib/server-rate-limit';
 
 export const maxDuration = 60;
 
@@ -22,11 +24,24 @@ REGRAS OBRIGATÓRIAS:
 5. Se não tiver dados suficientes para responder, diga claramente.
 6. Não exponha IDs internos, UUIDs ou detalhes técnicos de banco.`;
 
+const requestSchema = z.object({
+  messages: z.array(z.object({
+    role: z.enum(['user', 'assistant']),
+    content: z.string().trim().min(1).max(4000),
+  }).strict()).min(1).max(20),
+}).strict().refine(
+  ({ messages }) => messages.reduce((total, message) => total + message.content.length, 0) <= 20_000,
+  'Conversa muito longa.'
+);
+
 export async function POST(request: NextRequest) {
   // Auth check
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
+  if (!await checkServerRateLimit('ai-chat', user.id, 30, 600)) {
+    return NextResponse.json({ error: 'Limite de uso atingido. Aguarde alguns minutos.' }, { status: 429 });
+  }
 
   // Get API key
   const apiKey = await getOpenAIKey();
@@ -36,13 +51,10 @@ export async function POST(request: NextRequest) {
     }, { status: 503 });
   }
 
-  const { messages } = await request.json() as {
-    messages: { role: 'user' | 'assistant'; content: string }[];
-  };
-
-  if (!messages?.length) {
-    return NextResponse.json({ error: 'Mensagem não fornecida.' }, { status: 400 });
-  }
+  const body = await request.json().catch(() => null);
+  const parsed = requestSchema.safeParse(body);
+  if (!parsed.success) return NextResponse.json({ error: 'Conversa inválida ou muito longa.' }, { status: 400 });
+  const { messages } = parsed.data;
 
   // Build real-time context
   const context = await buildOperationalContext();

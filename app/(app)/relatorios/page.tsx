@@ -3,7 +3,7 @@ import { AlertTriangle, BarChart3, Gem, Package, Scissors, ShoppingBag, Shopping
 import { AppBar, Topbar } from '@/components/layout/Navigation';
 import { DataNotice } from '@/components/app/DataNotice';
 import { Badge } from '@/components/ui/Badge';
-import { Card, SectionHead, Divider } from '@/components/ui/Primitives';
+import { Card, SectionHead } from '@/components/ui/Primitives';
 import { getReportsSummary, getShopKpis } from '@/lib/app-data';
 import { brl } from '@/lib/utils';
 import { ExportButton } from './ExportButton';

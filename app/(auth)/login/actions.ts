@@ -3,6 +3,8 @@
 import { redirect } from 'next/navigation';
 import { hasSupabasePublicEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { sendPasswordResetEmail } from '@/lib/email';
 
 export type LoginActionState = {
   error?: string;
@@ -45,20 +47,18 @@ export async function sendPasswordReset(
   if (!hasSupabasePublicEnv()) return { error: 'Configuração indisponível.' };
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://one2brand.com.br';
-  const supabase = await createClient();
-
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${siteUrl}/auth/callback?next=/nova-senha`,
-  });
-
-  if (error) return { error: 'Não foi possível enviar o e-mail. Verifique o endereço.' };
-
-  // Send branded email via Resend (non-fatal — Supabase also sends its own)
   try {
-    const { sendPasswordResetEmail } = await import('@/lib/email');
-    await sendPasswordResetEmail({ to: email, resetLink: `${siteUrl}/auth/callback?next=/nova-senha` });
-  } catch {
-    // silently ignore — Supabase fallback still works
+    const admin = createAdminClient();
+    const { data, error } = await admin.auth.admin.generateLink({
+      type: 'recovery',
+      email,
+      options: { redirectTo: `${siteUrl}/auth/callback?next=/nova-senha` },
+    });
+    if (!error && data.properties?.action_link) {
+      await sendPasswordResetEmail({ to: email, resetLink: data.properties.action_link });
+    }
+  } catch (error) {
+    console.error('[password-reset]', error instanceof Error ? error.message : error);
   }
 
   return { success: 'Se este e-mail estiver cadastrado, você receberá um link em instantes.' };

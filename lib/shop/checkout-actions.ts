@@ -10,6 +10,13 @@ import { buildShippingOptions, DEFAULT_FREE_THRESHOLD, type ShippingOption } fro
 import { getPlatformConfig } from '@/lib/platform-config';
 import { parseMoneyBR } from '@/lib/input-masks';
 import type { CartItem } from './cart-store';
+import { z } from 'zod';
+import {
+  assertCustomerSessionConfigured,
+  getCustomerSessionEmail,
+  setCustomerSession,
+} from './customer-session';
+import { getInternalOrderSummary } from './orders-admin';
 
 async function getFreeShippingThreshold(): Promise<number> {
   try {
@@ -40,11 +47,9 @@ export type CheckoutPayload = {
   customerEmail: string;
   customerPhone: string;
   address:       CheckoutAddress;
-  shippingCarrier: string;
-  shippingCost:  number;
+  shippingId:    string;
   paymentMethod: 'card' | 'pix' | 'boleto';
   couponCode:    string | null;
-  couponDiscount: number;
   items:         CartItem[];
 };
 
@@ -52,20 +57,93 @@ export type CreateOrderResult =
   | { ok: true;  orderId: string; orderNumber: string; total: number }
   | { ok: false; error: string };
 
+const checkoutSchema = z.object({
+  customerName: z.string().trim().min(2).max(120),
+  customerEmail: z.string().trim().toLowerCase().email().max(254),
+  customerPhone: z.string().trim().max(30),
+  address: z.object({
+    label: z.string().trim().min(1).max(40),
+    street: z.string().trim().min(2).max(160),
+    number: z.string().trim().min(1).max(30),
+    complement: z.string().trim().max(120),
+    district: z.string().trim().max(100),
+    city: z.string().trim().min(2).max(100),
+    state: z.string().trim().length(2).transform((value) => value.toUpperCase()),
+    cep: z.string().transform((value) => value.replace(/\D/g, '')).pipe(z.string().length(8)),
+  }),
+  shippingId: z.enum(['sedex', 'pac', 'retirada']),
+  paymentMethod: z.enum(['card', 'pix', 'boleto']),
+  couponCode: z.string().trim().max(40).nullable(),
+  items: z.array(z.object({
+    pieceId: z.string().uuid(),
+    size: z.string().trim().min(1).max(20),
+    qty: z.number().int().min(1).max(20),
+  }).passthrough()).min(1).max(30),
+}).strict();
+
 // ── Criar pedido ─────────────────────────────────────────────────
 
 export async function createOrder(payload: CheckoutPayload): Promise<CreateOrderResult> {
-  const supabase = createAdminClient();
-
-  const subtotal = payload.items.reduce((s, i) => s + i.price * i.qty, 0);
-  const total    = Math.max(0, subtotal - payload.couponDiscount + payload.shippingCost);
-
   try {
+    assertCustomerSessionConfigured();
+    const parsed = checkoutSchema.safeParse(payload);
+    if (!parsed.success) return { ok: false, error: 'Dados do checkout inválidos.' };
+
+    const input = parsed.data;
+    const supabase = createAdminClient();
+    const pieceIds = [...new Set(input.items.map((item) => item.pieceId))];
+    const [{ data: pieces, error: piecesError }, { data: stock, error: stockError }] = await Promise.all([
+      supabase.from('pieces').select('id, name, price, photo_url, color').in('id', pieceIds).eq('active', true),
+      supabase.from('stock_items').select('piece_id, size, quantity').in('piece_id', pieceIds),
+    ]);
+
+    if (piecesError || stockError || !pieces || pieces.length !== pieceIds.length) {
+      return { ok: false, error: 'Não foi possível validar os produtos do pedido.' };
+    }
+
+    const pieceById = new Map(pieces.map((piece) => [piece.id, piece]));
+    const validatedItems = [];
+    for (const item of input.items) {
+      const piece = pieceById.get(item.pieceId);
+      const available = (stock ?? [])
+        .filter((row) => row.piece_id === item.pieceId && row.size === item.size)
+        .reduce((sum, row) => sum + Number(row.quantity), 0);
+      if (!piece || available < item.qty) {
+        return { ok: false, error: `Estoque indisponível para um dos itens (${item.size}).` };
+      }
+      validatedItems.push({
+        ...item,
+        name: piece.name,
+        price: Number(piece.price),
+        color: piece.color ?? null,
+        photoUrl: piece.photo_url ?? null,
+      });
+    }
+
+    const subtotal = validatedItems.reduce((sum, item) => sum + item.price * item.qty, 0);
+    let couponDiscount = 0;
+    let couponCode: string | null = null;
+    if (input.couponCode) {
+      const coupon = await validateCoupon(input.couponCode, subtotal);
+      if (!coupon.ok) return coupon;
+      couponDiscount = coupon.discount;
+      couponCode = coupon.code;
+    }
+
+    const paymentDiscount = input.paymentMethod === 'pix'
+      ? Math.round((subtotal - couponDiscount) * 0.05 * 100) / 100
+      : 0;
+    const totalDiscount = couponDiscount + paymentDiscount;
+    const shippingOptions = buildShippingOptions(subtotal, await getFreeShippingThreshold());
+    const shipping = shippingOptions.find((option) => option.id === input.shippingId);
+    if (!shipping) return { ok: false, error: 'Modalidade de frete inválida.' };
+    const total = Math.max(0, subtotal - totalDiscount + shipping.price);
+
     // 1. Upsert customer
     const { data: customer, error: custErr } = await supabase
       .from('customers')
       .upsert(
-        { name: payload.customerName, email: payload.customerEmail, phone: payload.customerPhone },
+        { name: input.customerName, email: input.customerEmail, phone: input.customerPhone },
         { onConflict: 'email', ignoreDuplicates: false }
       )
       .select('id')
@@ -80,7 +158,7 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
       .from('addresses')
       .insert({
         customer_id: customer.id,
-        ...payload.address,
+        ...input.address,
         is_default: true,
       })
       .select('id')
@@ -100,17 +178,17 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
       .insert({
         order_number:        orderNumber,
         customer_id:         customer.id,
-        customer_name:       payload.customerName,
-        customer_email:      payload.customerEmail,
+        customer_name:       input.customerName,
+        customer_email:      input.customerEmail,
         subtotal,
-        discount:            payload.couponDiscount,
-        shipping:            payload.shippingCost,
+        discount:            totalDiscount,
+        shipping:            shipping.price,
         total,
-        coupon_code:         payload.couponCode,
-        payment_method:      payload.paymentMethod,
+        coupon_code:         couponCode,
+        payment_method:      input.paymentMethod,
         payment_status:      'pending',
         shipping_address_id: address.id,
-        shipping_carrier:    payload.shippingCarrier,
+        shipping_carrier:    shipping.carrier,
       })
       .select('id, order_number, total')
       .single();
@@ -120,7 +198,7 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
     }
 
     // 5. Inserir order_items
-    const itemsPayload = payload.items.map((item) => ({
+    const itemsPayload = validatedItems.map((item) => ({
       order_id:   order.id,
       piece_id:   item.pieceId,
       piece_name: item.name,
@@ -133,33 +211,15 @@ export async function createOrder(payload: CheckoutPayload): Promise<CreateOrder
 
     const { error: itemsErr } = await supabase.from('order_items').insert(itemsPayload);
     if (itemsErr) {
+      await supabase.from('orders').delete().eq('id', order.id);
       return { ok: false, error: itemsErr.message };
     }
 
+    await setCustomerSession(input.customerEmail);
     return { ok: true, orderId: order.id, orderNumber: order.order_number, total: order.total };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Erro inesperado.' };
   }
-}
-
-// ── Marcar pedido como pago (chamado pelo webhook) ───────────────
-
-export async function markOrderPaid(
-  orderId: string,
-  opts: { stripePaymentIntentId?: string; mercadopagoPaymentId?: string }
-): Promise<{ ok: boolean; error?: string }> {
-  const supabase = createAdminClient();
-  const { error } = await supabase
-    .from('orders')
-    .update({
-      payment_status:              'paid',
-      stripe_payment_intent_id:    opts.stripePaymentIntentId ?? null,
-      mercadopago_payment_id:      opts.mercadopagoPaymentId  ?? null,
-    })
-    .eq('id', orderId);
-
-  if (error) return { ok: false, error: error.message };
-  return { ok: true };
 }
 
 // ── Validar cupom ────────────────────────────────────────────────
@@ -208,7 +268,16 @@ export type OrderProgress = {
 export async function getOrderProgress(
   orderId: string
 ): Promise<{ progress: OrderProgress[]; error?: string }> {
+  const customerEmail = await getCustomerSessionEmail();
+  if (!customerEmail) return { progress: [], error: 'Sessão do cliente inválida.' };
   const supabase = createAdminClient();
+  const { data: ownedOrder } = await supabase
+    .from('orders')
+    .select('id')
+    .eq('id', orderId)
+    .eq('customer_email', customerEmail)
+    .maybeSingle();
+  if (!ownedOrder) return { progress: [], error: 'Pedido não encontrado.' };
   const { data, error } = await supabase.rpc('shop_order_progress', { p_order_id: orderId });
   if (error || !data) return { progress: [], error: error?.message };
 
@@ -244,9 +313,9 @@ export type CustomerOrderItem = {
   createdAt:         string;
 };
 
-export async function getCustomerOrders(
-  email: string
-): Promise<{ orders: CustomerOrderItem[]; error?: string }> {
+export async function getCustomerOrders(): Promise<{ orders: CustomerOrderItem[]; error?: string }> {
+  const email = await getCustomerSessionEmail();
+  if (!email) return { orders: [], error: 'Sessão do cliente inválida.' };
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('orders')
@@ -279,6 +348,90 @@ export async function getCustomerOrders(
       };
     }),
   };
+}
+
+export type CustomerProfile = { name: string; email: string; phone: string };
+
+export async function getCustomerProfile(): Promise<{ profile: CustomerProfile | null; error?: string }> {
+  const email = await getCustomerSessionEmail();
+  if (!email) return { profile: null, error: 'Sessão do cliente inválida.' };
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from('customers')
+    .select('name, email, phone')
+    .eq('email', email)
+    .maybeSingle();
+  if (error || !data) return { profile: null, error: error?.message ?? 'Cliente não encontrado.' };
+  return { profile: { name: data.name, email: data.email, phone: data.phone ?? '' } };
+}
+
+const customerProfileSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  phone: z.string().trim().max(30),
+});
+
+export async function updateCustomerProfile(input: { name: string; phone: string }): Promise<{ ok: boolean; error?: string }> {
+  const email = await getCustomerSessionEmail();
+  if (!email) return { ok: false, error: 'Sessão do cliente inválida.' };
+  const parsed = customerProfileSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'Dados pessoais inválidos.' };
+  const admin = createAdminClient();
+  const { error } = await admin.from('customers').update(parsed.data).eq('email', email);
+  return error ? { ok: false, error: error.message } : { ok: true };
+}
+
+export type CustomerAddress = {
+  id: string; label: string; street: string; number: string | null;
+  complement: string | null; district: string | null; city: string;
+  state: string; cep: string; is_default: boolean;
+};
+
+async function getSessionCustomerId(): Promise<string | null> {
+  const email = await getCustomerSessionEmail();
+  if (!email) return null;
+  const admin = createAdminClient();
+  const { data } = await admin.from('customers').select('id').eq('email', email).maybeSingle();
+  return data?.id ?? null;
+}
+
+export async function getCustomerAddresses(): Promise<{ addresses: CustomerAddress[]; error?: string }> {
+  const customerId = await getSessionCustomerId();
+  if (!customerId) return { addresses: [], error: 'Sessão do cliente inválida.' };
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from('addresses')
+    .select('id, label, street, number, complement, district, city, state, cep, is_default')
+    .eq('customer_id', customerId)
+    .order('is_default', { ascending: false })
+    .order('created_at', { ascending: false });
+  return error
+    ? { addresses: [], error: error.message }
+    : { addresses: (data ?? []) as CustomerAddress[] };
+}
+
+export async function deleteCustomerAddress(addressId: string): Promise<{ ok: boolean; error?: string }> {
+  const customerId = await getSessionCustomerId();
+  if (!customerId || !z.string().uuid().safeParse(addressId).success) {
+    return { ok: false, error: 'Endereço inválido.' };
+  }
+  const admin = createAdminClient();
+  const { error } = await admin.from('addresses').delete().eq('id', addressId).eq('customer_id', customerId);
+  return error ? { ok: false, error: error.message } : { ok: true };
+}
+
+export async function setDefaultCustomerAddress(addressId: string): Promise<{ ok: boolean; error?: string }> {
+  const customerId = await getSessionCustomerId();
+  if (!customerId || !z.string().uuid().safeParse(addressId).success) {
+    return { ok: false, error: 'Endereço inválido.' };
+  }
+  const admin = createAdminClient();
+  const { data: owned } = await admin
+    .from('addresses').select('id').eq('id', addressId).eq('customer_id', customerId).maybeSingle();
+  if (!owned) return { ok: false, error: 'Endereço não encontrado.' };
+  const { error: clearError } = await admin.from('addresses').update({ is_default: false }).eq('customer_id', customerId);
+  if (clearError) return { ok: false, error: clearError.message };
+  const { error } = await admin.from('addresses').update({ is_default: true }).eq('id', addressId).eq('customer_id', customerId);
+  return error ? { ok: false, error: error.message } : { ok: true };
 }
 
 // ── Buscar detalhe completo do pedido para /conta/pedidos/[id] ───
@@ -316,6 +469,8 @@ export type OrderDetailFull = OrderSummary & {
 export async function getOrderDetail(
   orderId: string
 ): Promise<{ order: OrderDetailFull | null; error?: string }> {
+  const customerEmail = await getCustomerSessionEmail();
+  if (!customerEmail) return { order: null, error: 'Sessão do cliente inválida.' };
   const supabase = createAdminClient();
 
   const { data, error } = await supabase
@@ -323,7 +478,7 @@ export async function getOrderDetail(
     .select(`
       id, order_number, customer_name, customer_email,
       total, subtotal, discount, shipping, coupon_code,
-      payment_method, fulfillment_status, created_at,
+      payment_method, payment_status, fulfillment_status, created_at,
       shipping_carrier, tracking_code,
       order_items ( piece_name, size, qty, unit_price, photo_url ),
       addresses (
@@ -331,6 +486,7 @@ export async function getOrderDetail(
       )
     `)
     .eq('id', orderId)
+    .eq('customer_email', customerEmail)
     .single();
 
   if (error || !data) return { order: null, error: error?.message };
@@ -376,6 +532,7 @@ export async function getOrderDetail(
       shipping:          data.shipping,
       couponCode:        data.coupon_code,
       paymentMethod:     data.payment_method,
+      paymentStatus:     data.payment_status,
       fulfillmentStatus: data.fulfillment_status,
       createdAt:         data.created_at,
       shippingCarrier:   data.shipping_carrier ?? null,
@@ -432,6 +589,7 @@ export type OrderSummary = {
   customerEmail: string;
   total:       number;
   paymentMethod: string;
+  paymentStatus: string;
   fulfillmentStatus: string;
   items: Array<{
     pieceName: string;
@@ -446,39 +604,25 @@ export type OrderSummary = {
 export async function getOrderSummary(
   orderId: string
 ): Promise<{ order: OrderSummary | null; error?: string }> {
-  const supabase = createAdminClient();
-  const { data, error } = await supabase
-    .from('orders')
-    .select(`
-      id, order_number, customer_name, customer_email,
-      total, payment_method, fulfillment_status, created_at,
-      order_items(piece_name, size, qty, unit_price, photo_url)
-    `)
-    .eq('id', orderId)
-    .single();
-
-  if (error || !data) return { order: null, error: error?.message };
+  const customerEmail = await getCustomerSessionEmail();
+  if (!customerEmail) return { order: null, error: 'Sessão do cliente inválida.' };
+  const data = await getInternalOrderSummary(orderId);
+  if (!data || data.customerEmail !== customerEmail) {
+    return { order: null, error: 'Pedido não encontrado.' };
+  }
 
   return {
     order: {
       id:                data.id,
-      orderNumber:       data.order_number,
-      customerName:      data.customer_name,
-      customerEmail:     data.customer_email,
+      orderNumber:       data.orderNumber,
+      customerName:      data.customerName,
+      customerEmail:     data.customerEmail,
       total:             data.total,
-      paymentMethod:     data.payment_method,
-      fulfillmentStatus: data.fulfillment_status,
-      createdAt:         data.created_at,
-      items: (data.order_items as Array<{
-        piece_name: string; size: string; qty: number;
-        unit_price: number; photo_url: string | null;
-      }>).map((i) => ({
-        pieceName: i.piece_name,
-        size:      i.size,
-        qty:       i.qty,
-        unitPrice: i.unit_price,
-        photoUrl:  i.photo_url,
-      })),
+      paymentMethod:     data.paymentMethod,
+      paymentStatus:     data.paymentStatus,
+      fulfillmentStatus: data.fulfillmentStatus,
+      createdAt:         data.createdAt,
+      items:             data.items,
     },
   };
 }

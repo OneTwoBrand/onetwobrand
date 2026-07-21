@@ -9,8 +9,7 @@
 import { useEffect, useState } from 'react';
 import { CheckCircle2, Package, Scissors, Truck } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { createClient } from '@/lib/supabase/browser';
-import type { OrderProgress as OrderProgressData } from '@/lib/shop/checkout-actions';
+import { getOrderProgress, type OrderProgress as OrderProgressData } from '@/lib/shop/checkout-actions';
 
 const STAGE_ICONS: Record<string, React.ReactNode> = {
   confirmed:   <Package  size={14} strokeWidth={1.5} />,
@@ -34,43 +33,16 @@ export function OrderProgress({ orderId, initialProgress, compact = false }: Ord
   useEffect(() => {
     if (!orderId) return;
 
-    const supabase = createClient();
-
-    // Subscreve mudanças em production_orders onde order_id = orderId
-    const channel = supabase
-      .channel(`order-progress-${orderId}`)
-      .on(
-        'postgres_changes',
-        {
-          event:  'UPDATE',
-          schema: 'public',
-          table:  'production_orders',
-          filter: `order_id=eq.${orderId}`,
-        },
-        async () => {
-          // Rebusca o progresso completo via RPC
-          const { data } = await supabase.rpc('shop_order_progress', { p_order_id: orderId });
-          if (!data) return;
-
-          const rows = data as Array<{
-            op_id: string; op_number: string; op_status: string;
-            stage_label: string; stage_key: string; progress_pct: number; updated_at: string;
-          }>;
-
-          setProgress(rows.map((r) => ({
-            opId:        r.op_id,
-            opNumber:    r.op_number,
-            opStatus:    r.op_status,
-            stageLabel:  r.stage_label,
-            stageKey:    r.stage_key,
-            progressPct: r.progress_pct,
-            updatedAt:   r.updated_at,
-          })));
-        }
-      )
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
+    let active = true;
+    const refresh = async () => {
+      const result = await getOrderProgress(orderId);
+      if (active && !result.error) setProgress(result.progress);
+    };
+    const timer = window.setInterval(refresh, 15_000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
   }, [orderId]);
 
   if (progress.length === 0) {

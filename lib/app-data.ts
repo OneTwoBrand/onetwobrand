@@ -2,6 +2,7 @@ import { hasSupabasePublicEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
 import type { ProductionOrderListItem } from '@/lib/production/orders';
 import { fallbackProductionOrders, getProductionOrders } from '@/lib/production/orders';
+import { demoRows, demoValue } from '@/lib/demo-data';
 
 export type DataSource = 'supabase' | 'fallback';
 
@@ -86,25 +87,25 @@ export type SalesSummary = {
   latestSales: { id: string; clientName: string; total: number; status: string; createdAt: string }[];
 };
 
-const fallbackClients: ClientListItem[] = [
+const fallbackClients: ClientListItem[] = demoRows([
   { id: 'clara', name: 'Clara Bianchi', city: 'Rio de Janeiro', state: 'RJ', phone: '+5521988880001', vip: true, totalPieces: 18, totalSpent: 9860 },
   { id: 'beatriz', name: 'Beatriz Lacerda', city: 'Curitiba', state: 'PR', phone: '+5541988880006', vip: true, totalPieces: 7, totalSpent: 3140 },
   { id: 'ana', name: 'Ana Toledo', city: 'São Paulo', state: 'SP', phone: '+5511988880003', vip: false, totalPieces: 12, totalSpent: 6420 },
-];
+]);
 
-const fallbackShipments: EmbroideryShipmentItem[] = [
+const fallbackShipments: EmbroideryShipmentItem[] = demoRows([
   { id: 'bd-118', code: 'BD-118', seamstressName: 'Maria Helena', qty: 6, sentAt: '2026-05-28', expectedReturnAt: '2026-06-07', status: 'Em Bordagem', embroideryType: 'Floral a mao', value: 1380, linkedOps: 1 },
   { id: 'bd-117', code: 'BD-117', seamstressName: 'Joana Lima', qty: 3, sentAt: '2026-05-25', expectedReturnAt: '2026-06-05', status: 'Em Bordagem', embroideryType: 'Aplicacao', value: 720, linkedOps: 1 },
   { id: 'bd-116', code: 'BD-116', seamstressName: 'Renata Souza', qty: 4, sentAt: '2026-05-15', expectedReturnAt: '2026-05-29', status: 'Finalizada', embroideryType: 'Richelieu', value: 880, linkedOps: 0 },
-];
+]);
 
-const fallbackSeamstresses: SeamstressListItem[] = [
+const fallbackSeamstresses: SeamstressListItem[] = demoRows([
   { id: 'maria', name: 'Maria Helena', role: 'Costureira-chefe', phone: '+5511999990001', pix: 'maria@pix', specialty: 'Bordado floral', active: true, pendingShipments: 1, pendingValue: 1380 },
   { id: 'joana', name: 'Joana Lima', role: 'Bordadeira', phone: '+5511999990002', pix: 'joana@pix', specialty: 'Aplicacoes', active: true, pendingShipments: 1, pendingValue: 720 },
   { id: 'renata', name: 'Renata Souza', role: 'Costureira', phone: '+5511999990003', specialty: 'Costura fina', active: true, pendingShipments: 0, pendingValue: 0 },
-];
+]);
 
-const fallbackFinancial: FinancialSummary = {
+const fallbackFinancial: FinancialSummary = demoValue({
   revenueMonth: 0,
   toReceive: 0,
   toPay: 6420,
@@ -117,9 +118,12 @@ const fallbackFinancial: FinancialSummary = {
     { id: 'maria', supplier: 'Maria Helena', category: 'bordagem', amount: 1380, dueDate: '2026-06-14', status: 'pending' },
   ],
   receivables: [],
-};
+}, {
+  revenueMonth: 0, toReceive: 0, toPay: 0, expensesPaidMonth: 0,
+  grossProfitMonth: 0, netProfitMonth: 0, payables: [], receivables: [],
+});
 
-const fallbackReports: ReportsSummary = {
+const fallbackReports: ReportsSummary = demoValue({
   piecesSold: 0,
   grossMonth: 0,
   revenueMonth: 0,
@@ -132,14 +136,17 @@ const fallbackReports: ReportsSummary = {
   productionReport: [],
   embroideryReport: [],
   lowStock: [],
-};
+}, {
+  piecesSold: 0, grossMonth: 0, revenueMonth: 0, topPieces: [], salesMonth: [],
+  productionReport: [], embroideryReport: [], lowStock: [],
+});
 
 const fallbackSales: SalesSummary = {
   pendingOrders: 0,
   latestSales: [],
 };
 
-const fallbackDashboard: DashboardSummary = {
+const fallbackDashboard: DashboardSummary = demoValue({
   inProduction: 1,
   inEmbroidery: 1,
   stockTotal: 47,
@@ -152,7 +159,11 @@ const fallbackDashboard: DashboardSummary = {
   overdueOps: 0,
   lowStockSkus: 3,
   activeOrders: fallbackProductionOrders.slice(0, 2),
-};
+}, {
+  inProduction: 0, inEmbroidery: 0, stockTotal: 0, pendingOrders: 0,
+  revenueMonth: 0, toReceive: 0, toPay: 0, grossProfitMonth: 0,
+  netProfitMonth: 0, overdueOps: 0, lowStockSkus: 0, activeOrders: [],
+});
 
 async function getSupabaseOrNull() {
   if (!hasSupabasePublicEnv()) return null;

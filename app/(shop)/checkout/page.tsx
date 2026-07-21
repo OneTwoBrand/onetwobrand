@@ -5,7 +5,7 @@
  */
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
 import { useCartStore } from '@/lib/shop/cart-store';
@@ -47,10 +47,11 @@ export default function CheckoutPage() {
     setShippingOptions(cfg.options);
   }
 
-  if (count === 0) {
-    router.replace('/carrinho');
-    return null;
-  }
+  useEffect(() => {
+    if (count === 0) router.replace('/carrinho');
+  }, [count, router]);
+
+  if (count === 0) return null;
 
   async function handleCepBlur() {
     const clean = address.cep.replace(/\D/g, '');

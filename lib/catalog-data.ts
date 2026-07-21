@@ -1,5 +1,6 @@
 import { hasSupabasePublicEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
+import { demoRows } from '@/lib/demo-data';
 
 export type CollectionOption = {
   id: string;
@@ -34,18 +35,18 @@ export type CatalogStockItem = {
   featured?: boolean;
 };
 
-const fallbackCollections: CollectionOption[] = [
+const fallbackCollections: CollectionOption[] = demoRows([
   { id: 'premium', name: 'Premium', category: 'Bordados', featured: true, featuredOrder: 1, slug: 'premium', publishedAt: new Date().toISOString() },
   { id: 'verao', name: 'Verão 2026', category: 'Casual', featured: false, featuredOrder: 2, slug: 'verao-2026', publishedAt: new Date().toISOString() },
   { id: 'bordados', name: 'Bordados', category: 'Artesanal', featured: false, featuredOrder: 3, slug: 'bordados', publishedAt: new Date().toISOString() },
-];
+]);
 
-const fallbackProducts: CatalogStockItem[] = [
+const fallbackProducts: CatalogStockItem[] = demoRows([
   { id: 'vestido-lis', pieceId: 'vestido-lis', name: 'Vestido Lis', collectionName: 'Verão 2026', category: 'Vestido', fabric: 'Linho cru', color: 'Cru', size: 'M', quantity: 8, lowThreshold: 3, costPrice: 320, price: 890 },
   { id: 'blusa-iris', pieceId: 'blusa-iris', name: 'Blusa Íris', collectionName: 'Premium', category: 'Blusa', fabric: 'Crepe', color: 'Terracota', size: 'P', quantity: 5, lowThreshold: 3, costPrice: 160, price: 420 },
   { id: 'conjunto-hera', pieceId: 'conjunto-hera', name: 'Conjunto Hera', collectionName: 'Bordados', category: 'Conjunto', fabric: 'Algodão Pima', color: 'Off-white', size: 'Único', quantity: 3, lowThreshold: 3, costPrice: 520, price: 1240 },
   { id: 'saia-margarida', pieceId: 'saia-margarida', name: 'Saia Margarida', collectionName: 'Casual', category: 'Saia', fabric: 'Linho', color: 'Rosé', size: 'G', quantity: 12, lowThreshold: 3, costPrice: 120, price: 380 },
-];
+]);
 
 type PieceRow = {
   id?: string;
@@ -269,10 +270,10 @@ export type PieceItem = {
   createdAt?: string | null;
 };
 
-const fallbackPieces: PieceItem[] = [
+const fallbackPieces: PieceItem[] = demoRows([
   { id: 'vestido-lis', name: 'Vestido Lis', collectionName: 'Verão 2026', category: 'Vestido', fabric: 'Linho cru', color: 'Cru', costPrice: 320, price: 890, published: false, featured: false, active: true },
   { id: 'blusa-iris', name: 'Blusa Íris', collectionName: 'Premium', category: 'Blusa', fabric: 'Crepe', color: 'Terracota', costPrice: 160, price: 420, published: false, featured: false, active: true },
-];
+]);
 
 export async function getPieces(): Promise<{ pieces: PieceItem[]; source: 'supabase' | 'fallback'; error?: string }> {
   if (!hasSupabasePublicEnv()) return { pieces: fallbackPieces, source: 'fallback' };

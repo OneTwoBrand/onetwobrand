@@ -2,9 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { MoreHorizontal, ShieldOff, ShieldCheck, Trash2, ChevronDown } from 'lucide-react';
-import { Badge } from '@/components/ui/Badge';
 import { updateUserRole, toggleUserActive, removeUser, saveNavPermissions } from './actions';
-import { ROLE_LABEL, ROLE_TONE } from '@/lib/users-data';
 import { ALL_NAV_HREFS, NAV_LABELS, parseNavPermissions, type NavHref } from '@/lib/nav-permissions';
 
 type Role = 'admin' | 'atelier' | 'viewer' | 'vendedora';
@@ -61,20 +59,20 @@ export function NavPermissionsPanel({
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [open, setOpen] = useState(false);
-
-  // Admin always has full access — no need to configure
-  if (currentRole === 'admin') return null;
-
   const current: NavHref[] = navPermissions
     ? parseNavPermissions(navPermissions)
     : [...ALL_NAV_HREFS];
 
   const [selected, setSelected] = useState<Set<NavHref>>(new Set(current));
 
+  // Admin always has full access — no need to configure
+  if (currentRole === 'admin') return null;
+
   function toggle(href: NavHref) {
     setSelected((prev) => {
       const next = new Set(prev);
-      next.has(href) ? next.delete(href) : next.add(href);
+      if (next.has(href)) next.delete(href);
+      else next.add(href);
       return next;
     });
   }

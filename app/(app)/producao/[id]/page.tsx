@@ -1,4 +1,4 @@
-import { Calendar, Clock, FileText, Pencil, Scissors, ShoppingBag, Trash2, UserRound } from 'lucide-react';
+import { Calendar, Clock, FileText, Pencil, Scissors, ShoppingBag, UserRound } from 'lucide-react';
 import Link from 'next/link';
 import { AppBar, Topbar } from '@/components/layout/Navigation';
 import { Button } from '@/components/ui/Button';

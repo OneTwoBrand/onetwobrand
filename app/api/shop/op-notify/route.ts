@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
  * ONE TWO · GET|POST /api/shop/op-notify
  * Consome a shop_email_queue e envia e-mails de status ao cliente.
  * Chamada por: Vercel Cron (GET) ou webhook interno (POST).
- * Segurança: ?secret=CRON_SECRET (query) ou Authorization Bearer (header).
+ * Segurança: Authorization Bearer CRON_SECRET.
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -12,13 +12,15 @@ import { sendOrderStatusEmail } from '@/lib/shop/email';
 
 function isAuthorized(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;
-  if (!secret) return true; // sem secret configurado, permite (dev)
-  const querySecret = req.nextUrl.searchParams.get('secret');
+  if (!secret) return false;
   const headerAuth  = req.headers.get('authorization') ?? '';
-  return querySecret === secret || headerAuth === `Bearer ${secret}`;
+  return headerAuth === `Bearer ${secret}`;
 }
 
 async function handle(req: NextRequest): Promise<NextResponse> {
+  if (!process.env.CRON_SECRET) {
+    return NextResponse.json({ error: 'CRON_SECRET não configurado.' }, { status: 503 });
+  }
   if (!isAuthorized(req)) {
     return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
   }
@@ -37,6 +39,7 @@ async function handle(req: NextRequest): Promise<NextResponse> {
     `)
     .is('sent_at', null)
     .is('error', null)
+    .is('processing_at', null)
     .order('queued_at', { ascending: true })
     .limit(20);
 
@@ -57,11 +60,22 @@ async function handle(req: NextRequest): Promise<NextResponse> {
   let failed = 0;
 
   for (const entry of queue) {
+    const { data: claimed } = await supabase
+      .from('shop_email_queue')
+      .update({ processing_at: new Date().toISOString() })
+      .eq('id', entry.id)
+      .is('sent_at', null)
+      .is('error', null)
+      .is('processing_at', null)
+      .select('id')
+      .maybeSingle();
+    if (!claimed) continue;
+
     const order = Array.isArray(entry.orders) ? entry.orders[0] : entry.orders;
     if (!order?.customer_email) {
       await supabase
         .from('shop_email_queue')
-        .update({ error: 'E-mail do cliente não encontrado.' })
+        .update({ error: 'E-mail do cliente não encontrado.', processing_at: null })
         .eq('id', entry.id);
       failed++;
       continue;
@@ -78,14 +92,14 @@ async function handle(req: NextRequest): Promise<NextResponse> {
 
       await supabase
         .from('shop_email_queue')
-        .update({ sent_at: new Date().toISOString() })
+        .update({ sent_at: new Date().toISOString(), processing_at: null })
         .eq('id', entry.id);
 
       sent++;
     } catch (e) {
       await supabase
         .from('shop_email_queue')
-        .update({ error: e instanceof Error ? e.message : 'Erro desconhecido.' })
+        .update({ error: e instanceof Error ? e.message : 'Erro desconhecido.', processing_at: null })
         .eq('id', entry.id);
       failed++;
     }

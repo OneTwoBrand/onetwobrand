@@ -24,9 +24,15 @@ export async function inviteUser(
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://one2brand.com.br';
 
-    const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
-      data: { full_name: fullName },
-      redirectTo: `${siteUrl}/auth/callback?next=/nova-senha`,
+    // Generate the invite token without asking Supabase to send its own email.
+    // Resend is the single delivery channel for the branded invitation.
+    const { data, error } = await admin.auth.admin.generateLink({
+      type: 'invite',
+      email,
+      options: {
+        data: { full_name: fullName },
+        redirectTo: `${siteUrl}/auth/callback?next=/nova-senha`,
+      },
     });
 
     if (error) {
@@ -34,27 +40,36 @@ export async function inviteUser(
       if (msg.includes('rate limit') || msg.includes('email rate')) {
         return {
           error:
-            'Limite de e-mails do Supabase atingido (2–3/hora no plano gratuito). ' +
-            'Aguarde alguns minutos e tente novamente, ou configure um SMTP próprio em ' +
-            'Authentication → Settings → SMTP no painel do Supabase.',
+            'Limite temporário do serviço de autenticação atingido. Aguarde alguns minutos e tente novamente.',
         };
       }
       return { error: error.message };
     }
 
-    // Set role in profiles (trigger creates the row, we update the role)
-    await admin.from('profiles').upsert({
+    const inviteLink = data.properties?.action_link;
+    if (!inviteLink) {
+      await admin.auth.admin.deleteUser(data.user.id);
+      return { error: 'Não foi possível gerar um link válido para o convite.' };
+    }
+
+    // Set role in profiles after the invitation token is available.
+    const { error: profileError } = await admin.from('profiles').upsert({
       id: data.user.id,
       full_name: fullName,
       role,
     }, { onConflict: 'id' });
+    if (profileError) {
+      await admin.auth.admin.deleteUser(data.user.id);
+      return { error: `Não foi possível configurar o perfil: ${profileError.message}` };
+    }
 
-    // Build the invite link from the Supabase action link so Resend sends
-    // the real token (not just /login). action_link is the full URL with token.
-    const inviteLink = (data.user as { action_link?: string }).action_link
-      ?? `${siteUrl}/auth/callback?next=/nova-senha`;
-
-    await sendInviteEmail({ to: email, fullName, role, inviteLink }).catch(() => {});
+    const { error: emailError } = await sendInviteEmail({ to: email, fullName, role, inviteLink });
+    if (emailError) {
+      // Avoid leaving an account that the recipient cannot activate when the
+      // delivery provider definitively rejects the message.
+      await admin.auth.admin.deleteUser(data.user.id);
+      return { error: `O convite não foi enviado: ${emailError.message}` };
+    }
 
     revalidatePath('/usuarios');
     return { success: `Convite enviado para ${email}.` };

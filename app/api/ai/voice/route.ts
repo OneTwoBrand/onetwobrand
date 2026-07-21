@@ -3,6 +3,7 @@ import OpenAI from 'openai';
 import { createClient } from '@/lib/supabase/server';
 import { getOpenAIKey } from '@/lib/platform-config';
 import { buildOperationalContext } from '@/lib/ai/context';
+import { checkServerRateLimit } from '@/lib/server-rate-limit';
 
 export const maxDuration = 60;
 
@@ -20,6 +21,9 @@ export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
+  if (!await checkServerRateLimit('ai-voice', user.id, 10, 600)) {
+    return NextResponse.json({ error: 'Limite de uso atingido. Aguarde alguns minutos.' }, { status: 429 });
+  }
 
   const apiKey = await getOpenAIKey();
   if (!apiKey) {
@@ -32,6 +36,13 @@ export async function POST(request: NextRequest) {
   const audioFile = formData.get('audio') as File | null;
   if (!audioFile) {
     return NextResponse.json({ error: 'Arquivo de áudio não recebido.' }, { status: 400 });
+  }
+  const allowedAudioTypes = new Set([
+    'audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/m4a', 'audio/wav',
+    'audio/webm', 'audio/ogg', 'video/webm',
+  ]);
+  if (!allowedAudioTypes.has(audioFile.type) || audioFile.size > 10 * 1024 * 1024) {
+    return NextResponse.json({ error: 'Áudio inválido. Limite de 10 MB.' }, { status: 400 });
   }
 
   const openai = new OpenAI({ apiKey });

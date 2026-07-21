@@ -41,7 +41,8 @@ export const useFavoritesStore = create<FavoritesState>()(
 
       toggleFavorite: (item) => {
         const { isFavorited, addFavorite, removeFavorite } = get();
-        isFavorited(item.pieceId) ? removeFavorite(item.pieceId) : addFavorite(item);
+        if (isFavorited(item.pieceId)) removeFavorite(item.pieceId);
+        else addFavorite(item);
       },
 
       isFavorited: (pieceId) => get().items.some((i) => i.pieceId === pieceId),

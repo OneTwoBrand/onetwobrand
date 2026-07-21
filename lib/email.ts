@@ -5,6 +5,15 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = process.env.RESEND_FROM ?? 'ONE TWO Brand <onboarding@resend.dev>';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://one2brand.com.br';
 
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
 // ── shared HTML shell ──────────────────────────────────────────
 function emailShell(content: string, accentColor = '#1A1A1A'): string {
   return `<!DOCTYPE html>
@@ -66,22 +75,26 @@ export async function sendInviteEmail({
   const roleLabel: Record<string, string> = {
     admin: 'Administradora',
     atelier: 'Atelier',
+    vendedora: 'Vendedora',
     viewer: 'Visualizadora',
   };
 
   const roleIcon: Record<string, string> = {
     admin: '✦',
     atelier: '✿',
+    vendedora: '◌',
     viewer: '◎',
   };
 
   const icon = roleIcon[role] ?? '✦';
   const label = roleLabel[role] ?? role;
+  const safeName = escapeHtml(fullName);
+  const safeInviteLink = escapeHtml(inviteLink);
 
   const content = `
     <!-- Saudação -->
     <p style="margin:0 0 4px;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:#A09890;">Bem-vinda</p>
-    <h2 style="margin:0 0 6px;font-size:26px;font-weight:300;color:#1A1A1A;letter-spacing:0.03em;line-height:1.2;">Olá, ${fullName} 👋</h2>
+    <h2 style="margin:0 0 6px;font-size:26px;font-weight:300;color:#1A1A1A;letter-spacing:0.03em;line-height:1.2;">Olá, ${safeName} 👋</h2>
     <p style="margin:0 0 28px;font-size:13px;color:#9E9688;letter-spacing:0.02em;">Você tem um convite esperando por você.</p>
 
     <!-- Card de função -->
@@ -103,7 +116,7 @@ export async function sendInviteEmail({
     <!-- CTA principal -->
     <table width="100%" cellpadding="0" cellspacing="0">
       <tr><td align="center" style="padding-bottom:32px;">
-        <a href="${inviteLink}"
+        <a href="${safeInviteLink}"
            style="display:inline-block;background:#1A1A1A;color:#F7F5F2;text-decoration:none;
                   font-size:12px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;
                   padding:16px 44px;border-radius:100px;line-height:1;">
@@ -148,7 +161,7 @@ export async function sendInviteEmail({
     <!-- Link alternativo -->
     <p style="margin:0;font-size:11px;color:#A09890;line-height:1.7;">
       Se o botão não funcionar, copie e cole este link diretamente no navegador:<br/>
-      <a href="${inviteLink}" style="color:#A09890;word-break:break-all;text-decoration:underline;">${inviteLink}</a>
+      <a href="${safeInviteLink}" style="color:#A09890;word-break:break-all;text-decoration:underline;">${safeInviteLink}</a>
     </p>
   `;
 
@@ -236,6 +249,7 @@ export async function sendPasswordResetEmail({
   to: string;
   resetLink: string;
 }) {
+  const safeResetLink = escapeHtml(resetLink);
   const content = `
     <p style="margin:0 0 6px;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:#A09890;">Segurança da conta</p>
     <h2 style="margin:0 0 6px;font-size:26px;font-weight:300;color:#1A1A1A;letter-spacing:0.03em;">Redefinir senha</h2>
@@ -250,7 +264,7 @@ export async function sendPasswordResetEmail({
 
     <table width="100%" cellpadding="0" cellspacing="0">
       <tr><td align="center" style="padding-bottom:32px;">
-        <a href="${resetLink}"
+        <a href="${safeResetLink}"
            style="display:inline-block;background:#1A1A1A;color:#F7F5F2;text-decoration:none;
                   font-size:12px;letter-spacing:0.22em;text-transform:uppercase;
                   padding:16px 44px;border-radius:100px;">
@@ -263,7 +277,7 @@ export async function sendPasswordResetEmail({
 
     <p style="margin:0;font-size:11px;color:#A09890;line-height:1.7;">
       Se o botão não funcionar, copie e cole este link no navegador:<br/>
-      <a href="${resetLink}" style="color:#A09890;word-break:break-all;text-decoration:underline;">${resetLink}</a>
+      <a href="${safeResetLink}" style="color:#A09890;word-break:break-all;text-decoration:underline;">${safeResetLink}</a>
     </p>
   `;
 

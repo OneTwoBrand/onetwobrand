@@ -23,6 +23,18 @@ export type VisualSettings = {
   sectionReveal: string;
 };
 
+function normalizePublicHref(value: string): string {
+  const href = value.trim();
+  if (!href) return '';
+  if (href.startsWith('/') && !href.startsWith('//')) return href;
+  try {
+    const parsed = new URL(href);
+    return ['https:', 'http:', 'mailto:'].includes(parsed.protocol) ? parsed.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
 // ─── Auth guard helper ────────────────────────────────────────────────────────
 async function requireAdmin() {
   const supabase = await createClient();
@@ -187,6 +199,53 @@ export async function saveCanaisSettings(
   return { success: 'Canal de vendas salvo.' };
 }
 
+// ─── Public institutional fanpage ───────────────────────────────────────────
+export async function saveInstitutionalSettings(
+  _prev: ShopConfigState,
+  formData: FormData
+): Promise<ShopConfigState> {
+  const { user, error: authError } = await requireAdmin();
+  if (authError || !user) return { error: authError ?? 'Não autenticado.' };
+
+  const mode = String(formData.get('shop_public_mode') ?? 'store');
+  if (mode !== 'store' && mode !== 'institutional') return { error: 'Modo público inválido.' };
+
+  const fields: Record<string, string> = {
+    shop_public_mode: mode,
+    shop_institutional_eyebrow: String(formData.get('shop_institutional_eyebrow') ?? '').trim().slice(0, 80),
+    shop_institutional_brand_title: String(formData.get('shop_institutional_brand_title') ?? '').trim().slice(0, 140),
+    shop_institutional_intro: String(formData.get('shop_institutional_intro') ?? '').trim().slice(0, 420),
+    shop_institutional_interval: String(Math.max(4, Math.min(20, Number(formData.get('shop_institutional_interval') ?? 8) || 8))),
+    shop_institutional_meta_title: String(formData.get('shop_institutional_meta_title') ?? '').trim().slice(0, 120),
+    shop_institutional_meta_description: String(formData.get('shop_institutional_meta_description') ?? '').trim().slice(0, 180),
+  };
+
+  for (const slot of [1, 2, 3, 4]) {
+    fields[`shop_institutional_${slot}_image_url`] = String(formData.get(`shop_institutional_${slot}_image_url`) ?? '').trim().slice(0, 2000);
+    fields[`shop_institutional_${slot}_eyebrow`] = String(formData.get(`shop_institutional_${slot}_eyebrow`) ?? '').trim().slice(0, 80);
+    fields[`shop_institutional_${slot}_title`] = String(formData.get(`shop_institutional_${slot}_title`) ?? '').trim().slice(0, 140);
+    fields[`shop_institutional_${slot}_description`] = String(formData.get(`shop_institutional_${slot}_description`) ?? '').trim().slice(0, 420);
+    fields[`shop_institutional_${slot}_cta_label`] = String(formData.get(`shop_institutional_${slot}_cta_label`) ?? '').trim().slice(0, 60);
+    fields[`shop_institutional_${slot}_cta_href`] = normalizePublicHref(String(formData.get(`shop_institutional_${slot}_cta_href`) ?? ''));
+  }
+
+  if (mode === 'institutional' && !fields.shop_institutional_brand_title) {
+    return { error: 'Informe o título principal antes de ativar o modo institucional.' };
+  }
+
+  try {
+    await Promise.all(Object.entries(fields).map(([key, value]) => setPlatformConfig(key, value, user.id)));
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : 'Erro ao salvar o modo institucional.' };
+  }
+
+  revalidatePath('/');
+  revalidatePath('/loja');
+  revalidatePath('/apresentacao');
+  revalidatePath('/mais/loja');
+  return { success: mode === 'institutional' ? 'Fanpage institucional ativada.' : 'Loja pública ativada.' };
+}
+
 // ─── Read all shop config keys ────────────────────────────────────────────────
 export async function getShopConfig(): Promise<Record<string, string>> {
   const keys = [
@@ -217,6 +276,22 @@ export async function getShopConfig(): Promise<Record<string, string>> {
     'shop_page_privacidade',
     'shop_page_trocas',
     'shop_faq',
+    // Institutional fanpage
+    'shop_public_mode',
+    'shop_institutional_eyebrow',
+    'shop_institutional_brand_title',
+    'shop_institutional_intro',
+    'shop_institutional_interval',
+    'shop_institutional_meta_title',
+    'shop_institutional_meta_description',
+    ...[1, 2, 3, 4].flatMap((slot) => [
+      `shop_institutional_${slot}_image_url`,
+      `shop_institutional_${slot}_eyebrow`,
+      `shop_institutional_${slot}_title`,
+      `shop_institutional_${slot}_description`,
+      `shop_institutional_${slot}_cta_label`,
+      `shop_institutional_${slot}_cta_href`,
+    ]),
   ];
 
   const entries = await Promise.all(

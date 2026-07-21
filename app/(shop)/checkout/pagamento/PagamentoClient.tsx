@@ -1,14 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, CreditCard, QrCode, FileText } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useCartStore, type CartItem } from '@/lib/shop/cart-store';
-import { createOrder, markOrderPaid } from '@/lib/shop/checkout-actions';
+import { createOrder } from '@/lib/shop/checkout-actions';
 import { brl, cn } from '@/lib/utils';
 import { CheckoutStepper } from '../CheckoutStepper';
+import { formatCpf } from '@/lib/input-masks';
 
 const STEPS = ['Identificação', 'Entrega', 'Pagamento', 'Concluir'];
 
@@ -43,16 +45,25 @@ export function PagamentoClient({ waEnabled, waNumber }: Props) {
   const [session, setSession]           = useState<CheckoutSession | null>(null);
   const [method, setMethod]             = useState<PayMethod>('card');
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [stripeOrderId, setStripeOrderId] = useState<string | null>(null);
   const [loading, setLoading]           = useState(false);
   const [error, setError]               = useState('');
 
   useEffect(() => {
-    const raw = sessionStorage.getItem('ot_checkout');
-    if (!raw) { router.replace('/checkout'); return; }
-    setSession(JSON.parse(raw));
+    queueMicrotask(() => {
+      const raw = sessionStorage.getItem('ot_checkout');
+      if (!raw) { router.replace('/checkout'); return; }
+      try { setSession(JSON.parse(raw)); }
+      catch { router.replace('/checkout'); }
+    });
   }, [router]);
 
-  if (cart.itemCount() === 0) { router.replace('/carrinho'); return null; }
+  const cartItemCount = cart.itemCount();
+  useEffect(() => {
+    if (cartItemCount === 0) router.replace('/carrinho');
+  }, [cartItemCount, router]);
+
+  if (cartItemCount === 0) return null;
   if (!session) return null;
 
   const total = cart.total(session.shippingCost);
@@ -81,18 +92,35 @@ export function PagamentoClient({ waEnabled, waNumber }: Props) {
 
   // Cria PaymentIntent via API quando seleciona cartão
   async function initStripe() {
-    if (clientSecret) return;
+    if (clientSecret || !session) return;
     setLoading(true);
     try {
+      const orderRes = await createOrder({
+        customerName: session.customer.name,
+        customerEmail: session.customer.email,
+        customerPhone: session.customer.phone,
+        address: session.address as Parameters<typeof createOrder>[0]['address'],
+        shippingId: session.shippingId,
+        paymentMethod: 'card',
+        couponCode: cart.couponCode,
+        items: cart.items,
+      });
+      if (!orderRes.ok) {
+        setError(orderRes.error);
+        return;
+      }
+
       const res = await fetch('/api/shop/stripe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: Math.round(total * 100), currency: 'brl' }),
+        body: JSON.stringify({ orderId: orderRes.orderId }),
       });
       const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? 'Erro ao iniciar o pagamento.');
+      setStripeOrderId(orderRes.orderId);
       setClientSecret(json.clientSecret ?? null);
-    } catch {
-      setError('Erro ao conectar com o gateway de pagamento.');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erro ao conectar com o gateway de pagamento.');
     } finally {
       setLoading(false);
     }
@@ -167,7 +195,7 @@ export function PagamentoClient({ waEnabled, waNumber }: Props) {
           <div className="flex flex-col gap-4">
             <p className="text-[10px] font-medium tracking-[0.24em] uppercase text-ink-soft">Dados do cartão</p>
             {loading && <p className="text-[12px] text-ink-mute">Carregando formulário…</p>}
-            {clientSecret && getStripePromise() ? (
+            {clientSecret && stripeOrderId && getStripePromise() ? (
               <Elements
                 stripe={getStripePromise()}
                 options={{
@@ -187,7 +215,7 @@ export function PagamentoClient({ waEnabled, waNumber }: Props) {
                 }}
               >
                 <StripeForm
-                  session={session}
+                  orderId={stripeOrderId}
                   cart={cart}
                   total={total}
                   onError={setError}
@@ -351,8 +379,8 @@ function WhatsAppCheckout({ session, cart, total, waNumber }: {
 
 // ── Stripe form ──────────────────────────────────────────────────
 
-function StripeForm({ session, cart, total, onError }: {
-  session: CheckoutSession;
+function StripeForm({ orderId, cart, total, onError }: {
+  orderId: string;
   cart: { items: CartItem[]; couponCode: string | null; couponDiscount: number; clearCart: () => void };
   total: number;
   onError: (e: string) => void;
@@ -367,23 +395,7 @@ function StripeForm({ session, cart, total, onError }: {
     if (!stripe || !elements) return;
     setPaying(true);
 
-    // 1. Criar pedido
-    const orderRes = await createOrder({
-      customerName:    session.customer.name,
-      customerEmail:   session.customer.email,
-      customerPhone:   session.customer.phone,
-      address:         session.address as Parameters<typeof createOrder>[0]['address'],
-      shippingCarrier: session.shippingCarrier,
-      shippingCost:    session.shippingCost,
-      paymentMethod:   'card',
-      couponCode:      cart.couponCode,
-      couponDiscount:  cart.couponDiscount,
-      items:           cart.items,
-    });
-
-    if (!orderRes.ok) { onError(orderRes.error); setPaying(false); return; }
-
-    // 2. Confirmar pagamento via Stripe
+    // A confirmação financeira é feita exclusivamente pelo webhook da Stripe.
     const { error, paymentIntent } = await stripe.confirmPayment({
       elements,
       redirect: 'if_required',
@@ -391,12 +403,11 @@ function StripeForm({ session, cart, total, onError }: {
 
     if (error) { onError(error.message ?? 'Erro no pagamento.'); setPaying(false); return; }
 
-    // 3. Marcar pedido como pago → dispara trigger que cria OP
-    await markOrderPaid(orderRes.orderId, { stripePaymentIntentId: paymentIntent?.id });
+    if (!paymentIntent?.id) { onError('Pagamento não confirmado pela Stripe.'); setPaying(false); return; }
 
     cart.clearCart();
     sessionStorage.removeItem('ot_checkout');
-    router.push(`/checkout/sucesso/${orderRes.orderId}`);
+    router.push(`/checkout/sucesso/${orderId}`);
   }
 
   return (
@@ -442,11 +453,9 @@ function PixSection({ session, cart, total, onError }: {
         customerEmail:   session.customer.email,
         customerPhone:   session.customer.phone,
         address:         session.address as Parameters<typeof createOrder>[0]['address'],
-        shippingCarrier: session.shippingCarrier,
-        shippingCost:    session.shippingCost,
+        shippingId:      session.shippingId,
         paymentMethod:   'pix',
         couponCode:      cart.couponCode,
-        couponDiscount:  cart.couponDiscount,
         items:           cart.items,
       });
       if (!orderRes.ok) { onError(orderRes.error); setLoading(false); return; }
@@ -455,7 +464,7 @@ function PixSection({ session, cart, total, onError }: {
       const res = await fetch('/api/shop/mercadopago', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId: orderRes.orderId, amount: total, email: session.customer.email }),
+        body: JSON.stringify({ orderId: orderRes.orderId, method: 'pix' }),
       });
       const json = await res.json();
       if (json.error) { onError(json.error); setLoading(false); return; }
@@ -475,7 +484,7 @@ function PixSection({ session, cart, total, onError }: {
       <div className="flex flex-col items-center gap-4 py-4">
         <div className="w-48 h-48 bg-white rounded-[16px] flex items-center justify-center border border-line">
           {pixData.qrCode
-            ? <img src={`data:image/png;base64,${pixData.qrCode}`} alt="QR Code PIX" className="w-44 h-44" />
+            ? <Image src={`data:image/png;base64,${pixData.qrCode}`} alt="QR Code PIX" width={176} height={176} unoptimized />
             : <QrCode size={80} className="text-ink-mute" />
           }
         </div>
@@ -540,8 +549,13 @@ function BoletoSection({ session, cart, total, onError }: {
 }) {
   const router  = useRouter();
   const [loading, setLoading] = useState(false);
+  const [cpf, setCpf] = useState('');
 
   async function generateBoleto() {
+    if (cpf.replace(/\D/g, '').length !== 11) {
+      onError('Informe um CPF válido para emitir o boleto.');
+      return;
+    }
     setLoading(true);
     try {
       const orderRes = await createOrder({
@@ -549,11 +563,9 @@ function BoletoSection({ session, cart, total, onError }: {
         customerEmail:   session.customer.email,
         customerPhone:   session.customer.phone,
         address:         session.address as Parameters<typeof createOrder>[0]['address'],
-        shippingCarrier: session.shippingCarrier,
-        shippingCost:    session.shippingCost,
+        shippingId:      session.shippingId,
         paymentMethod:   'boleto',
         couponCode:      cart.couponCode,
-        couponDiscount:  cart.couponDiscount,
         items:           cart.items,
       });
       if (!orderRes.ok) { onError(orderRes.error); setLoading(false); return; }
@@ -561,9 +573,10 @@ function BoletoSection({ session, cart, total, onError }: {
       const res = await fetch('/api/shop/mercadopago', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId: orderRes.orderId, amount: total, email: session.customer.email, method: 'boleto' }),
+        body: JSON.stringify({ orderId: orderRes.orderId, method: 'boleto', document: cpf }),
       });
       const json = await res.json();
+      if (!res.ok || json.error) { onError(json.error ?? 'Não foi possível emitir o boleto.'); return; }
       if (json.boletoUrl) window.open(json.boletoUrl, '_blank');
 
       cart.clearCart();
@@ -585,6 +598,17 @@ function BoletoSection({ session, cart, total, onError }: {
         <span className="text-[10px] font-medium tracking-[0.20em] uppercase text-ink-soft">Total</span>
         <span className="font-serif text-[18px] text-ink">{brl(total, { decimals: true })}</span>
       </div>
+      <label className="flex flex-col gap-1">
+        <span className="text-[10px] font-medium tracking-[0.20em] uppercase text-ink-soft">CPF do pagador</span>
+        <input
+          value={cpf}
+          onChange={(event) => setCpf(formatCpf(event.target.value))}
+          inputMode="numeric"
+          autoComplete="off"
+          placeholder="000.000.000-00"
+          className="h-[52px] rounded-[12px] border border-line bg-paper px-4 text-[16px] text-ink outline-none focus:border-primary"
+        />
+      </label>
       <button
         type="button"
         onClick={generateBoleto}

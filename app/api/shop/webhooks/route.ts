@@ -8,9 +8,13 @@ export const dynamic = 'force-dynamic';
  */
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { markOrderPaid } from '@/lib/shop/checkout-actions';
 import { sendOrderConfirmationEmail } from '@/lib/shop/email';
-import { getOrderSummary } from '@/lib/shop/checkout-actions';
+import {
+  claimWebhookEvent,
+  finishWebhookEvent,
+  getInternalOrderSummary,
+  markOrderPaidVerified,
+} from '@/lib/shop/orders-admin';
 
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-05-27.dahlia' })
@@ -32,14 +36,24 @@ export async function POST(req: NextRequest) {
   }
 
   if (event.type === 'payment_intent.succeeded') {
+    const claim = await claimWebhookEvent('stripe', event.id);
+    if (claim !== 'claimed') return NextResponse.json({ received: true, duplicate: true });
+
     const intent = event.data.object as Stripe.PaymentIntent;
     const orderId = intent.metadata?.orderId;
-    if (orderId) {
-      await markOrderPaid(orderId, { stripePaymentIntentId: intent.id });
+    try {
+      if (!orderId) throw new Error('PaymentIntent sem orderId.');
+      if (intent.currency !== 'brl') throw new Error('Moeda do pagamento inválida.');
+      const paid = await markOrderPaidVerified(orderId, 'stripe', intent.id, intent.amount_received / 100);
+      if (!paid.ok) throw new Error(paid.error);
 
-      // Enviar e-mail de confirmação
-      const { order } = await getOrderSummary(orderId);
+      const order = await getInternalOrderSummary(orderId);
       if (order) await sendOrderConfirmationEmail(order);
+      await finishWebhookEvent('stripe', event.id);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Falha ao processar webhook.';
+      await finishWebhookEvent('stripe', event.id, message);
+      return NextResponse.json({ error: message }, { status: 500 });
     }
   }
 

@@ -2,6 +2,7 @@ import { hasSupabasePublicEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
 import type { OPStatus } from '@/lib/types';
 import type { ProductionOrderForm } from './schema';
+import { demoRows } from '@/lib/demo-data';
 
 export type ProductionOrderListItem = {
   id?: string;
@@ -31,7 +32,7 @@ export type OPHistoryEntry = {
   createdAt: string;
 };
 
-export const fallbackProductionOrders: ProductionOrderListItem[] = [
+export const fallbackProductionOrders: ProductionOrderListItem[] = demoRows([
   {
     opNumber: '0241',
     productName: 'Vestido Lis — Linho cru',
@@ -59,7 +60,7 @@ export const fallbackProductionOrders: ProductionOrderListItem[] = [
     dueDate: '2026-06-10',
     status: 'Aberta',
   },
-];
+]);
 
 type RelatedRecord<T> = T | T[] | null;
 

@@ -1,5 +1,6 @@
 import { hasSupabasePublicEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
+import { demoRows } from '@/lib/demo-data';
 
 export type StockMovementType = 'entrada' | 'saida' | 'ajuste' | 'producao' | 'venda';
 
@@ -17,7 +18,7 @@ export type StockMovementItem = {
   color?: string | null;
 };
 
-const fallbackMovements: StockMovementItem[] = [
+const fallbackMovements: StockMovementItem[] = demoRows([
   {
     id: 'fallback-entrada',
     type: 'entrada',
@@ -44,7 +45,7 @@ const fallbackMovements: StockMovementItem[] = [
     size: 'Único',
     color: 'Off-white',
   },
-];
+]);
 
 type MovementRow = {
   id: string;

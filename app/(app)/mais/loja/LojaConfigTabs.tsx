@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { HeroConfigForm, StoreSettingsForm, VisualEffectsForm, CanaisForm, PagesForm } from '../ShopConfigForm';
+import { HeroConfigForm, StoreSettingsForm, VisualEffectsForm, CanaisForm, InstitutionalForm, PagesForm } from '../ShopConfigForm';
 
-type Tab = 'vitrine' | 'visual' | 'canais' | 'frete' | 'comunicacao' | 'seo' | 'paginas';
+type Tab = 'institucional' | 'vitrine' | 'visual' | 'canais' | 'frete' | 'comunicacao' | 'seo' | 'paginas';
 
 const TABS: { id: Tab; label: string }[] = [
+  { id: 'institucional', label: 'Institucional' },
   { id: 'vitrine',     label: 'Vitrine' },
   { id: 'visual',      label: 'Visual' },
   { id: 'canais',      label: 'Canais' },
@@ -17,7 +18,7 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 export function LojaConfigTabs({ config }: { config: Record<string, string> }) {
-  const [active, setActive] = useState<Tab>('vitrine');
+  const [active, setActive] = useState<Tab>('institucional');
 
   return (
     <div>
@@ -41,6 +42,8 @@ export function LojaConfigTabs({ config }: { config: Record<string, string> }) {
       </div>
 
       {/* Tab content */}
+      {active === 'institucional' && <InstitutionalForm config={config} />}
+
       {active === 'vitrine' && (
         <HeroConfigForm config={config} />
       )}

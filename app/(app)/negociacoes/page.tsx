@@ -1,5 +1,4 @@
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
 import { MessageCircle } from 'lucide-react';
 import { AppBar, Topbar } from '@/components/layout/Navigation';
 import { Card, SectionHead } from '@/components/ui/Primitives';
@@ -52,7 +51,7 @@ export default async function NegociacoesPage() {
                 <MessageCircle size={32} className="text-ink-mute" strokeWidth={1.2} />
                 <p className="text-[14px] text-ink-soft">Nenhuma negociação ainda.</p>
                 <p className="text-[12px] text-ink-mute max-w-xs">
-                  Quando uma cliente clicar em "Negociar pelo WhatsApp" na loja, o interesse aparecerá aqui.
+                  Quando uma cliente clicar em &quot;Negociar pelo WhatsApp&quot; na loja, o interesse aparecerá aqui.
                 </p>
               </div>
             </Card>

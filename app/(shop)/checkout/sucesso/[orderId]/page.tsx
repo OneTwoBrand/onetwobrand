@@ -4,7 +4,7 @@
  */
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Clock3 } from 'lucide-react';
 import { getOrderSummary } from '@/lib/shop/checkout-actions';
 import { brl } from '@/lib/utils';
 import { CheckoutStepper } from '../../CheckoutStepper';
@@ -41,6 +41,7 @@ export default async function SucessoPage({
 
   const firstName = order.customerName.split(' ')[0];
   const stage     = STAGE_LABEL[order.fulfillmentStatus] ?? order.fulfillmentStatus;
+  const isPaid = order.paymentStatus === 'paid';
 
   return (
     <div className="max-w-[520px] mx-auto">
@@ -49,18 +50,24 @@ export default async function SucessoPage({
       <div className="flex flex-col items-center gap-3 mt-8 text-center">
         {/* Ícone */}
         <div className="w-[92px] h-[92px] rounded-full bg-success-soft flex items-center justify-center">
-          <CheckCircle2 size={44} className="text-success" strokeWidth={1.5} />
+          {isPaid
+            ? <CheckCircle2 size={44} className="text-success" strokeWidth={1.5} />
+            : <Clock3 size={44} className="text-warning" strokeWidth={1.5} />}
         </div>
 
         <div>
-          <p className="text-[10px] font-medium tracking-[0.24em] uppercase text-success mb-1">Pagamento aprovado</p>
+          <p className={`text-[10px] font-medium tracking-[0.24em] uppercase mb-1 ${isPaid ? 'text-success' : 'text-warning'}`}>
+            {isPaid ? 'Pagamento aprovado' : 'Pedido recebido, pagamento pendente'}
+          </p>
           <h1 className="font-serif text-[30px] font-light text-ink leading-[1.1]">
             Obrigada,<br /><em>{firstName}.</em>
           </h1>
         </div>
 
         <p className="text-[13px] text-ink-soft leading-[1.6] max-w-[300px]">
-          Seu pedido entrou no fluxo de produção do atelier. Acompanhe o status em tempo real.
+          {isPaid
+            ? 'Seu pedido entrou no fluxo de produção do atelier. Acompanhe o status em tempo real.'
+            : 'Assim que o pagamento for confirmado, seu pedido entrará no fluxo de produção.'}
         </p>
       </div>
 

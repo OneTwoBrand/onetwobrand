@@ -19,7 +19,7 @@ type Props = {
   embroideryTypes: string[];
 };
 
-export function EditOPForm({ params, order, seamstresses, allStatuses, embroideryTypes }: Props) {
+export function EditOPForm({ params, order, seamstresses, allStatuses }: Props) {
   const { id } = use(params);
   const router = useRouter();
   const [state, formAction, pending] = useActionState(editProductionOrder, { error: '' });

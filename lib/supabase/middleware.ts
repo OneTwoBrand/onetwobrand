@@ -4,6 +4,7 @@ import { getSupabasePublicEnv, hasSupabasePublicEnv } from '@/lib/env';
 
 const PUBLIC_PATHS = [
   '/login', '/recuperar', '/nova-senha', '/manifest.webmanifest',
+  '/apresentacao',
   // Loja pública — sem autenticação
   '/loja', '/produto', '/carrinho',
   '/checkout', '/conta',
@@ -18,7 +19,10 @@ function isPublicPath(pathname: string) {
 }
 
 export async function updateSession(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-onetwo-pathname', request.nextUrl.pathname);
+  const nextResponse = () => NextResponse.next({ request: { headers: requestHeaders } });
+  let response = nextResponse();
 
   if (!hasSupabasePublicEnv()) {
     return response;
@@ -33,7 +37,7 @@ export async function updateSession(request: NextRequest) {
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = NextResponse.next({ request });
+        response = nextResponse();
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options);
         });
@@ -51,10 +55,10 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // Visitante não logado na raiz → vitrine da loja
+  // Visitante não logado na raiz → página pública, que resolve o modo ativo.
   if (!user && pathname === '/') {
     const lojaUrl = request.nextUrl.clone();
-    lojaUrl.pathname = '/loja';
+    lojaUrl.pathname = '/apresentacao';
     return NextResponse.redirect(lojaUrl);
   }
 

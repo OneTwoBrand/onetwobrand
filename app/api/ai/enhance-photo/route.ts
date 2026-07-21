@@ -2,13 +2,27 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI, { toFile } from 'openai';
 import sharp from 'sharp';
 import { createClient } from '@/lib/supabase/server';
-import { hasSupabasePublicEnv } from '@/lib/env';
+import { getSupabasePublicEnv, hasSupabasePublicEnv } from '@/lib/env';
 import { getOpenAIKey } from '@/lib/platform-config';
+import { checkServerRateLimit } from '@/lib/server-rate-limit';
 
 export const runtime = 'nodejs';
 
 const TARGET_W = 800;
 const TARGET_H = 1000;
+const MAX_SOURCE_BYTES = 20 * 1024 * 1024;
+
+function isAllowedSource(rawUrl: string): boolean {
+  try {
+    const source = new URL(rawUrl);
+    const storage = new URL(getSupabasePublicEnv().url);
+    return source.protocol === 'https:'
+      && source.hostname === storage.hostname
+      && source.pathname.startsWith('/storage/v1/object/public/product-images/');
+  } catch {
+    return false;
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,22 +39,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Faça login para refinar imagens.' }, { status: 401 });
     }
 
+    const { data: profile } = await supabase
+      .from('profiles').select('role').eq('id', user.id).maybeSingle();
+    if (!profile || !['admin', 'atelier'].includes(profile.role)) {
+      return NextResponse.json({ error: 'Acesso restrito à equipe de produção.' }, { status: 403 });
+    }
+    if (!await checkServerRateLimit('ai-image', user.id, 10, 600)) {
+      return NextResponse.json({ error: 'Limite de uso atingido. Aguarde alguns minutos.' }, { status: 429 });
+    }
+
     const { imageUrl, productName, color } = (await request.json()) as {
       imageUrl: string;
       productName?: string;
       color?: string;
     };
 
-    if (!imageUrl) {
-      return NextResponse.json({ error: 'imageUrl é obrigatório.' }, { status: 400 });
+    if (!imageUrl || !isAllowedSource(imageUrl)) {
+      return NextResponse.json({ error: 'Origem de imagem não permitida.' }, { status: 400 });
     }
 
-    const response = await fetch(imageUrl);
+    const response = await fetch(imageUrl, { redirect: 'error', signal: AbortSignal.timeout(15_000) });
     if (!response.ok) {
       return NextResponse.json({ error: 'Não foi possível baixar a imagem original.' }, { status: 400 });
     }
 
+    const contentType = response.headers.get('content-type') ?? '';
+    const contentLength = Number(response.headers.get('content-length') ?? 0);
+    if (!contentType.startsWith('image/') || contentLength > MAX_SOURCE_BYTES) {
+      return NextResponse.json({ error: 'Arquivo de imagem inválido ou muito grande.' }, { status: 400 });
+    }
     const rawBuffer = Buffer.from(await response.arrayBuffer());
+    if (rawBuffer.length > MAX_SOURCE_BYTES) {
+      return NextResponse.json({ error: 'Arquivo de imagem muito grande.' }, { status: 400 });
+    }
     const apiKey = await getOpenAIKey();
     if (!apiKey) {
       return NextResponse.json({

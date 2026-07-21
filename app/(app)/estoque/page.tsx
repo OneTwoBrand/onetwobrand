@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, History, Package, Pencil, Plus, RotateCw, Search, SlidersHorizontal } from 'lucide-react';
+import { ArrowDown, ArrowUp, History, Package, Pencil, RotateCw, Search, SlidersHorizontal } from 'lucide-react';
 import Link from 'next/link';
 import { AppBar, Topbar } from '@/components/layout/Navigation';
 import { Button } from '@/components/ui/Button';

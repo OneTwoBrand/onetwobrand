@@ -1,14 +1,14 @@
 'use client';
 
 import { useActionState, useRef, useState, type ReactNode } from 'react';
-import { Check, Maximize2, MoveHorizontal, MoveVertical, RotateCcw, Sparkles, Upload, X } from 'lucide-react';
+import { Check, ExternalLink, Maximize2, MoveHorizontal, MoveVertical, RotateCcw, Sparkles, Upload, X } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { MoneyInput, PhoneInput } from '@/components/ui/MaskedInput';
 import { Select, Textarea } from '@/components/ui/Field';
 import { parseShopVisualConfig } from '@/lib/shop/visual-config';
-import { saveHeroConfig, saveStoreSettings, saveVisualSettings, saveCanaisSettings, savePagesSettings, type ShopConfigState } from './shop-config-actions';
+import { saveHeroConfig, saveStoreSettings, saveVisualSettings, saveCanaisSettings, saveInstitutionalSettings, savePagesSettings, type ShopConfigState } from './shop-config-actions';
 
 type UploadState = 'idle' | 'uploading' | 'enhancing' | 'done' | 'error';
 type HeroFit = { zoom: number; offsetX: number; offsetY: number };
@@ -552,6 +552,74 @@ export function CanaisForm({ config }: { config: Record<string, string> }) {
       <Button type="submit" size="sm" disabled={pending} block>
         {pending ? 'Salvando…' : 'Salvar canal'}
       </Button>
+    </form>
+  );
+}
+
+export function InstitutionalForm({ config }: { config: Record<string, string> }) {
+  const [state, action, pending] = useActionState(saveInstitutionalSettings, {} as ShopConfigState);
+  const initialMode = config.shop_public_mode === 'institutional' ? 'institutional' : 'store';
+  const [mode, setMode] = useState<'store' | 'institutional'>(initialMode);
+
+  return (
+    <form action={action} className="space-y-6">
+      <div className="rounded-[12px] border border-line bg-surface p-4">
+        <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft">Modo público</p>
+        <div className="mt-3 grid gap-2">
+          <label className={`flex cursor-pointer items-start gap-3 rounded-[10px] border p-3 transition-colors ${mode === 'store' ? 'border-primary bg-primary-soft' : 'border-line bg-paper'}`}>
+            <input type="radio" name="shop_public_mode" value="store" checked={mode === 'store'} onChange={() => setMode('store')} className="mt-0.5 accent-primary" />
+            <span><span className="block text-[13px] font-medium text-ink">Loja pública</span><span className="mt-0.5 block text-[11px] leading-relaxed text-ink-soft">Catálogo, produtos, sacola e checkout ficam acessíveis.</span></span>
+          </label>
+          <label className={`flex cursor-pointer items-start gap-3 rounded-[10px] border p-3 transition-colors ${mode === 'institutional' ? 'border-primary bg-primary-soft' : 'border-line bg-paper'}`}>
+            <input type="radio" name="shop_public_mode" value="institutional" checked={mode === 'institutional'} onChange={() => setMode('institutional')} className="mt-0.5 accent-primary" />
+            <span><span className="block text-[13px] font-medium text-ink">Fanpage institucional</span><span className="mt-0.5 block text-[11px] leading-relaxed text-ink-soft">Exibe uma apresentação visual da marca e direciona o público aos seus canais de atendimento.</span></span>
+          </label>
+        </div>
+      </div>
+
+      <fieldset className="space-y-4">
+        <legend className="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft">Identidade da apresentação</legend>
+        <Input name="shop_institutional_eyebrow" label="Assinatura curta" defaultValue={config.shop_institutional_eyebrow} placeholder="ONE TWO · crafted pieces" />
+        <Textarea name="shop_institutional_brand_title" label="Título principal" defaultValue={config.shop_institutional_brand_title} placeholder="Peças com tempo, técnica e presença." />
+        <Textarea name="shop_institutional_intro" label="Texto de apresentação" defaultValue={config.shop_institutional_intro} placeholder="Uma breve apresentação do atelier, da técnica e do atendimento." />
+        <Input name="shop_institutional_interval" type="number" min="4" max="20" label="Tempo por slide (segundos)" defaultValue={config.shop_institutional_interval || '8'} />
+      </fieldset>
+
+      <fieldset className="space-y-4">
+        <legend className="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft">Carrossel institucional</legend>
+        <p className="-mt-2 text-[11px] leading-relaxed text-ink-soft">Cadastre até quatro momentos da marca. As imagens podem ser enviadas pela aba Vitrine e reutilizadas aqui pela URL pública.</p>
+        {[1, 2, 3, 4].map((slot) => (
+          <details key={slot} open={slot === 1} className="group rounded-[12px] border border-line bg-paper">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[12px] font-medium text-ink">
+              <span>Slide {slot}</span><span className="text-[10px] uppercase tracking-[0.14em] text-ink-soft group-open:hidden">Editar</span>
+            </summary>
+            <div className="space-y-3 border-t border-line px-4 py-4">
+              <Input name={`shop_institutional_${slot}_image_url`} label="URL da imagem" defaultValue={config[`shop_institutional_${slot}_image_url`]} placeholder="https://..." />
+              <Input name={`shop_institutional_${slot}_eyebrow`} label="Linha de contexto" defaultValue={config[`shop_institutional_${slot}_eyebrow`]} placeholder="ATELIER · CAMPO GRANDE" />
+              <Input name={`shop_institutional_${slot}_title`} label="Título" defaultValue={config[`shop_institutional_${slot}_title`]} placeholder={slot === 1 ? 'O tempo faz parte da peça.' : 'Título do momento'} />
+              <Textarea name={`shop_institutional_${slot}_description`} label="Texto" defaultValue={config[`shop_institutional_${slot}_description`]} placeholder="Uma descrição breve, com foco na marca e na experiência." />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Input name={`shop_institutional_${slot}_cta_label`} label="Chamada para ação" defaultValue={config[`shop_institutional_${slot}_cta_label`]} placeholder="Falar com o atelier" />
+                <Input name={`shop_institutional_${slot}_cta_href`} label="Link" defaultValue={config[`shop_institutional_${slot}_cta_href`]} placeholder="https://wa.me/..." />
+              </div>
+            </div>
+          </details>
+        ))}
+      </fieldset>
+
+      <fieldset className="space-y-4">
+        <legend className="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-soft">SEO da fanpage</legend>
+        <Input name="shop_institutional_meta_title" label="Título do navegador" defaultValue={config.shop_institutional_meta_title} placeholder="ONE TWO · crafted pieces" />
+        <Textarea name="shop_institutional_meta_description" label="Descrição para buscadores" defaultValue={config.shop_institutional_meta_description} placeholder="Conheça o universo ONE TWO." />
+      </fieldset>
+
+      {state?.error && <p className="text-[12px] text-danger">{state.error}</p>}
+      {state?.success && <p className="flex items-center gap-1.5 text-[12px] text-success"><Check size={13} />{state.success}</p>}
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <Button type="submit" size="sm" disabled={pending} className="sm:flex-1">{pending ? 'Salvando…' : mode === 'institutional' ? 'Ativar fanpage institucional' : 'Ativar loja pública'}</Button>
+        {mode === 'institutional' && <a href="/apresentacao" target="_blank" rel="noopener noreferrer" className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border border-line px-4 text-[11px] font-medium uppercase tracking-[0.12em] text-ink hover:bg-surface"><ExternalLink size={13} />Visualizar</a>}
+      </div>
     </form>
   );
 }

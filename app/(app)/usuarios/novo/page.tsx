@@ -55,7 +55,7 @@ export default function NovoUsuarioPage() {
             {state?.error && <p className="text-[12px] text-danger">{state.error}</p>}
             {state?.success && (
               <div className="rounded-[12px] bg-success-soft px-4 py-3 text-[12px] text-success">
-                {state.success} O usuário receberá um e-mail para criar sua senha.
+                {state.success} O usuário receberá um único e-mail para criar sua senha.
               </div>
             )}
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Heart, ShoppingBag, Trash2 } from 'lucide-react';
@@ -8,10 +8,12 @@ import { useFavoritesStore } from '@/lib/shop/favorites-store';
 import { brl } from '@/lib/utils';
 
 export default function FavoritosPage() {
-  const [mounted, setMounted] = useState(false);
   const { items, removeFavorite } = useFavoritesStore();
-
-  useEffect(() => { setMounted(true); }, []);
+  const mounted = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false
+  );
   if (!mounted) return null;
 
   return (

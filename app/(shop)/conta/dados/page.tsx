@@ -8,14 +8,13 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { CheckCircle2, User } from 'lucide-react';
-import { createClient } from '@/lib/supabase/browser';
 import { formatPhoneBR } from '@/lib/input-masks';
+import { getCustomerProfile, updateCustomerProfile } from '@/lib/shop/checkout-actions';
 
 export default function DadosPage() {
   const [name,      setName]      = useState('');
   const [email,     setEmail]     = useState('');
   const [phone,     setPhone]     = useState('');
-  const [custId,    setCustId]    = useState<string | null>(null);
   const [loading,   setLoading]   = useState(true);
   const [saving,    setSaving]    = useState(false);
   const [saved,     setSaved]     = useState(false);
@@ -23,38 +22,14 @@ export default function DadosPage() {
 
   useEffect(() => {
     let active = true;
-
-    queueMicrotask(() => {
+    getCustomerProfile().then(({ profile }) => {
       if (!active) return;
-
-      try {
-        const raw = sessionStorage.getItem('ot_checkout');
-        if (!raw) { setLoading(false); return; }
-        const data = JSON.parse(raw) as { customer?: { name?: string; email?: string; phone?: string } };
-        const em = data.customer?.email ?? '';
-        setEmail(em);
-        setName(data.customer?.name ?? '');
-        setPhone(formatPhoneBR(data.customer?.phone ?? ''));
-        if (!em) { setLoading(false); return; }
-
-        const supabase = createClient();
-        supabase
-          .from('customers')
-          .select('id, name, phone')
-          .eq('email', em)
-          .maybeSingle()
-          .then(({ data: cust }) => {
-            if (!active) return;
-            if (cust?.id) {
-              setCustId(cust.id);
-              setName(cust.name ?? '');
-              setPhone(formatPhoneBR(cust.phone ?? ''));
-            }
-            setLoading(false);
-          });
-      } catch {
-        setLoading(false);
+      if (profile) {
+        setEmail(profile.email);
+        setName(profile.name);
+        setPhone(formatPhoneBR(profile.phone));
       }
+      setLoading(false);
     });
 
     return () => { active = false; };
@@ -62,16 +37,11 @@ export default function DadosPage() {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    if (!custId) return;
     setSaving(true);
     setError(null);
-    const supabase = createClient();
-    const { error: err } = await supabase
-      .from('customers')
-      .update({ name: name.trim(), phone: phone.trim() })
-      .eq('id', custId);
+    const result = await updateCustomerProfile({ name, phone });
     setSaving(false);
-    if (err) { setError(err.message); return; }
+    if (!result.ok) { setError(result.error ?? 'Não foi possível salvar.'); return; }
 
     // Atualiza sessionStorage
     try {
@@ -176,7 +146,7 @@ export default function DadosPage() {
 
           <button
             type="submit"
-            disabled={saving || saved || !custId}
+            disabled={saving || saved}
             className="w-full h-[52px] rounded-full flex items-center justify-center gap-2 text-[11px] font-medium tracking-[0.20em] uppercase transition-colors disabled:opacity-60 bg-primary text-paper hover:bg-primary/90"
           >
             {saved ? (

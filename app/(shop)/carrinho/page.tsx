@@ -16,7 +16,7 @@ import { FREE_THRESHOLD } from '@/lib/shop/shipping';
 
 export default function CarrinhoPage() {
   const { items, couponCode, couponDiscount, updateQty, removeItem,
-          applyCoupon, removeCoupon, subtotal, total, itemCount } = useCartStore();
+          applyCoupon, removeCoupon, subtotal, itemCount } = useCartStore();
   const [couponInput, setCouponInput] = useState('');
   const [couponError, setCouponError] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);

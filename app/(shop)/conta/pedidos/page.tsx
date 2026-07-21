@@ -1,6 +1,6 @@
 /**
  * ONE TWO · /conta/pedidos
- * Lista de pedidos do cliente identificado pelo e-mail em sessionStorage.
+ * Lista protegida pela sessão HTTP assinada do cliente.
  */
 'use client';
 
@@ -35,29 +35,17 @@ function formatDate(iso: string) {
 export default function PedidosPage() {
   const [orders,  setOrders]  = useState<CustomerOrderItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [email,   setEmail]   = useState<string | null>(null);
+  const [hasSession, setHasSession] = useState(true);
 
   useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem('ot_checkout');
-      if (raw) {
-        const data = JSON.parse(raw) as { customer?: { email?: string } };
-        const addr = data.customer?.email ?? null;
-        setEmail(addr);
-        if (addr) {
-          getCustomerOrders(addr).then(({ orders: o }) => {
-            setOrders(o);
-            setLoading(false);
-          });
-        } else {
-          setLoading(false);
-        }
-      } else {
-        setLoading(false);
-      }
-    } catch {
+    getCustomerOrders().then(({ orders: result, error }) => {
+      setOrders(result);
+      if (error) setHasSession(false);
       setLoading(false);
-    }
+    }).catch(() => {
+      setHasSession(false);
+      setLoading(false);
+    });
   }, []);
 
   return (
@@ -80,7 +68,7 @@ export default function PedidosPage() {
         </div>
       )}
 
-      {!loading && !email && (
+      {!loading && !hasSession && (
         <div className="flex flex-col items-center py-16 text-center gap-4">
           <div className="w-14 h-14 rounded-full bg-surface border border-line flex items-center justify-center text-primary">
             <ShoppingBag size={22} strokeWidth={1.2} />
@@ -98,7 +86,7 @@ export default function PedidosPage() {
         </div>
       )}
 
-      {!loading && email && orders.length === 0 && (
+      {!loading && hasSession && orders.length === 0 && (
         <div className="flex flex-col items-center py-16 text-center gap-4">
           <div className="w-14 h-14 rounded-full bg-surface border border-line flex items-center justify-center text-primary">
             <Package size={22} strokeWidth={1.2} />

@@ -1,7 +1,7 @@
 /**
  * ONE TWO · /conta
  * Hub de Minha Conta — links para pedidos, favoritos, dados.
- * Identifica o cliente pelo e-mail salvo em sessionStorage (set no checkout).
+ * Identifica o cliente pela sessão HTTP assinada criada no checkout.
  */
 'use client';
 
@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ChevronRight, Heart, MapPin, Package, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getCustomerProfile } from '@/lib/shop/checkout-actions';
 
 const LINKS = [
   { href: '/conta/pedidos',   icon: <Package  size={18} strokeWidth={1.5} />, label: 'Meus pedidos',   desc: 'Acompanhe o status de cada peça' },
@@ -22,16 +23,10 @@ export default function ContaPage() {
   const [name,  setName]  = useState<string | null>(null);
 
   useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem('ot_checkout');
-      if (raw) {
-        const data = JSON.parse(raw) as { customer?: { name?: string; email?: string } };
-        setEmail(data.customer?.email ?? null);
-        setName(data.customer?.name ?? null);
-      }
-    } catch {
-      // sessionStorage pode não estar disponível em SSR
-    }
+    getCustomerProfile().then(({ profile }) => {
+      setEmail(profile?.email ?? null);
+      setName(profile?.name ?? null);
+    });
   }, []);
 
   return (
